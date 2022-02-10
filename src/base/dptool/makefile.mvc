@@ -1,0 +1,73 @@
+# Makefile for BUBASE
+# Windows 32 Visual C++ version
+
+!IF "$(CFG)" != "release" && "$(CFG)" != "debug"
+CFG=release
+!MESSAGE WARNING!!! Use default configuration - "release"
+!MESSAGE
+!ENDIF 
+
+
+CPP = cl.exe
+LINK = link.exe
+
+
+BUBASE_INC = /I "../../../include"
+BUBASE_SRC= "../../libsrc/kernel/"
+DLLEXPORT_DEFINE = DPTOOL_EXPORTS
+
+
+!IF "$(CFG)" == "release"
+CPPFLAGS = /nologo /MD /W3 /GX /O2 /FD
+CPPDEFS = /D "$(DLLEXPORT_DEFINE)" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "NDEBUG" /D   /D"_WIN32_DCOM"
+LDFLAGS = /nologo /subsystem:windows /machine:I386
+!ELSEIF "$(CFG)" == "debug"
+CPPFLAGS =  /nologo /MDd /W3 /GX /Od /Zi /FD
+CPPDEFS = /D "$(DLLEXPORT_DEFINE)" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_DEBUG"   /D"_WIN32_DCOM"
+LDFLAGS = /nologo /subsystem:windows /machine:I386
+!ENDIF
+
+
+.cpp.obj:
+	@$(CPP)	$(CPPFLAGS) /c /D "$(DLLEXPORT_DEFINE)" $(CPPDEFS) $(BUBASE_INC) $<
+.cpp.o:
+	@$(CPP) $(CPPFLAGS) /c /Zl /Fo$@ $(CPPDEFS) $(BUBASE_INC) $<
+
+
+OBJS =	RtfGenerate.obj  InterfacePack.obj PackConvert.obj
+
+	
+!IF "$(CFG)" == "release"
+LIBS =   bf_kernel.lib bf_version_info.lib WS2_32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib 
+
+ALL:  clean $(OBJS) bf_dbapi.dll SAFE_CLEAN
+
+bf_dptool.dll: $(OBJS)
+	@$(LINK) /DLL /OPT:REF $(LDFLAGS) $(OBJS) $(LIBS) /IMPLIB:bf_dptool.lib /OUT:$@
+	
+	
+!ELSEIF "$(CFG)" == "debug"
+
+LIBS =   bf_kerneld.lib bf_version_infod.lib WS2_32.lib  kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib 
+
+ALL: clean  $(OBJS) bf_dbapid.dll  SAFE_CLEAN
+
+bf_dptoold.dll: $(OBJS)
+	@$(LINK) /DLL /DEBUG $(LDFLAGS) $(OBJS) $(LIBS) \
+	/IMPLIB:bf_dptoold.lib /PDB:bf_dptoold.pdb /OUT:$@
+
+
+!ENDIF 
+
+CLEAN:
+	-@if exist *.obj del *.obj
+	-@if exist *.o del *.o
+SAFE_CLEAN: clean
+	-@if exist *.lib del *.lib
+	-@if exist *.pdb del *.pdb
+	-@if exist *.dll del *.dll
+	-@if exist *.ilk del *.ilk
+	-@if exist *.idb del *.idb
+	-@if exist *.exp del *.exp
+	-@if exist *.exe del *.exe
+

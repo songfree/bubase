@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="GB2312"?>
+<网关API>
+   <日志>
+     <日志级别 remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">5</日志级别>
+     <日志文件名 remark="记录日志信息的文件名,前加日期">cgateapi.log</日志文件名>
+     <日志目录 remark="存放日志的目录"></日志目录>
+   </日志>
+   <网关 心跳时间="30" 断开时间="60" remark="通讯时发送心跳的间隔 秒">
+      <gate1  ip="" port="" remark="网关服务器的IP及端口" />
+      <gate2  ip="" port="" remark="网关服务器的IP及端口" />
+   </网关>
+   <证书 use="0" dllpath="/home/songfree/lib" dllname="shcaapi.dll" method="getInstance" remark="是否使用证书及证书动态库目录,名称、实例化方法 " />
+</网关API>

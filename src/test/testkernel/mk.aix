@@ -1,0 +1,37 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+INCBASE = $(HOME)/include
+
+BU_INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/dbapi -I$(INCBASE)/xml -I$(INCBASE)/bubase 
+
+KERNEL_INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/xml 
+
+CPPFLAGS =  -g -Wall  -O2 -fpic 
+CPPDEFS = -DAIX -DUNIX  -DNDEBUG -D_THREAD_SAFE 
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(BU_INC)  $< -o $@
+
+OBJL =  GResource.o ProcessMgr.o SocketInfo.o front.o  PoolData.o ProcessThread.o SocketMgr.o PoolModule.o SendQueue.o 
+OBJL2 = BuLink.o  BuMainProcess.o  BuRes.o bfbu.o 
+
+ALL:   bffcc bfbu clean
+
+
+BULIB = -L$(HOME)/lib  $(LIBDESTPATH)/libbf_bubase.so  $(LIBDESTPATH)/libbf_kernel.so $(LIBDESTPATH)/libbf_oldxml.so  -lpthread  -ldl
+BCCLIB = -L$(HOME)/lib   $(LIBDESTPATH)/libbf_kernel.so  $(LIBDESTPATH)/libbf_oldxml.so -lpthread -ldl
+
+bffcc: $(OBJL)
+	g++ $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL) $(KERNEL_INC) -L$(HOME)/lib    $(CPPDEFS) $(BCCLIB)
+	mv $@ $(HOME)/bin
+bfbu: $(OBJL2)
+	g++ $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL2) $(BU_INC) -L$(HOME)/lib    $(CPPDEFS) $(BULIB)
+	mv $@ $(HOME)/bin
+clean:
+	rm -f *.o

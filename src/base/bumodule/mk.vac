@@ -1,0 +1,36 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+
+INCBASE = $(HOME)/include
+
+KERNEL_INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/dbpub -I$(INCBASE)/dreb -I$(INCBASE)/bumodule -I$(INCBASE)/dbapi -I$(INCBASE)/xml 
+
+CPP = xlC_r 
+CPPFLAGS = -g -qrtti=all -qcpluscmt  -O2 -q64 
+CPPDEFS = -DAIX -DUNIX -DNDEBUG  -D_THREAD_SAFE  -D_REENTRANT
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(KERNEL_INC) $< -o $@
+
+OBJL =   BPCLink.o  BuFlowControl.o  BuFuncMgr.o  BuModule.o  CallBu.o  FuncTbl.o
+
+
+BPULIB = -L$(HOME)/lib  -lbf_kernel -lbf_oldxml -lbf_dbapi -lsqlapi -lbf_dbpub
+
+
+ALL: libbf_bumodule.a libbf_bumodule.so clean
+
+
+libbf_bumodule.so: $(OBJL)
+	$(CPP) -brtl -qmkshrobj $(CPPFLAGS) $(OBJL)  -o $@ -L$(HOME)/lib   -lpthread -ldl $(BPULIB)
+	mv $@ $(HOME)/lib
+libbf_bumodule.a: $(OBJL)
+	ar -X64 -rv $@ $(OBJL) 
+	mv $@ $(HOME)/lib
+
+clean:
+	rm -f *.o

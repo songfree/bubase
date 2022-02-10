@@ -1,0 +1,31 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+INCBASE = $(HOME)/include
+
+INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/xml  -I$(INCBASE)/dptool
+
+
+CPPFLAGS = -Wall -g -mlp64 
+CPPDEFS = -DUNIX  -DHP_UX -DLOGCURPATH -DNDEBUG -D_THREAD_SAFE -D_XOPEN_SOURCE_EXTENDED 
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(INC) $< -o $@
+
+OBJL =   RtfGenerate.o  InterfacePack.o PackConvert.o TransPackNew.o
+
+ALL:   libbf_dptool.so  clean
+
+libbf_dptool.a: $(OBJL)
+	ar rv $@ $(OBJL)
+	mv $@ $(HOME)/lib
+libbf_dptool.so: $(OBJL)
+	g++ $(CPPFLAGS) $(CPPDEFS) -shared $(OBJL) -L$(HOME)/lib  -lbf_kernel -lbf_oldxml -lpthread -ldl -o $@
+	mv $@ $(HOME)/lib
+clean:
+	rm -f *.o

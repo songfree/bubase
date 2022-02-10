@@ -1,0 +1,31 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+INCBASE = $(HOME)/include
+
+INC= -I$(INCBASE) -I$(INCBASE)/kernel  -I$(INCBASE)/bumodule -I$(INCBASE)/dbapi -I$(INCBASE)/dbpub -I$(INCBASE)/dreb  -I$(INCBASE)/xml
+
+CPPFLAGS = -Wall -g 
+CPPDEFS = -DUNIX  -DHP_UX -DNDEBUG -D_THREAD_SAFE -D_XOPEN_SOURCE_EXTENDED
+DLLLIB  =   -lbf_kernel -lbf_dbpub -lbf_dbapi -lsqlapi  -lbf_bumodule -lbf_oldxml  -lpthread
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(KERNEL_INC) $< -o $@
+
+OOBJL = MoniSvr.o 
+
+ALL: libMoniSvr.so clean
+
+libMoniSvr.so: $(OBJL)
+	$(CPP) $(CPPFLAGS) $(CPPDEFS) -shared $(OBJL) -L$(HOME)/lib $(DLLLIB) -o $@ 
+	mv $@ $(HOME)/libapp
+libMoniSvr.a: $(OBJL)
+	ar -rv $@ $(OBJL) 
+	mv $@ $(HOME)/libapp
+clean:
+	rm -f *.o

@@ -1,0 +1,20 @@
+
+<package>
+   <head>
+      <aa type="0" len="8" fmt="%08I64d" initvalue="20" />
+      <bb type="1" len="8" fmt="" initvalue="">
+         <aa />
+         <aa />
+      </bb>
+      <cc type="2" len="8" fmt="" initvalue="">
+         <ddd />
+         <dddddd />
+         <dd />
+         <dd />
+         <d />
+         <dd />
+         <dd />
+      </cc>
+      <dd type="0" len="8" fmt="%08I64d" initvalue="20" />
+   </head>
+</package>

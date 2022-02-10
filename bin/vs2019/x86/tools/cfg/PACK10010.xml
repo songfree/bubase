@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package name="A">
+   <head>
+      <BINFLAG>0</BINFLAG>
+      <交易码>10010</交易码>
+      <业务控制流水>0</业务控制流水>
+      <业务步骤>0</业务步骤>
+      <总包数>1</总包数>
+      <FIRSTFLAG>1</FIRSTFLAG>
+      <NEXTFLAG>0</NEXTFLAG>
+      <返回码>0</返回码>
+      <本包记录数>1</本包记录数>
+   </head>
+   <pack>
+      <时间 type="0" dec="0" length="8" align="0">103001</时间>
+      <日期 type="0" dec="0" length="8" align="0">20080425</日期>
+      <短信正文 type="0" dec="0" length="400" align="0">666#</短信正文>
+      <渠道号 type="0" dec="0" length="5" align="0">3</渠道号>
+      <接收编号 type="0" dec="0" length="5" align="0">1</接收编号>
+      <短信服务商流水 type="0" dec="0" length="5" align="0">1</短信服务商流水>
+      <目标手机号码 type="0" dec="0" length="20" align="0">13725555392</目标手机号码>
+      <源手机号码 type="0" dec="0" length="20" align="0">13725555392</源手机号码>
+      <短信服务商 type="0" dec="0" length="5" align="0">2</短信服务商>
+   </pack>
+</package>

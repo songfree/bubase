@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package name="上传文件">
+   <head>
+      <BINFLAG>0</BINFLAG>
+      <交易码>999999006</交易码>
+      <业务控制流水>0</业务控制流水>
+      <业务步骤>0</业务步骤>
+      <总包数>1</总包数>
+      <FIRSTFLAG>1</FIRSTFLAG>
+      <NEXTFLAG>0</NEXTFLAG>
+      <返回码>0</返回码>
+      <本包记录数>1</本包记录数>
+   </head>
+   <pack>
+      <文件名 type="0" dec="0" length="60" align="0">test.txt</文件名>
+      <文件大小 type="0" dec="0" length="60" align="0">1212</文件大小>
+      <文件结束标志 type="0" dec="0" length="60" align="0">0</文件结束标志>
+      <文件开始标志 type="0" dec="0" length="60" align="0">1</文件开始标志>
+   </pack>
+</package>

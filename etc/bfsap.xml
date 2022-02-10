@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <head>
+      <public>
+         <loglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">4</loglevel>
+         <dataloglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">3</dataloglevel>
+         <logfile remark="记录日志信息的文件名,前加日期">bfsap.log</logfile>
+         <logdir remark="日志存放的目录"></logdir>
+         <logsize remark="日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</logsize>
+         <datalogsize remark="DATA日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</datalogsize>
+      </public>
+      <dreb>
+            <DREB1 ip="127.0.0.1" port="9011" useipc="1" bandwidth="100" remark="配置数据总线的参数 useipc为1表示通过本机ipc方式连总线" />
+            <DREB1 ip="127.0.0.1" port="9012" useipc="0" bandwidth="100" remark="配置数据总线的参数 useipc为1表示通过本机ipc方式连总线" />
+      </dreb>
+       <monitor use="0" host="0" remark="use为主动报告选项，0不报告 host为主机资源报告选择0不报告">
+        <nodeid>0</nodeid>
+        <nodepid>0</nodepid>
+        <svrid>0</svrid>
+        <svrpid>0</svrpid>
+        <txcode>99001</txcode>
+     </monitor>
+      <bpc>
+         <svrid remark="在dreb上注册的服务号">100</svrid>
+         <svrpid remark="在dreb上注册的私有服务号">1</svrpid>
+         <maxserial remark="Bpu共享的流水最大值，超过则从1重新开始">99999999</maxserial>
+         <dispatchtime remark="请求分配给BU的超时时间，秒">10</dispatchtime>
+         <hearttime remark="和DREB的心条时间,秒">600</hearttime>
+         <due_times remark="连接断开时间,秒">60</due_times>
+         <regmode remark="0表示动态注册，1表示静态注册 2表示不注册">0</regmode>
+         <regfile remark="静态注册时的文件名">txlist.xml</regfile>
+      </bpc>
+      <bpu>
+         <bpuport useipc="1" remark="useipc为1表示bpu通过本机ipc方式连过来，接受BPU连接上来的端口">29001</bpuport>
+         <bpugroup>
+            <riskbpu>
+                <endian remark="发给BPU的字节序 JAVA为1">0</endian>
+                <sendplain remark="由BPU解压缩解密0,明文发给BPU1">0</sendplain>
+                <heartans remark="当为c/c++多bpu时，不用应答心跳消息">0</heartans>
+                <dispatchmode remark="0表示空闲分配，1表示BPU数只能为1，一直分配">0</dispatchmode>
+                <startnum remark="即可以处理业务的单元数目，当请求分配模式为1时只能为1">20</startnum>
+                <autoloadbpu use="1" remark="自动将BPU程序启动1，否则为0">
+                    <bpuprgname remark="BU程序的名称，不带路径">bfspu</bpuprgname>
+                    <bpuprgpath remark="绝对路径">/home/wms/bin</bpuprgpath>
+                    <bpurunpath remark="绝对目录">/home/wms/run/bpc1</bpurunpath>
+                    <bpupara remark="启动BPU所需的参数 最多49个参数 每个2k"></bpupara>
+                </autoloadbpu>
+            </riskbpu>
+         </bpugroup>
+      </bpu>
+   </head>
+   <pack />
+</package>

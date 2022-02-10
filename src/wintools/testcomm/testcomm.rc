@@ -1,0 +1,314 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Chinese (P.R.C.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 4, 2\r\n"
+    "#pragma code_page(936)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\testcomm.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""l.chs\\afxres.rc""          // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\tools1.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 235, 55
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "关于 testcomm"
+FONT 9, "宋体"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
+    LTEXT           "testcomm 1.0 版",IDC_STATIC,40,10,119,8,SS_NOPREFIX
+    LTEXT           "版权所有 (C) 2007",IDC_STATIC,40,25,119,8
+    DEFPUSHBUTTON   "确定",IDOK,178,7,50,14,WS_GROUP
+END
+
+IDD_TESTCOMM_DIALOG DIALOGEX 0, 0, 572, 401
+STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | 
+    WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "前置测试程序 V1.0 "
+FONT 9, "宋体"
+BEGIN
+    COMBOBOX        IDC_COMBO_SEL_HEAD,415,316,141,77,CBS_DROPDOWNLIST | 
+                    CBS_OWNERDRAWFIXED | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "增加",IDC_BUTTON_ADD,34,171,50,14
+    PUSHBUTTON      "增加/修改",IDC_BUTTON_MODI_ADD,144,199,50,14
+    PUSHBUTTON      "修改",IDC_BUTTON_MODI,84,205,36,14,NOT WS_VISIBLE
+    PUSHBUTTON      "删除",IDC_BUTTON_DELETE,214,199,50,14
+    PUSHBUTTON      "发送",IDC_BUTTON_SEND,288,326,50,14
+    PUSHBUTTON      "连接",IDC_BUTTON_CONNECT,420,43,39,14
+    PUSHBUTTON      "断开",IDC_BUTTON_DISCONNECT,466,43,38,14
+    PUSHBUTTON      "退出",IDCANCEL,288,363,50,14
+    GROUPBOX        "通讯参数",IDC_STATIC,7,3,558,57
+    LTEXT           "IP地址",IDC_STATIC,17,21,25,8
+    LTEXT           "端口",IDC_STATIC,126,21,17,8
+    LTEXT           "通讯超时(ms)",IDC_STATIC,204,21,49,8
+    LTEXT           "通讯头长度",IDC_STATIC,296,21,41,8
+    CONTROL         "包含自身",IDC_CHECK_INCLUDE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,366,20,48,10
+    PUSHBUTTON      "保存设置",IDC_BUTTON_SAVE_PARA,515,43,50,14
+    EDITTEXT        IDC_EDIT_IP,48,18,70,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_PORT,148,18,34,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_TIMEOUT,254,18,39,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_HEAD,340,18,22,14,ES_AUTOHSCROLL
+    CONTROL         "包头",IDC_RADIO_ADD_HEAD,"Button",BS_AUTORADIOBUTTON,18,
+                    82,32,10
+    CONTROL         "包体",IDC_RADIO_ADD_PACK,"Button",BS_AUTORADIOBUTTON,68,
+                    82,32,10
+    CONTROL         "包头内容",IDC_RADIO_MODI_HEAD,"Button",
+                    BS_AUTORADIOBUTTON,148,82,48,10
+    CONTROL         "包体内容",IDC_RADIO_MODI_PACK,"Button",
+                    BS_AUTORADIOBUTTON,207,82,48,10
+    GROUPBOX        "增加功能",IDC_STATIC,6,64,120,160
+    GROUPBOX        "",IDC_STATIC,7,75,117,20
+    GROUPBOX        "修改内容",IDC_STATIC,128,64,149,160
+    GROUPBOX        "",IDC_STATIC,128,75,147,19
+    LTEXT           "编号",IDC_STATIC,9,116,17,8
+    EDITTEXT        IDC_EDIT_FUNCNO,31,113,43,14,ES_AUTOHSCROLL
+    LTEXT           "名称",IDC_STATIC,9,138,17,8
+    EDITTEXT        IDC_EDIT_FUNCNAME,31,135,91,14,ES_AUTOHSCROLL
+    LTEXT           "字段名称",IDC_STATIC,131,105,33,8
+    LTEXT           "字段取值",IDC_STATIC,131,127,33,8
+    LTEXT           "字段类型",IDC_STATIC,131,149,33,8
+    LTEXT           "对齐方式",IDC_STATIC,131,171,33,8
+    EDITTEXT        IDC_EDIT_NAME,167,103,104,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_VALUE,167,124,104,14,ES_AUTOHSCROLL
+    COMBOBOX        IDC_COMBO_TYPE,167,147,53,70,CBS_DROPDOWNLIST | 
+                    CBS_OWNERDRAWFIXED | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_ALIGN,167,169,53,65,CBS_DROPDOWNLIST | 
+                    CBS_OWNERDRAWFIXED | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "小数位数",IDC_STATIC,222,149,33,8
+    LTEXT           "字段长度",IDC_STATIC,221,171,33,8
+    EDITTEXT        IDC_EDIT_DEC,255,147,18,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_LENGTH,255,168,18,14,ES_AUTOHSCROLL
+    GROUPBOX        "",IDC_STATIC,129,189,146,31
+    GROUPBOX        "返回结果",IDC_STATIC,8,227,269,148
+    CONTROL         "Tree1",IDC_TREE_ANS,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | 
+                    WS_BORDER | WS_TABSTOP,8,239,267,134
+    LTEXT           "处理总时间(ms)",IDC_STATIC,11,382,57,8
+    EDITTEXT        IDC_EDIT_TIME,70,379,40,14,ES_AUTOHSCROLL | WS_DISABLED
+    PUSHBUTTON      "清空树内容",IDC_BUTTON_CLEAR_TREE,169,379,50,14
+    PUSHBUTTON      "保存树内容",IDC_BUTTON_SAVE_TREE,224,379,50,14
+    GROUPBOX        "包头内容",IDC_STATIC_HEAD,281,63,284,119
+    GROUPBOX        "包体内容",IDC_STATIC_PACK,281,184,284,119
+    GROUPBOX        "发送",IDC_STATIC,281,305,284,88
+    CONTROL         "List1",IDC_LIST_HEAD,"SysListView32",LVS_REPORT | 
+                    LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,280,71,282,
+                    109
+    CONTROL         "List2",IDC_LIST_PACK,"SysListView32",LVS_REPORT | 
+                    LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,280,192,282,
+                    109
+    LTEXT           "选择通讯包头",IDC_STATIC,361,318,49,8
+    LTEXT           "选择通讯包体",IDC_STATIC,362,337,49,8
+    COMBOBOX        IDC_COMBO_SEL_PACK,415,335,141,76,CBS_DROPDOWNLIST | 
+                    CBS_OWNERDRAWFIXED | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "发送次数",IDC_STATIC_SENDNUM,362,357,33,8
+    LTEXT           "线程数",IDC_STATIC,439,357,25,8
+    EDITTEXT        IDC_EDIT_SEND_NUM,398,354,39,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    EDITTEXT        IDC_EDIT_THREAD_NUM,466,354,29,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    CONTROL         "定长",IDC_RADIO_INVAR,"Button",BS_AUTORADIOBUTTON,389,
+                    376,32,10
+    CONTROL         "定长带分隔",IDC_RADIO_INVARSEG,"Button",
+                    BS_AUTORADIOBUTTON,428,376,56,10
+    CONTROL         "分隔符",IDC_RADIO_SEG,"Button",BS_AUTORADIOBUTTON,493,
+                    376,40,10
+    EDITTEXT        IDC_EDIT_SEG,537,374,18,14,ES_AUTOHSCROLL
+    GROUPBOX        "",IDC_STATIC,281,309,72,84
+    CONTROL         "不足补空格",IDC_CHECK_FILL,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,502,355,56,10
+    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",WS_BORDER,
+                    88,227,185,10
+    EDITTEXT        IDC_EDIT_MAXTIME,113,379,25,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    EDITTEXT        IDC_EDIT_MINTIME,141,379,25,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    CONTROL         "XML",IDC_RADIO_XML,"Button",BS_AUTORADIOBUTTON,353,376,
+                    28,10
+    COMBOBOX        IDC_COMBO_ZIP,54,42,86,59,CBS_DROPDOWNLIST | 
+                    CBS_OWNERDRAWFIXED | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_PWDFLAG,192,42,74,57,CBS_DROPDOWNLIST | 
+                    CBS_OWNERDRAWFIXED | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "加密压缩",IDC_STATIC,16,44,35,8
+    LTEXT           "密码设置",IDC_STATIC,154,44,34,8
+    LTEXT           "日志级别",IDC_STATIC,428,21,33,8
+    EDITTEXT        IDC_EDIT_LOG_LEVEL,464,19,23,14,ES_AUTOHSCROLL
+    CONTROL         "短连接",IDC_CHECK_CONNECT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,507,20,40,10
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 3,0,1,0
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", "rd\0"
+            VALUE "FileDescription", "功能压力测试工具\0"
+            VALUE "FileVersion", "3, 0, 1, 0\0"
+            VALUE "InternalName", "testcomm\0"
+            VALUE "LegalCopyright", "版权所有 (C) 2007\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "testcomm.EXE\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "testcomm 应用程序\0"
+            VALUE "ProductVersion", "1, 0, 0, 1\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 48
+    END
+
+    IDD_TESTCOMM_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 565
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 394
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_ABOUTBOX            "关于 testcomm(&A)..."
+END
+
+#endif    // Chinese (P.R.C.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE 4, 2
+#pragma code_page(936)
+#endif //_WIN32
+#include "res\testcomm.rc2"  // non-Microsoft Visual C++ edited resources
+#include "l.chs\afxres.rc"          // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

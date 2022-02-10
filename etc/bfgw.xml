@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <head>
+      <public>
+         <loglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">5</loglevel>
+         <logfile remark="记录日志信息的文件名,前加日期">bfarb.log</logfile>
+         <logdir remark="日志存放的目录"></logdir>
+         <logtrans remark="是否打印转发日志" >0</logtrans>
+      </public>
+      <bpc>
+         <svrid remark="在dreb上注册的服务号">1011</svrid>
+         <svrpid remark="在dreb上注册的私有服务号">1</svrpid>
+         <due_times remark="当连接长时间未有数据时断开,秒">600</due_times>
+         <hearttime remark="和DREB的心条时间,秒">60</hearttime>
+         <transtimeout remark="转发连接过期时间">60000</transtimeout>
+      </bpc>
+      <monitor use="1" host="1" remark="use为主动报告选项，0不报告 host为主机资源报告选择0不报告">
+        <drebid>0</drebid>
+        <drebpid>0</drebpid>
+        <svrid>0</svrid>
+        <svrpid>0</svrpid>
+        <txcode>99001</txcode>
+     </monitor>
+     <dreb>
+            <DREB1 ip="172.168.9.149" port="9021" bandwidth="100" remark="配置数据总线的参数" />
+      </dreb>
+     <gateway>
+        <转发1  INPUTPORT="3001" OUTPUTIP="127.0.0.1" OUTPUTPORT="9901" />
+     </gateway>
+     <blacklist>
+        <黑名单  IP="20.13.0.217" />
+	    <黑名单  IP="20.13.0.218" />
+	    <黑名单  IP="20.13.0.216" />
+     </blacklist>
+   </head>
+   <pack>
+	</pack>
+</package>

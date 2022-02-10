@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package name="推送行情">
+   <head>
+      <交易码>900088</交易码>
+      <返回码>0</返回码>
+      <NEXTFLAG>0</NEXTFLAG>
+      <FIRSTFLAG>1</FIRSTFLAG>
+      <总记录数>1</总记录数>
+      <本包记录数>1</本包记录数>
+      <总包数>1</总包数>
+      <BINFLAG>0</BINFLAG>
+      <业务步骤>0</业务步骤>
+      <业务控制流水>0</业务控制流水>
+   </head>
+   <pack>
+      <合约代码 type="2" dec="" length="0" align="">Au99.99</合约代码>
+      <合约名称 type="2" dec="" length="0" align="">Au99.99金</合约名称>
+      <昨收盘 type="2" dec="" length="0" align="">240</昨收盘>
+      <昨结算 type="2" dec="" length="0" align="">241</昨结算>
+      <开盘价 type="2" dec="" length="0" align="">239</开盘价>
+      <最高价 type="2" dec="" length="0" align="">250</最高价>
+      <最低价 type="2" dec="" length="0" align="">235</最低价>
+      <最新价 type="2" dec="" length="0" align="">243</最新价>
+      <收盘价 type="2" dec="" length="0" align="">244</收盘价>
+      <结算价 type="2" dec="" length="0" align="">244</结算价>
+      <买价1 type="2" dec="" length="0" align="">241</买价1>
+      <买价2 type="2" dec="" length="0" align="">242</买价2>
+      <买价3 type="2" dec="" length="0" align="">243</买价3>
+      <买价4 type="2" dec="" length="0" align="">244</买价4>
+      <买价5 type="2" dec="" length="0" align="">245</买价5>
+      <买量1 type="2" dec="" length="0" align="">1</买量1>
+      <买量2 type="2" dec="" length="0" align="">2</买量2>
+      <买量3 type="2" dec="" length="0" align="">3</买量3>
+      <买量4 type="2" dec="" length="0" align="">4</买量4>
+      <买量5 type="2" dec="" length="0" align="">5</买量5>
+      <卖价1 type="2" dec="" length="0" align="">241</卖价1>
+      <卖价2 type="2" dec="" length="0" align="">242</卖价2>
+      <卖价3 type="2" dec="" length="0" align="">243</卖价3>
+      <卖价4 type="2" dec="" length="0" align="">244</卖价4>
+      <卖价5 type="2" dec="" length="0" align="">245</卖价5>
+      <卖量1 type="2" dec="" length="0" align="">1</卖量1>
+      <卖量2 type="2" dec="" length="0" align="">2</卖量2>
+      <卖量3 type="2" dec="" length="0" align="">3</卖量3>
+      <卖量4 type="2" dec="" length="0" align="">4</卖量4>
+      <卖量5 type="2" dec="" length="0" align="">5</卖量5>
+      <成交量 type="2" dec="" length="0" align="">1111</成交量>
+      <成交重量 type="2" dec="" length="0" align="">1111000</成交重量>
+      <持仓量 type="2" dec="" length="0" align="">300</持仓量>
+      <涨停板 type="2" dec="" length="0" align="">3</涨停板>
+      <跌停板 type="2" dec="" length="0" align="">3</跌停板>
+      <涨跌 type="2" dec="" length="0" align="">1</涨跌>
+      <涨跌幅 type="2" dec="" length="0" align="">0.32</涨跌幅>
+      <成交额 type="2" dec="" length="0" align="">131313131</成交额>
+      <均价 type="2" dec="" length="0" align="">244</均价>
+      <行情日期 type="2" dec="" length="0" align="">20110225</行情日期>
+      <行情时间 type="2" dec="" length="0" align="">162901</行情时间>
+      <行情序号 type="2" dec="" length="0" align="">100</行情序号>
+   </pack>
+</package>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <head>
+       <public>
+         <loglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">4</loglevel>
+         <dataloglevel remark="DATA日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">3</dataloglevel>
+         <logfile remark="记录日志信息的文件名,前加日期">cgate.log</logfile>
+         <logdir remark="存放日志的目录"></logdir>
+         <logsize remark="日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</logsize>
+         <datalogsize remark="DATA日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</datalogsize>
+         <compress remark="发给客户端的数据是否压缩,当本程序及后台为win64位的程序时不能压缩">0</compress>
+         <crc remark="报文头是否生成校验位">0</crc>
+       </public>
+       <gate hearttime="30" disconnecttime="60" timeout="30" remark="通讯时发送心跳的间隔 秒">
+            <gate2 ip="172.24.13.127" port="8002" remark="网关服务器的IP及端口" />
+            <gate1 ip="172.24.13.127" port="8001" remark="网关服务器的IP及端口" />
+       </gate>
+       <pki use="0" dllpath="" dllname="cfcaapid.dll" method="getInstance" certpath="./cfca" certpwd="11111111" certpwdflag="0" remark="是否使用证书及证书动态库目录,名称、实例化方法 " />
+    </head>
+</package>

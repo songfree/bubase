@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <head>
+      <public>
+         <loglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">4</loglevel>
+         <logfile remark="记录日志信息的文件名,前加日期">bpu.log</logfile>
+         <logdir remark="日志文件写入的目录"></logdir>
+      </public>
+      <bpc>
+         <bpcport remark="BPC侦听端口">29001</bpcport>
+         <bpcip remark="BPC侦听端口">127.0.0.1</bpcip>
+         <useipc remark="USEIPC为1表示和bpc在同一台机器上，并且通过IPC方式连接">1</useipc>
+         <hearttime remark="在此时间无数据，发心跳给BPC">10</hearttime>
+         <disconnecttime remark="连接无数据断开时间">600</disconnecttime>
+         <bpugroup remark="为bfbpc.xml的package/head/BPU配置/BPU组/下的节点名称">riskbpu</bpugroup>
+         <compress datalen="200" flag="0" remark="0明文 1des加密密钥长度16，加密后长度增大 2压缩 3DES加密密钥长度8，加密后长度不变 4DES加密并压缩 当本程序及后台为win64位的程序时，不能压缩"  />
+      </bpc>
+      <business>
+         <test>
+            <autoloaddll remark="是否自动装载动态库1自动,测试时使用，生产禁止">0</autoloaddll>
+            <testback testfilepath="/home/songfree/test" remark="为1从testfilepath目录下读取test+交易码.xml的文件数据内容返回">0</testback>
+            <timetest remark="为1将每一步的时间记录至日志文件中，程序优化使用，生产禁用">0</timetest>
+            <txtrans remark="为1将原子转换为对外提供服务的交易">1</txtrans>
+         </test>
+         <busidll dllpath="c:\libapp" remark="dllpath为业务动态库的路径，若不填或错误的路径将按PATH或LIBPATH来打开，在下面增加业务动态库">
+            <libSampleNew.so  method="getInstance"  remark="业务原子功能动态库,method为实例化方法名" />
+         </busidll>
+         <flowcontrol use="0" dllpath="/home/songfree/lib" dllname="libbf_flowcontrol.so" method="getFlowInstance" remark="流程控制,use为1起作用" />
+         <database use="0" commit="1" remark="此处数据库的连接配置，可通过工具修改,use是否连接数据库0不连1连接commit交易(非原子流程)是否自动提交事务1提交">
+            <databaseserver remark="数据库名字 oracle-tnsname mysql ip:prot@db">ORCL</databaseserver>
+            <databaseuser remark="数据库用户名">nmqk3</databaseuser>
+            <userpasswd remark="数据库密码">nmqk3</userpasswd>
+            <passwdtype remark="数据库密码加密标志1-des 2-3des 0-不加密">0</passwdtype>
+            <databasetype remark="数据库类型0-oracl 1-sybase 2-sqlserver 3-infomi 4-db2 5-odbc 6-mysql">0</databasetype>
+         </database>
+      </business>
+   </head>
+   <pack>
+ </pack>
+</package>

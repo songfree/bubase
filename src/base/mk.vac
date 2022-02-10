@@ -1,0 +1,17 @@
+
+#! make -f
+
+DIRS = kernel xml xdp dbapi dbpub dreb bpc bumodule aio bpu cgate cgateapi fpc fpu drebapi drebapi_java dptool arb 
+all:
+	for dir in $(DIRS); do\
+		echo Making all in $$dir... ;\
+		(cd $$dir && make clean && make -f mk.vac);\
+		if test $$? != 0 ; then exit 1; fi ;\
+	done
+clean:
+	for dir in $(DIRS); do\
+		echo clean all in $$dir... ;\
+		(cd $$dir && make clean);\
+	done
+
+

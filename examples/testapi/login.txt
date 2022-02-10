@@ -1,0 +1,1 @@
+55f0b5a218004001   1011 dcc                                                                                 #oper_flag=1#user_type=1#user_id_type=1#user_id=dcc#user_pwd=10f7df2451ae3f3c02d31cbd1ee825f8#login_ip=172.29.31.157#ver_num=1.0.2013121200#is_down_para=0#

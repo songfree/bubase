@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="GB2312"?>
+<bfdrtp name="通讯平台配置">
+   <self remark="通讯平台自身的配置参数">
+      <port name="通讯服务端口">9001</port>
+      <node name="在节点组的编号">100</node>
+      <crypto name="加密方式">0</crypto>
+      <zip name="是否压缩">1</zip>
+      <maxconncount name="最大连接数，不要大于640">512</maxconncount>
+      <beatheart name="是否有心跳1有0无">0</beatheart>
+      <beatheartcount name="心跳个数，在发出beatheart个心跳未收到响应后，将主动关闭连接，取值1到20">1</beatheartcount>
+      <bufferlimit name="连接上的发送缓存包数0为不限制，最小的限制是100">0</bufferlimit>
+      <routesyn name="路由同步，1快速，0慢速">1</routesyn>
+      <nodetype name="节点类型,1主干节点，0叶子节点">1</nodetype>
+      <procnum name="处理消息的线程数">3</procnum>
+      <modulenum name="io模型的线程数">2</modulenum>
+   </self>
+   <router count="0"  remark="连接的通讯平台节点配置">
+      <center ip="127.0.0.1" port="8001" node="900" bandwidth="102400" remark="连接的通讯平台的ip端口、节点编号及带宽,单位为K" />
+      <center ip="127.0.0.1" port="8002" node="901" bandwidth="102400" remark="连接的通讯平台的ip端口、节点编号及带宽,单位为K" />
+   </router>
+   <log remark="日志配置">
+      <logname name="日志文件名">drtp.log</logname>
+      <debug name="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">3</debug>
+	</log>
+</bfdrtp>

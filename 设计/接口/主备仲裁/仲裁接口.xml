@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="GB2312"?>
+<!-- edited with XML Spy v4.2 U (http://www.xmlspy.com) by lock (AIsys) -->
+<interface name="xdp define">
+	<func_list>
+		
+		<s9100002 name="主机状态查询"  author="" remark="仲裁机发现服务主机超时未收到状态通知，主动发起各主机的查询 用DPBC外发">
+			<请求>
+			    <公共服务号 type="uint3" length="5" remark="公共服务号" />
+			    <私有服务号 type="uint4" length="2" remark="私有服务号" />
+			</请求>
+			<应答>
+			    <公共服务号 type="uint3" length="5" remark="公共服务号" />
+			    <私有服务号 type="uint4" length="2" remark="私有服务号" />
+			    <主备状态   type="uint9" length="5" remark="0未知 1主 2备 3主同 4备同" />
+			    <返回码 type="uint10" length="4" remark="0成功" />
+			</应答>
+		</s9100002>
+		<s9100004 name="指定主机"  author="songfree" remark="仲裁机未收到主机状态通知且主机状态查询不了的情况下，向一台备机发起指定其为主机的指令，在这之前，先发起取消主机服务注册的交易至总线">
+			<请求>
+			    <公共服务号 type="uint3" length="5" remark="公共服务号" />
+			    <私有服务号 type="uint4" length="2" remark="私有服务号" />
+			    <主备状态   type="uint9" length="5" remark="0未知 1主 2备 3主同 4备同" />
+			</请求>
+			<应答>
+			    <公共服务号 type="uint3" length="5" remark="公共服务号" />
+			    <私有服务号 type="uint4" length="2" remark="私有服务号" />
+			    <主备状态   type="uint9" length="5" remark="0未知 1主 2备 3主同 4备同" />
+			    <返回码 type="uint10" length="4" remark="0成功" />
+			</应答>
+		</s9100004>
+		<s9100005 name="取消注册"  author="songfree" remark="仲裁机取消应用在总线上的注册">
+			<请求>
+			    <公共服务号 type="s_nSvrMainId" length="9" remark="DREB报文头的源节点" />
+			    <私有服务号 type="s_cSvrPrivateId" length="5" remark="DREB报文头的源节点" />
+			    <公共服务号 type="uint3" length="5" remark="公共服务号" />
+			    <私有服务号 type="uint4" length="2" remark="私有服务号" />
+			</请求>
+		</s9100004>
+		
+		<r9100001 name="主备询问"  author="songfree" remark="由需要主备的服务发起向仲裁机询问是否主机">
+			<请求>
+			    <公共服务号 type="uint3" length="5" remark="公共服务号" />
+			    <私有服务号 type="uint4" length="2" remark="私有服务号" />
+			</请求>
+			<应答>
+			    <主备状态   type="uint9" length="5" remark="0未知 1主 2备" />
+			    <返回码 type="uint10" length="4" remark="0成功" />
+			</应答>
+		</r9100001>
+		<r9100003 name="主备状态通知"  author="songfree" remark="由需要主备的服务发起给仲裁机，通知本机的状态的交易">
+			<请求>
+			    <公共服务号 type="uint3" length="5" remark="公共服务号" />
+			    <私有服务号 type="uint4" length="2" remark="私有服务号" />
+			    <主备状态   type="uint9" length="5" remark="0未知 1主 2备 3主同 4备同" />
+			</请求>
+		</r9100003>
+		
+		
+	</func_list>
+</interface>

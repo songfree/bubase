@@ -1,0 +1,34 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+
+INCBASE = $(HOME)/include
+
+INC= -I$(INCBASE) -I$(INCBASE)/xml -I$(INCBASE)/kernel -I$(INCBASE)/dbpub -I$(INCBASE)/dreb -I$(INCBASE)/bumodule -I$(INCBASE)/dbapi 
+
+
+
+CPPFLAGS = -Wall -g -m64 
+CPPDEFS = -DUNIX  -DLINUX -DNDEBUG -D_THREAD_SAFE 
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(INC) $< -o $@
+
+OBJL =  bfbpu.o  
+
+
+ALL:   bfbpu clean
+
+DREBLIB = -L$(HOME)/lib  -lbf_oldxml  -lbf_kernel -lbf_dbpub -lbf_dbapi -lbf_bumodule -lsqlapi -lpthread -ldl
+
+bfbpu: $(OBJL)
+	g++ $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL) $(INC) -L$(HOME)/lib    $(CPPDEFS) $(DREBLIB)
+	mv $@ $(HOME)/bin
+
+clean:
+	rm -f *.o

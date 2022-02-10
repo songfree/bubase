@@ -1,0 +1,31 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+
+INCBASE = $(HOME)/include
+
+BU_INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/dbapi -I$(INCBASE)/xml -I$(INCBASE)/bumodule -I$(INCBASE)/dbpub
+
+CPP = xlC_r 
+CPPFLAGS = -g -qrtti=all -qcpluscmt -O2 -q64 
+CPPDEFS = -DAIX -DUNIX -DNDEBUG  -D_THREAD_SAFE -D_REENTRANT
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(BU_INC) $< -o $@
+
+OBJL = BuLink.o  BuRes.o bfbu.o 
+
+ALL:   bffpu clean
+
+
+BULIB = -L$(HOME)/lib   -lbf_oldxml  -lbf_kernel -lbf_dbpub -lbf_dbapi -lbf_bumodule -lsqlapi -lpthread -ldl
+
+bffpu: $(OBJL)
+	$(CPP)  $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL) $(BU_INC) -L$(HOME)/lib    $(CPPDEFS) $(BULIB)
+	mv $@ $(HOME)/bin
+clean:
+	rm -f *.o
+

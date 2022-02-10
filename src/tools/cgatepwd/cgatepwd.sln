@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31321.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cgatepwd", "cgatepwd.vcxproj", "{B0BC3FD6-6424-493E-8C8F-AB7C38921AB3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0BC3FD6-6424-493E-8C8F-AB7C38921AB3}.Debug|x86.ActiveCfg = Debug|Win32
+		{B0BC3FD6-6424-493E-8C8F-AB7C38921AB3}.Debug|x86.Build.0 = Debug|Win32
+		{B0BC3FD6-6424-493E-8C8F-AB7C38921AB3}.Release|x86.ActiveCfg = Release|Win32
+		{B0BC3FD6-6424-493E-8C8F-AB7C38921AB3}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BE09E533-1DFB-4157-83EA-400497ABE2C9}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,16 @@
+<Monitor>
+    <SetBpu mode="0" remark="0只更改内存数据1同时更新到配置文件">
+        <bpu1>
+            <发送明文 remark="由BPU解压缩解密0,明文发给BPU1">0</发送明文>
+            <心跳应答 remark="当为c/c++多bpu时，不用应答心跳消息">0</心跳应答>
+            <分配模式 remark="0表示空闲分配，1表示BPU数只能为1，一直分配">0</分配模式>
+            <可启动的BPU数 remark="即可以处理业务的单元数目，当请求分配模式为1时只能为1">1</可启动的BPU数>
+            <AUTOLOADBPU use="0" remark="自动将BPU程序启动1，否则为0">
+                <BPU程序名 remark="BU程序的名称，不带路径">bfBPUd.exe</BPU程序名>
+                <BPU程序路径 remark="绝对或相对路径">D:\BUBASE\bin</BPU程序路径>
+                <BPU运行目录 remark="绝对或相对目录">D:\BUBASE\bin</BPU运行目录>
+                <BPU启动参数 remark="启动BPU所需的参数">D:\BUBASE\bin\bfBPU.xml</BPU启动参数>
+            </AUTOLOADBPU>
+        </bpu1>
+    </SetBpu>
+</Monitor>

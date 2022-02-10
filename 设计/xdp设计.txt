@@ -1,0 +1,17 @@
+﻿报文头
+short   2
+flag    1
+bitmap  16   16*8  = 128字段
+
+
+
+数据类型
+short          2
+int            4
+double         8
+char           <255    data
+varchar        <255    1+data
+bindata        <8192   2+data
+
+
+

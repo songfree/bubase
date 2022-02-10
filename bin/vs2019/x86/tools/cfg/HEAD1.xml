@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package name="深发展渠道包头">
+   <head>
+      <BINFLAG>0</BINFLAG>
+      <交易码>0</交易码>
+      <业务控制流水>0</业务控制流水>
+      <业务步骤>0</业务步骤>
+      <总包数>1</总包数>
+      <后续包标志>0</后续包标志>
+      <返回码>0</返回码>
+      <本包记录数>1</本包记录数>
+   </head>
+   <pack>
+      <交易码 type="0" dec="0" length="5" align="0">##</交易码>
+      <返回码 type="0" dec="0" length="6" align="0">000000</返回码>
+      <返回信息 type="0" dec="0" length="100" align="0">00</返回信息>
+      <交易发生日期 type="0" dec="0" length="8" align="0">@DATE</交易发生日期>
+      <交易发生时间 type="0" dec="0" length="8" align="0">@TIME</交易发生时间>
+      <交易流水号 type="0" dec="0" length="20" align="0">~20348</交易流水号>
+      <交易日 type="0" dec="0" length="8" align="0">@DATE</交易日>
+      <代理标志 type="0" dec="0" length="1" align="0">0</代理标志>
+      <备用 type="0" dec="0" length="3" align="0">3</备用>
+      <联网行编号 type="0" dec="0" length="4" align="0">3</联网行编号>
+      <交易网点 type="0" dec="0" length="8" align="0">1101</交易网点>
+      <柜员 type="0" dec="0" length="8" align="0">1101</柜员>
+      <授权柜员1 type="0" dec="0" length="8" align="0">1101</授权柜员1>
+      <授权柜员2 type="0" dec="0" length="8" align="0">1101</授权柜员2>
+      <交易渠道 type="0" dec="0" length="1" align="0">1</交易渠道>
+      <终端号 type="0" dec="0" length="4" align="0">0000</终端号>
+      <返回码类型 type="0" dec="0" length="1" align="0">1</返回码类型>
+      <请求类型 type="0" dec="0" length="1" align="0">T</请求类型>
+      <授权级别 type="0" dec="0" length="2" align="0">00</授权级别>
+   </pack>
+</package>

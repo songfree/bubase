@@ -1,0 +1,361 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Chinese (P.R.C.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 4, 2\r\n"
+    "#pragma code_page(936)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\testfront.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""l.chs\\afxres.rc""          // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 235, 55
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "关于 testfront"
+FONT 9, "宋体"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
+    LTEXT           "testfront 1.0 版",IDC_STATIC,40,10,119,8,SS_NOPREFIX
+    LTEXT           "版权所有 (C) 2009",IDC_STATIC,40,25,119,8
+    DEFPUSHBUTTON   "确定",IDOK,178,7,50,14,WS_GROUP
+END
+
+IDD_TESTFRONT_DIALOG DIALOGEX 0, 0, 538, 373
+STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | 
+    WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "前置压力测试"
+FONT 9, "宋体"
+BEGIN
+    CONTROL         "IPAddress1",IDC_IPADDRESS,"SysIPAddress32",WS_TABSTOP,
+                    55,17,108,13
+    EDITTEXT        IDC_EDIT_PORT,197,17,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_TIMEOUT,327,17,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_HEAD,450,18,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_TIMESEP,73,43,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_LEVEL,168,43,18,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_RUNTIME,275,43,38,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_SCFILE,60,210,246,14,ES_AUTOHSCROLL
+    COMBOBOX        IDC_COMBO_CONNECT,59,233,99,50,CBS_DROPDOWNLIST | 
+                    CBS_OWNERDRAWFIXED | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_BEGINTIME,219,233,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    EDITTEXT        IDC_EDIT_THREADNUM,306,233,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    PUSHBUTTON      "增加",IDC_BUTTON_ADD,356,207,50,14
+    PUSHBUTTON      "删除",IDC_BUTTON_DEL,356,230,50,14
+    DEFPUSHBUTTON   "启动",IDOK,458,78,50,14
+    PUSHBUTTON      "停止",IDC_BUTTON_STOP,458,100,50,14
+    PUSHBUTTON      "退出",IDCANCEL,458,167,50,14
+    CONTROL         "List1",IDC_LIST_SC,"SysListView32",LVS_REPORT | 
+                    WS_BORDER | WS_TABSTOP,7,254,524,112
+    LTEXT           "服务端IP",IDC_STATIC,19,20,33,8
+    LTEXT           "端口",IDC_STATIC,175,20,17,8
+    GROUPBOX        "参数设置",IDC_STATIC,7,3,524,65
+    LTEXT           "接收应答超时(毫秒)",IDC_STATIC,252,20,73,8
+    LTEXT           "发送间隔(ms)",IDC_STATIC,17,46,49,8
+    LTEXT           "通讯报文头长度",IDC_STATIC,384,20,57,8
+    LTEXT           "日志级别",IDC_STATIC,126,45,33,8
+    LTEXT           "连接类型",IDC_STATIC,21,235,33,8
+    GROUPBOX        "",IDC_STATIC,435,68,96,119
+    GROUPBOX        "运行状态",IDC_STATIC,7,68,426,120
+    LTEXT           "发送笔数",IDC_STATIC,24,132,33,8
+    LTEXT           "接收笔数",IDC_STATIC,24,148,33,8
+    LTEXT           "总运行时间",IDC_STATIC,24,83,41,8
+    LTEXT           "当前运行时间",IDC_STATIC,24,100,49,8
+    LTEXT           "最大响应时间",IDC_STATIC,167,100,49,8
+    LTEXT           "最小响应时间",IDC_STATIC,167,83,49,8
+    LTEXT           "平均响应时间",IDC_STATIC,167,116,49,8
+    LTEXT           "平均每秒笔数",IDC_STATIC,167,148,49,8
+    LTEXT           "当前每秒笔数",IDC_STATIC,167,132,49,8
+    LTEXT           "出错笔数",IDC_STATIC,24,167,33,8
+    GROUPBOX        "脚本时间设定",IDC_STATIC,7,191,406,63
+    LTEXT           "脚本文件",IDC_STATIC,21,212,33,8
+    PUSHBUTTON      "浏览",IDC_BUTTON_FILE,308,210,19,14
+    LTEXT           "线程数",IDC_STATIC,271,236,25,8
+    LTEXT           "总运行时间(分钟)",IDC_STATIC,202,45,65,8
+    LTEXT           "起始时间(秒)",IDC_STATIC,167,236,49,8
+    LTEXT           "总线程数",IDC_STATIC,24,116,33,8
+    EDITTEXT        IDC_EDIT_ALLTIME,78,79,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_SENDNUM,78,130,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_RCVNUM,78,147,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_ERRNUM,78,166,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_ALLTHREAD,78,113,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_CURTIME,78,96,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_MINRESP,219,79,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_CURNUMSEC,219,130,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_AVNUMSEC,219,147,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_AVRESP,219,113,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_MAXRESP,219,96,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_DATETIME,350,172,82,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | NOT WS_TABSTOP
+    PUSHBUTTON      "重启停止线程",IDC_BUTTON_RESTAR,458,123,50,14
+    PUSHBUTTON      "查看",IDC_BUTTON_VIEW,160,165,22,14
+    CONTROL         "自动重启停止的线程",IDC_CHECK_AUTO,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,437,45,88,10
+    LTEXT           "尝试连接次数",IDC_STATIC,327,46,49,8
+    EDITTEXT        IDC_EDIT_TRYNUM,381,43,40,14,ES_AUTOHSCROLL
+    LTEXT           "发送字节数",IDC_STATIC,307,83,41,8
+    LTEXT           "接收字节数",IDC_STATIC,307,100,41,8
+    EDITTEXT        IDC_EDIT_SENDBYTE,352,80,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_RCVBYTE,352,98,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    LTEXT           "平均发速率",IDC_STATIC,307,116,41,8
+    LTEXT           "平均收速率",IDC_STATIC,307,132,41,8
+    EDITTEXT        IDC_EDIT_AVR_SENDBYTE,352,113,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    EDITTEXT        IDC_EDIT_AVR_RCVBYTE,351,130,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    LTEXT           "峰值笔数",IDC_STATIC,311,151,33,8
+    EDITTEXT        IDC_EDIT_MAXAVNUMSEC,352,148,78,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_GROUP
+    PUSHBUTTON      "保存列表",IDC_BUTTON_SAVELIST,419,240,50,14
+    GROUPBOX        "",IDC_STATIC,415,191,116,64
+    PUSHBUTTON      "打开列表",IDC_BUTTON_OPENLIST,479,240,50,14
+    PUSHBUTTON      "变量设置",IDC_BUTTON_SETVAR,458,145,50,14
+    PUSHBUTTON      "保存结果",IDC_BUTTON_SAVETEST,419,204,50,14
+    PUSHBUTTON      "打开结果",IDC_BUTTON_OPENTEST,481,203,50,14
+END
+
+IDD_DIALOG_ERRINFO DIALOG DISCARDABLE  0, 0, 404, 187
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "查看出错信息"
+FONT 10, "System"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,347,166,50,14
+    CONTROL         "",IDC_RICHEDIT_ERR,"RICHEDIT",ES_MULTILINE | 
+                    ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | 
+                    WS_BORDER | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP,7,7,390,
+                    151
+END
+
+IDD_DIALOG_SETVAR DIALOG DISCARDABLE  0, 0, 440, 291
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "测试变量设置"
+FONT 9, "宋体"
+BEGIN
+    EDITTEXT        IDC_EDIT_VARNAME,53,13,74,14,ES_AUTOHSCROLL
+    COMBOBOX        IDC_COMBO_TYPE,173,13,117,70,CBS_DROPDOWNLIST | 
+                    CBS_OWNERDRAWFIXED | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_VARLEN,53,33,41,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_FMT,142,33,73,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_INITVALUE,251,34,73,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_VALUE,285,227,148,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "增加变量值",IDC_BUTTON_ADDVALUE,279,206,50,14
+    DEFPUSHBUTTON   "增加变量",IDOK,370,11,50,14
+    PUSHBUTTON      "返回",IDCANCEL,373,168,50,14
+    CONTROL         "List1",IDC_LIST_VAR,"SysListView32",LVS_REPORT | 
+                    WS_BORDER | WS_TABSTOP,7,54,426,99
+    CONTROL         "List2",IDC_LIST_VARVALUE,"SysListView32",LVS_REPORT | 
+                    WS_BORDER | WS_TABSTOP,7,168,263,116
+    LTEXT           "变量名称",IDC_STATIC,16,15,33,8
+    LTEXT           "变量类型",IDC_STATIC,133,16,33,8
+    LTEXT           "变量长度",IDC_STATIC,15,36,33,8
+    LTEXT           "变量格式",IDC_STATIC,102,36,33,8
+    GROUPBOX        "",IDC_STATIC,7,3,426,47
+    GROUPBOX        "列表变量值",IDC_STATIC_LISTVALUE,7,156,265,128
+    LTEXT           "初始值",IDC_STATIC,223,36,25,8
+    PUSHBUTTON      "删除变量值",IDC_BUTTON_DELVALUE,280,251,50,14
+    PUSHBUTTON      "删除变量",IDC_BUTTON_DEL,369,33,50,14
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404B0"
+        BEGIN
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "testfront Microsoft 基础类应用程序\0"
+            VALUE "FileVersion", "1, 0, 0, 1\0"
+            VALUE "InternalName", "testfront\0"
+            VALUE "LegalCopyright", "版权所有 (C) 2009\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "testfront.EXE\0"
+            VALUE "ProductName", "testfront 应用程序\0"
+            VALUE "ProductVersion", "1, 0, 0, 1\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 48
+    END
+
+    IDD_TESTFRONT_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 531
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 366
+    END
+
+    IDD_DIALOG_ERRINFO, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 397
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 180
+    END
+
+    IDD_DIALOG_SETVAR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 433
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 284
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\testfront.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_ABOUTBOX            "关于 testfront(&A)..."
+END
+
+#endif    // Chinese (P.R.C.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE 4, 2
+#pragma code_page(936)
+#endif //_WIN32
+#include "res\testfront.rc2"  // non-Microsoft Visual C++ edited resources
+#include "l.chs\afxres.rc"          // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

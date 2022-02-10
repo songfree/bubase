@@ -1,0 +1,328 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(简体，中国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 4, 2\r\n"
+    "#pragma code_page(936)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\drebclient.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""l.chs\\afxres.rc""          // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\drebclient.ico"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 235, 55
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "关于 drebclient"
+FONT 9, "宋体", 0, 0, 0x0
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
+    LTEXT           "drebclient 1.0 版",IDC_STATIC,40,10,119,8,SS_NOPREFIX
+    LTEXT           "版权所有 (C) 2017",IDC_STATIC,40,25,119,8
+    DEFPUSHBUTTON   "确定",IDOK,178,7,50,14,WS_GROUP
+END
+
+IDD_DREBCLIENT_DIALOG DIALOGEX 0, 0, 550, 373
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "DREB测试客户端"
+FONT 9, "宋体", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "连接DREB",IDOK,415,17,50,14
+    PUSHBUTTON      "退出",IDCANCEL,487,307,50,14
+    GROUPBOX        "",IDC_STATIC,7,3,536,36
+    LTEXT           "DREB地址",IDC_STATIC,16,18,33,8
+    CONTROL         "IPAddress1",IDC_IPADDRESS_DREBIP,"SysIPAddress32",WS_TABSTOP,54,15,100,15
+    LTEXT           "DREB端口",IDC_STATIC,171,18,33,8
+    EDITTEXT        IDC_EDIT_DREBPORT,209,15,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "接收超时时间",IDC_STATIC,263,17,49,8
+    EDITTEXT        IDC_EDIT_TIMEOUT,317,14,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    PUSHBUTTON      "断开DREB",IDC_BUTTON_DISCONNECT,485,17,50,14
+    GROUPBOX        "信息发送",IDC_STATIC,7,40,536,172
+    LTEXT           "消息功能",IDC_STATIC,251,52,33,8
+    COMBOBOX        IDC_COMBO_MESSAGE,299,50,202,82,CBS_DROPDOWNLIST | CBS_OWNERDRAWFIXED | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "DREB公共节点",IDC_STATIC,17,53,49,8
+    LTEXT           "DREB私有节点",IDC_STATIC,134,53,49,8
+    CONTROL         "Tree1",IDC_TREE_RESULTLIST,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | WS_BORDER | WS_HSCROLL | WS_TABSTOP,9,216,464,141
+    LTEXT           "公共服务号",IDC_STATIC,17,75,41,8
+    LTEXT           "私有服务号",IDC_STATIC,134,75,41,8
+    LTEXT           "交易码",IDC_STATIC,251,75,25,8
+    PUSHBUTTON      "发送",IDC_BUTTON_SEND,487,223,50,14
+    EDITTEXT        IDC_EDIT_NODEID,75,50,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_PRIVATEID,186,51,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_SVRPRIVATEID,186,72,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_SERVICE_NO,299,71,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_SVRMAINID,75,71,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_DATAFILE,84,190,354,14,ES_AUTOHSCROLL
+    GROUPBOX        "数据",IDC_STATIC,7,112,536,95
+    CONTROL         "",IDC_RICHEDIT_DATA,"RICHEDIT",TCS_HOTTRACK | TCS_FOCUSONBUTTONDOWN | TCS_MULTISELECT | WS_BORDER | WS_VSCROLL | WS_TABSTOP,10,122,524,64
+    CONTROL         "数据来自文件",IDC_CHECK_DATA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,192,64,10
+    PUSHBUTTON      "浏览",IDC_BUTTON_FILE,444,190,27,14
+    PUSHBUTTON      "清空结果树",IDC_BUTTON_CLEAR,487,335,50,14
+    PUSHBUTTON      "接收后续数据",IDC_BUTTON_RCVNEXT,487,251,50,14
+    GROUPBOX        "",IDC_STATIC,7,212,536,147
+    LTEXT           "数据加密压缩标志",IDC_STATIC,364,74,65,8
+    COMBOBOX        IDC_COMBO_CZIP,438,71,91,86,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "查看数据包内容",IDC_VIEW,487,279,50,14
+    LTEXT           "s_nHook",IDC_STATIC,22,95,29,8
+    EDITTEXT        IDC_EDIT_HOOK,75,93,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "s_nSerial",IDC_STATIC,135,96,37,8
+    EDITTEXT        IDC_EDIT_SERIAL,186,93,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "s_nGateIndex",IDC_STATIC,244,95,49,8
+    EDITTEXT        IDC_EDIT_INDEX,300,93,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    PUSHBUTTON      "来自XDP",IDC_BUTTON_XDP,481,190,50,14
+END
+
+IDD_DIALOG_RESULT DIALOG 0, 0, 383, 245
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "应答数据"
+FONT 9, "宋体"
+BEGIN
+    DEFPUSHBUTTON   "保存至文件",IDOK,224,219,50,14
+    PUSHBUTTON      "返回",IDCANCEL,313,219,50,14
+    CONTROL         "",IDC_RICHEDIT_RESULT,"RICHEDIT",TCS_HOTTRACK | TCS_FOCUSONBUTTONDOWN | TCS_MULTISELECT | WS_BORDER | WS_VSCROLL | WS_TABSTOP,7,14,369,201
+    GROUPBOX        "",IDC_STATIC_TITLE,7,3,369,235
+END
+
+IDD_DIALOG_FILE DIALOG 0, 0, 383, 120
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "上传下载文件"
+FONT 9, "宋体"
+BEGIN
+    EDITTEXT        IDC_EDIT_LOCAL,67,21,260,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_REMOTE,67,45,260,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "浏览",IDC_BUTTON_LOCAL,340,22,28,12
+    DEFPUSHBUTTON   "确定",IDOK,121,93,50,14
+    PUSHBUTTON      "取消",IDCANCEL,199,92,50,14
+    LTEXT           "本地文件名",IDC_STATIC,17,23,46,8
+    LTEXT           "远程文件名",IDC_STATIC,17,48,46,8
+    GROUPBOX        "",IDC_STATIC,7,2,369,73
+    EDITTEXT        IDC_EDIT_REMARK,7,74,369,14,ES_AUTOHSCROLL | WS_DISABLED
+END
+
+IDD_DIALOG_XDP DIALOG 0, 0, 403, 227
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "XDP"
+FONT 10, "System"
+BEGIN
+    EDITTEXT        IDC_EDIT_XDPFIELD,202,178,29,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_XDPVALUE,249,178,89,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "保存XDP数据",IDC_BUTTON_SAVE,145,201,50,14
+    PUSHBUTTON      "删除",IDC_BUTTON_DELETE,213,201,50,14
+    PUSHBUTTON      "修改/增加",IDC_BUTTON_ADD,277,201,50,14
+    PUSHBUTTON      "取消",IDCANCEL,346,171,50,14
+    DEFPUSHBUTTON   "确定",IDOK,346,198,50,14
+    EDITTEXT        IDC_EDIT_FILE,138,12,179,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "浏览XDP数据文件",IDC_BUTTON_OPEN,324,12,72,14
+    GROUPBOX        "xdp定义",IDC_STATIC,7,7,126,213
+    LTEXT           "值",IDC_STATIC,237,181,9,8
+    LTEXT           "XDP字段Index",IDC_STATIC,146,180,49,8
+    CONTROL         "List1",IDC_LIST_XDP,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,138,29,258,134
+    CONTROL         "List2",IDC_LIST_XDPDEFINE,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,7,19,124,201
+    GROUPBOX        "",IDC_STATIC,135,162,207,58
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404B0"
+        BEGIN
+            VALUE "FileDescription", "drebclient Microsoft 基础类应用程序"
+            VALUE "FileVersion", "1, 0, 0, 1"
+            VALUE "InternalName", "drebclient"
+            VALUE "LegalCopyright", "版权所有 (C) 2010"
+            VALUE "OriginalFilename", "drebclient.EXE"
+            VALUE "ProductName", "drebclient 应用程序"
+            VALUE "ProductVersion", "1, 0, 0, 1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 48
+    END
+
+    IDD_DREBCLIENT_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 543
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 366
+    END
+
+    IDD_DIALOG_RESULT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 376
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 238
+    END
+
+    IDD_DIALOG_FILE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 376
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 113
+    END
+
+    IDD_DIALOG_XDP, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 396
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 220
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_ABOUTBOX AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_DREBCLIENT_DIALOG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_ABOUTBOX            "关于 drebclient(&A)..."
+END
+
+#endif    // 中文(简体，中国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE 4, 2
+#pragma code_page(936)
+#endif //_WIN32
+#include "res\drebclient.rc2"  // non-Microsoft Visual C++ edited resources
+#include "l.chs\afxres.rc"          // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

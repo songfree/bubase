@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <head>
+      <public>
+         <loglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">5</loglevel>
+         <dataloglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">3</dataloglevel>
+         <logfile remark="记录日志信息的文件名,前加日期">tradefront.log</logfile>
+         <logsize remark="日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</logsize>
+         <datalogsize remark="DATA日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</datalogsize>
+         <logdir remark="日志存放的目录"></logdir>
+         <xdpfile remark="xdp报文定义文件">xdp.xml</xdpfile>
+         <sendarbtime remark="主动发给仲裁服务的间隔时间 秒">1</sendarbtime>
+         <mastermode  remark="为1表示主备模式，否则为负载均衡模式">1</mastermode>
+         <listenport>18260</listenport>
+         <maxconnect>100</maxconnect>
+         <CRC>0</CRC>
+       </public>
+      <dreb>
+            <DREB1 ip="172.168.65.107" port="11001" bandwidth="100" remark="配置数据总线的参数" />
+            <DREB1 ip="172.168.65.107" port="11002" bandwidth="100" remark="配置数据总线的参数" />
+      </dreb>
+      <monitor use="0" host="0" remark="use为主动报告选项，0不报告 host为主机资源报告选择0不报告">
+          <drebid>0</drebid>
+          <drebpid>0</drebpid>
+          <svrid>0</svrid>
+          <svrpid>0</svrpid>
+          <txcode>99001</txcode>
+     </monitor>
+      <bpc>
+         <svrid remark="在dreb上注册的服务号或报盘机类型代码">602</svrid>
+         <svrpid remark="在dreb上注册的私有服务号">1</svrpid>
+         <due_times remark="当连接长时间未有数据时断开,秒">60</due_times>
+         <dreb_ticktime remark="和DREB的心跳时间,秒">6</dreb_ticktime>
+      </bpc>
+      <initial>
+          <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+          <database use="0" commit="1" remark="此处数据库的连接配置，可通过工具修改,use是否连接数据库0不连1连接commit交易(非原子流程)是否自动提交事务1提交">
+              <databaseserver remark="数据库名字">ORCL</databaseserver>
+              <databaseuser remark="数据库用户名">nmqk3</databaseuser>
+              <userpasswd remark="数据库密码">nmqk3</userpasswd>
+              <passwdtype remark="数据库密码加密标志1-des 2-3des 0-不加密">0</passwdtype>
+              <databasetype remark="数据库类型0-oracl 1-sybase 2-sqlserver 3-infomi 4-db2 5-odbc 6-mysql">0</databasetype>
+          </database>
+      </initial>
+      <business>
+          <busi_thread_num>2</busi_thread_num>
+          <DLL>
+              <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+              <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+          </DLL>
+          <timer>
+              <TIMER sep="1" txcode="1021" remark="sep为间隔，单位毫秒，txcode为定时发出的交易码，即定时发指定的交易码给业务进行处理" />
+              <TIMER sep="2" txcode="1022" remark="sep为间隔，单位毫秒，txcode为定时发出的交易码，即定时发指定的交易码给业务进行处理" />
+          </timer>
+          <database use="0" commit="1" remark="此处数据库的连接配置，可通过工具修改,use是否连接数据库0不连1连接commit交易(非原子流程)是否自动提交事务1提交">
+              <databaseserver remark="数据库名字">ORCL</databaseserver>
+              <databaseuser remark="数据库用户名">nmqk3</databaseuser>
+              <userpasswd remark="数据库密码">nmqk3</userpasswd>
+              <passwdtype remark="数据库密码加密标志1-des 2-3des 0-不加密">0</passwdtype>
+              <databasetype remark="数据库类型0-oracl 1-sybase 2-sqlserver 3-infomi 4-db2 5-odbc 6-mysql">0</databasetype>
+          </database>
+      </business>
+      <exchange>
+          <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+          <front>
+              <sfe>
+                  <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+                  <exchangeid>001</exchangeid>
+                  <seat_no>000000</seat_no>
+                  <traderid>test001</traderid>
+                  <traderpwd>test001</traderpwd>
+                  <pwdflag remark="0不加密1加密码" >0</pwdflag>
+                  <pwdmode remark="des加密0 3DES1">0</pwdmode>
+                  <front remark="配置交易所的前置，连不上可尝试下一个">
+                      <front ip="197.1.1.22" port="16777" remark="配置要连接前置的参数" />
+                  </front>
+              </sfe>
+              <dce>
+                  <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+                  <exchangeid>001</exchangeid>
+                  <seat_no>000000</seat_no>
+                  <traderid>test001</traderid>
+                  <traderpwd>test001</traderpwd>
+                  <pwdflag remark="0不加密1加密码" >0</pwdflag>
+                  <pwdmode remark="des加密0 3DES1">0</pwdmode>
+                  <front remark="配置交易所的前置，连不上可尝试下一个">
+                      <front ip="197.1.1.22" port="16777" remark="配置要连接前置的参数" />
+                  </front>
+              </dce>
+              <zce>
+                  <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+                  <exchangeid>001</exchangeid>
+                  <seat_no>000000</seat_no>
+                  <traderid>test001</traderid>
+                  <traderpwd>test001</traderpwd>
+                  <pwdflag remark="0不加密1加密码" >0</pwdflag>
+                  <pwdmode remark="des加密0 3DES1">0</pwdmode>
+                  <front remark="配置交易所的前置，连不上可尝试下一个">
+                      <front ip="197.1.1.22" port="16777" remark="配置要连接前置的参数" />
+                  </front>
+              </zce>
+              <cffex>
+                  <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+                  <exchangeid>001</exchangeid>
+                  <seat_no>000000</seat_no>
+                  <traderid>test001</traderid>
+                  <traderpwd>test001</traderpwd>
+                  <pwdflag remark="0不加密1加密码" >0</pwdflag>
+                  <pwdmode remark="des加密0 3DES1">0</pwdmode>
+                  <front remark="配置交易所的前置，连不上可尝试下一个">
+                      <front ip="197.1.1.22" port="16777" remark="配置要连接前置的参数" />
+                  </front>
+              </cffex>
+              <sge>
+                  <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+                  <exchangeid>001</exchangeid>
+                  <seat_no>000000</seat_no>
+                  <traderid>test001</traderid>
+                  <traderpwd>test001</traderpwd>
+                  <pwdflag remark="0不加密1加密码" >0</pwdflag>
+                  <pwdmode remark="des加密0 3DES1">0</pwdmode>
+                  <front remark="配置交易所的前置，连不上可尝试下一个">
+                      <front ip="197.1.1.22" port="16777" remark="配置要连接前置的参数" />
+                  </front>
+              </sge>
+              <CME>
+                  <DLLNAME method="getInstance" dllpath="" >testinitd.dll</DLLNAME>
+                  <exchangeid>001</exchangeid>
+                  <seat_no>000000</seat_no>
+                  <traderid>test001</traderid>
+                  <traderpwd>test001</traderpwd>
+                  <pwdflag remark="0不加密1加密码" >0</pwdflag>
+                  <pwdmode remark="des加密0 3DES1">0</pwdmode>
+                  <front remark="配置交易所的前置，连不上可尝试下一个">
+                      <front ip="197.1.1.22" port="16777" remark="配置要连接前置的参数" />
+                  </front>
+              </CME>
+          </front>
+      </exchange>
+   </head>
+   <pack />
+</package>

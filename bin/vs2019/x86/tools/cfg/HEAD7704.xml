@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package name="取发送短信状态">
+   <head>
+      <BINFLAG>0</BINFLAG>
+      <交易码>0</交易码>
+      <业务控制流水>0</业务控制流水>
+      <业务步骤>0</业务步骤>
+      <总包数>1</总包数>
+      <FIRSTFLAG>1</FIRSTFLAG>
+      <NEXTFLAG>0</NEXTFLAG>
+      <返回码>0</返回码>
+      <本包记录数>1</本包记录数>
+   </head>
+   <pack>
+      <交易码 type="0" dec="0" length="4" align="0">7704</交易码>
+   </pack>
+</package>

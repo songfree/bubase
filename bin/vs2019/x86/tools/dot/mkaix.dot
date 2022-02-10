@@ -1,0 +1,32 @@
+# Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+
+INCBASE = $(HOME)/include
+
+INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/dbpub  -I$(INCBASE)/bumodule -I$(INCBASE)/dbapi -I$(INCBASE)/dreb -I$(INCBASE)/xml
+
+CPPFLAGS =  -g -Wall  -O2 -fpic -brtl
+CPPDEFS =  -DAIX -DUNIX -Wall -D_THREAD_SAFE
+DLLLIB  =   $(LIBDESTPATH)/libbf_kernel.so    $(LIBDESTPATH)/libbf_dbpub.so $(LIBDESTPATH)/libbf_dbapi.so $(LIBDESTPATH)/libsqlapi.so  $(LIBDESTPATH)/libbf_bumodule.so $(LIBDESTPATH)/libbf_oldxml.so  -lpthread
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c   $(CPPDEFS)  $(INC)  $< -o $@
+
+OBJL = %s.o 
+
+ALL: lib%s.so clean
+
+lib%s.so: $(OBJL)
+	$(CPP) $(CPPFLAGS) $(CPPDEFS) -shared $(OBJL) -L$(HOME)/lib  $(DLLLIB) -o $@ 
+	mv $@ $(HOME)/lib
+lib%s.a: $(OBJL)
+	ar -rv $@ $(OBJL) 
+	mv $@ $(HOME)/lib
+clean:
+	rm -f *.o

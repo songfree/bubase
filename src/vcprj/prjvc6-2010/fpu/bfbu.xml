@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <head>
+      <公共配置>
+         <日志级别 name="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">3</日志级别>
+         <日志文件 name="记录日志信息的文件名,前加日期">bu.log</日志文件>
+      </公共配置>
+      <BU配置>
+         <BCCPORT name="bcc侦听端口">9002</BCCPORT>
+         <BCCIP name="bcc侦听端口">127.0.0.1</BCCIP>
+         <是否加密压缩 name="0数据不加密1数据包加密2数据压缩3DES加密4DES加密并压缩">0</是否加密压缩>
+      </BU配置>
+      <业务配置>
+         <使用多记录传输 name="即一个xml包多个pack(注意不支持二进制数据及xml包里本身就有多个pack)单xmlpack0,最大包1最大记录数2">0</使用多记录传输>
+         <多记录最大长度 name="使用多包传输时最大的长度在8k和96k之间">8192</多记录最大长度>
+         <多记录最大记录 name="若HEAD里无请求记录数则按此数值组包，最大20">50</多记录最大记录>
+         <AUTOLOADDLL name="是否自动装载动态库1自动,测试时使用，生产禁止">0</AUTOLOADDLL>
+         <原子交易转换 name="为1将原子转换为对外提供服务的交易">1</原子交易转换>
+         <测试回路 name="为1从test目录下读取test+交易码.xml的文件数据内容返回">0</测试回路>
+         <时间测试 name="为1将每一步的时间记录至日志文件中，程序优化使用，生产禁用">0</时间测试>
+         <动态库路径 name="业务动态库的路径，若不填或错误的路径将按PATH或LIBPATH来打开">/home/songfree/lib</动态库路径>
+         <业务动态库 name="在此处增加业务动态库">
+            <libsample1.so name="业务原子功能动态库,method为实例化方法名" method="getInstance" />
+         </业务动态库>
+         <流程控制配置 use="0" name="流程控制,use为1起作用" DLL="libbf_flowcontrol.so">
+            <MAINFUNC name="主控动态库方法">getmybcc</MAINFUNC>
+            <REQCALLDLL name="请求动态库方法">getreqinterface</REQCALLDLL>
+            <ANSCALLDLL name="应答动态库方法">getansinterface</ANSCALLDLL>
+            <EXTCALLDLL name="外调动态库方法">getextcall</EXTCALLDLL>
+            <CALLDLL name="内调动态库方法">getcall</CALLDLL>
+            <REPEALDLL name="冲正动态库方法">getrepeal</REPEALDLL>
+            <BUDATADLL name="流程数据类">getbudata</BUDATADLL>
+            <冲正模块交易码 name="发送到冲正主程序的端口">7777</冲正模块交易码>
+            <冲正功能号 name="写到数据库的本地原子功能号">7777</冲正功能号>
+         </流程控制配置>
+         <数据库配置 use="0" commit="0" name="此处数据库的连接配置，可通过工具修改,use是否连接数据库0不连1连接commit交易(非原子流程)是否自动提交事务1提交">
+            <databaseserver name="数据库名字">ORCL</databaseserver>
+            <databaseuser name="数据库用户名">ylivsd</databaseuser>
+            <userpasswd name="数据库密码">ylivsd</userpasswd>
+            <passwdtype name="数据库密码加密标志1加密0不加密">0</passwdtype>
+            <databasetype name="数据库类型0-oracl" 1-sybase="" 2-sqlserver="-infomi" 4-db2="" 5-odbc="-mysql""""">0</databasetype>
+         </数据库配置>
+      </业务配置>
+   </head>
+   <pack>
+ </pack>
+</package>

@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{609598fd-fb7f-467f-b4a3-c17dd9f5ae4d}</ProjectGuid>
+    <RootNamespace>bfkernel</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(BUBASE_INCLUDE)</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(BUBASE_LIB_X86)</LibraryPath>
+    <OutDir>$(BUBASE_LIB_X86)/</OutDir>
+    <TargetName>bf_kerneld</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>bf_kerneld</TargetName>
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(BUBASE_INCLUDE)</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(BUBASE_LIB_X64)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(BUBASE_INCLUDE)</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(BUBASE_LIB_X86)</LibraryPath>
+    <OutDir>$(BUBASE_LIB_X86)/</OutDir>
+    <TargetName>bf_kernel</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>bf_kernel</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(BUBASE_INCLUDE)</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(BUBASE_LIB_X64)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;KERNEL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <OutputFile>$(BUBASE_LIB_X86)/bf_kerneld.dll</OutputFile>
+      <ImportLibrary>$(BUBASE_LIB_X86)/bf_kerneld.lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;KERNEL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <OutputFile>$(BUBASE_LIB_X64)/bf_kerneld.dll</OutputFile>
+      <ImportLibrary>$(BUBASE_LIB_X64)/bf_kerneld.lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;KERNEL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <OutputFile>$(BUBASE_LIB_X86)/bf_kernel.dll</OutputFile>
+      <ImportLibrary>$(BUBASE_LIB_X86)/bf_kernel.lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;KERNEL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <OutputFile>$(BUBASE_LIB_X64)/bf_kernel.dll</OutputFile>
+      <ImportLibrary>$(BUBASE_LIB_X64)/bf_kernel.lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\include\kernel\BfDefine.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_3Des.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_BufferPool.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Date_Time.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Des.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_DesEncrypt.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_HostInfo.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_LogClient.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Md5.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Mutex.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_ProcessMgr.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Queue.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_SimpleLog.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Slist.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Socket.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_SocketTcp.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_SocketUdp.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Thread.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Timer.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Time_Value.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Tools.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Xml.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\BF_Zip.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\IErrLog.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\ISqlApi.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\IXmlNode.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\IXmlParse.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\MdbBase.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\PSAPI.H" />
+    <ClInclude Include="..\..\..\..\include\kernel\public.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\ShareMemory.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\typedefine.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\XmlAttribute.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\XmlAttributes.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\XmlAttrIndex.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\XmlHead.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\XmlNode.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\XmlNodeIndex.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\XmlParse.h" />
+    <ClInclude Include="..\..\..\..\include\kernel\XmlTransSign.h" />
+    <ClInclude Include="..\..\..\base\kernel\lzoconf.h" />
+    <ClInclude Include="..\..\..\base\kernel\minilzo.h" />
+    <ClInclude Include="..\..\..\base\kernel\zconf.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\base\kernel\codescan.sh" />
+    <None Include="..\..\..\base\kernel\Makefile" />
+    <None Include="..\..\..\base\kernel\mk.aix" />
+    <None Include="..\..\..\base\kernel\mk.aix64" />
+    <None Include="..\..\..\base\kernel\mk.hpgcc" />
+    <None Include="..\..\..\base\kernel\mk.hpgcc64" />
+    <None Include="..\..\..\base\kernel\mk.linux" />
+    <None Include="..\..\..\base\kernel\mk.linux64" />
+    <None Include="..\..\..\base\kernel\mk.vac" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\base\kernel\BF_3Des.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_BufferPool.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Date_Time.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Des.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_DesEncrypt.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_HostInfo.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_LogClient.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Md5.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Mutex.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_ProcessMgr.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_SimpleLog.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Slist.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_SocketTcp.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_SocketUdp.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Thread.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Timer.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Time_Value.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Tools.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\BF_Xml.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\minilzo.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\ShareMemory.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\XmlAttribute.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\XmlAttributes.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\XmlAttrIndex.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\XmlNode.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\XmlNodeIndex.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\XmlParse.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\XmlTransSign.cpp" />
+    <ClCompile Include="..\..\..\base\kernel\zip.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,135 @@
+// TibHead.h: interface for the TibHead class.
+//
+//////////////////////////////////////////////////////////////////////
+
+#if !defined(AFX_TIBHEAD_H__DE2B1A2A_D08F_456D_A3DA_42EAE6FD303E__INCLUDED_)
+#define AFX_TIBHEAD_H__DE2B1A2A_D08F_456D_A3DA_42EAE6FD303E__INCLUDED_
+
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
+#include "DrebPubDefine.h"
+
+
+#ifdef _WINDOWS
+#ifdef _DEBUG
+#pragma comment(lib, "bf_kerneld.lib") 
+#pragma message("Automatically linking with   bf_kerneld.lib ")
+#else
+#pragma comment(lib, "bf_kernel.lib") 
+#pragma message("Automatically linking with   bf_kernel.lib ")
+#endif
+#endif
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
+	//字节对齐
+#ifdef _WINDOWS
+#define __PACKED__ 
+#pragma pack(push,1)
+#else
+#ifdef __GNUC__
+#define __PACKED__	__attribute__ ((packed))
+	//#pragma pack(push,1)
+#else
+#define __PACKED__
+#pragma options align=packed
+#endif
+#endif
+	
+	
+#define   UDPRCVBUFSIZE       65534   //udp数据的最大缓冲大小
+
+#define   UDPBUFSIZE          1300   //udp发送数据的缓冲大小
+
+//定义交易总线消息类型
+#define TIB_MSG_TRADE       1      //交易报单
+#define TIB_MSG_TRADECANCEL 2      //交易撤销
+#define TIB_MSG_TRADEFUND   3      //交易资金类  出入金、费率、保证金率
+#define TIB_MSG_CONTROL     4      //交易控制类  日切、心跳、状态切换
+#define TIB_MSG_FUNDORDER   5      //资金报单类(报单经资金服务验证后发给撮合)
+#define TIB_MSG_RESEND      6      //交易重发类
+#define TIB_MSG_BACK_FUND   7      //资金类回报
+#define TIB_MSG_BACK_ORDER  8      //委托/撤单回报
+#define TIB_MSG_BACK_DONE   9      //成交回报
+#define TIB_MSG_QUERY       10      //查询类
+#define TIB_MSG_MONITOR     11      //监控类
+#define TIB_MSG_ARB         12      //仲裁类
+#define TIB_MSG_ANS         13      //应答  主要是查询应答
+
+//定义请求、应答
+#define  TIB_MSGFLAG_REQ    0      //请求
+#define  TIB_MSGFLAG_ANS    1      //应答
+
+//定义交易总线上的应用类型
+#define TIB_APPTYPE_UNKNOW                    0      //未知，或所有接收方
+#define TIB_APPTYPE_MAINCONTROL_MASTER        1      //交易主控主机
+#define TIB_APPTYPE_MAINCONTROL_BACKUP        2      //交易主控备机
+#define TIB_APPTYPE_FUNDSERVICE               3      //资金服务
+#define TIB_APPTYPE_RISKCONTROL               4      //风控服务
+#define TIB_APPTYPE_TRADE                     5      //撮合/报盘/报价服务
+#define TIB_APPTYPE_QUOTATION                 6      //行情服务
+#define TIB_APPTYPE_TM2DB                     7      //交易内存同步服务
+#define TIB_APPTYPE_MONITOR                   8      //监控服务
+#define TIB_APPTYPE_ARB                       9      //仲裁服务
+#define TIB_APPTYPE_MAINCONTROL               10      //交易主控 主备未知
+
+
+typedef struct   //长度9
+{
+	unsigned int   d_nSvrMainId;     //目标服务功能号,不填表示所有
+	char           d_cSvrPrivateId;  //目标私有序号 0表示公共 >0为每个服务的序号，必须填写
+	unsigned int   d_nServiceNo;     //要调用的服务功能号
+} __PACKED__ TIB_D_NODEINFO;        //目标信息
+
+typedef struct  //长度7
+{
+	unsigned int   a_nSvrMainId;     //应答服务功能号
+	char           a_cSvrPrivateId;  //应答私有序号 0表示公共 >0为每个服务的序号，必须填写
+	unsigned short a_nRetCode;       //应答的返回码
+} __PACKED__ TIB_A_NODEINFO;        //应答的数据总线节点填写的信息
+
+
+typedef struct  //长度26+9+7+6+7  = 55
+{
+	char              cMsgType;     //消息类型  见交易总线消息类型
+	char              cSendAppType;      //发送方的应用类型  见交易总线上的应用类型
+	char              cRcvAppType;       //接收方的应用类型  见交易总线上的应用类型
+	char              cCmd;         //数据总线节点请求命令字，应答时不做变换   
+	char              cRaflag;      //请求应答标志  0请求 1应答
+	DREB_S_NODEINFO   s_Sinfo;      //源信息           由请求方及请求数据总线节点填写
+    TIB_D_NODEINFO    d_Dinfo;       //目的信息         应答时从源信息取过来更新
+	TIB_A_NODEINFO    a_Ainfo;      //应答信息         应答数据总线节点填写
+	BPC_CALLINFO      b_Cinfo;      //BPC调用信息
+	unsigned short     nLen;        //后面的数据长度
+}__PACKED__ S_TIB_HEAD,*PS_TIB_HEAD;  //交易总线节点通讯头  
+
+#define  TIBHEADLEN    sizeof(S_TIB_HEAD)    //交易总线报文头长长
+
+typedef struct  //长度55+data
+{
+	S_TIB_HEAD     sHead;         //交易总线报文头
+	char   sBuffer[UDPBUFSIZE];  
+}__PACKED__ TIBCOMMSTRU,*PTIBCOMMSTRU; //发送数据结构
+
+	//取消字节对齐
+#ifdef _WINDOWS
+#pragma pack(pop)
+#else
+#ifdef __GNUC__
+	//#pragma pack(pop)
+#else
+#pragma options align=reset
+#endif
+#endif
+#undef __PACKED__
+	
+#ifdef __cplusplus
+}
+#endif
+
+#endif // !defined(AFX_TIBHEAD_H__DE2B1A2A_D08F_456D_A3DA_42EAE6FD303E__INCLUDED_)

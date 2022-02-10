@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <public>
+         <loglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">4</loglevel>
+         <logfile remark="记录日志信息的文件名,前加日期">bpu.log</logfile>
+         <logdir remark="日志文件写入的目录"></logdir>
+      </public>
+      <fpu>
+         <fpcport name="fpc侦听端口">9002</fpcport>
+         <fpcip name="fpc侦听端口">127.0.0.1</fpcip>
+         <compress name="0数据不加密1数据包加密2数据压缩3DES加密4DES加密并压缩">0</compress>
+         <oneentry use="0" txcode="10000" remark="所有的请求都交给一个交易码里进行处理" />
+         <xmlnodemode remark="xml配置node支持类型0支持所有1不支持">0</xmlnodemode>
+      </fpu>
+      <business>
+         <test>
+            <autoloaddll remark="是否自动装载动态库1自动,测试时使用，生产禁止">0</autoloaddll>
+            <testback testfilepath="/home/songfree/test" remark="为1从testfilepath目录下读取test+交易码.xml的文件数据内容返回">0</testback>
+            <timetest remark="为1将每一步的时间记录至日志文件中，程序优化使用，生产禁用">0</timetest>
+            <txtrans remark="为1将原子转换为对外提供服务的交易">1</txtrans>
+         </test>
+         <busidll dllpath="c:\libapp" remark="dllpath为业务动态库的路径，若不填或错误的路径将按PATH或LIBPATH来打开，在下面增加业务动态库">
+            <SampleNew.dll  method="getInstance"  remark="业务原子功能动态库,method为实例化方法名" />
+         </busidll>
+         <flowcontrol use="0" dllpath="/home/songfree/lib" dllname="libbf_flowcontrol.so" method="getFlowInstance" remark="流程控制,use为1起作用" />
+         <database use="0" commit="1" remark="此处数据库的连接配置，可通过工具修改,use是否连接数据库0不连1连接commit交易(非原子流程)是否自动提交事务1提交">
+            <databaseserver remark="数据库名字 oracle-tnsname mysql ip:prot@db">ORCL</databaseserver>
+            <databaseuser remark="数据库用户名">nmqk3</databaseuser>
+            <userpasswd remark="数据库密码">nmqk3</userpasswd>
+            <passwdtype remark="数据库密码加密标志1-des 2-3des 0-不加密">0</passwdtype>
+            <databasetype remark="数据库类型0-oracl 1-sybase 2-sqlserver 3-infomi 4-db2 5-odbc 6-mysql">0</databasetype>
+         </database>
+      </business>
+   </head>
+   <pack>
+    	<主交易服务器IP>10.3.1.233</主交易服务器IP>
+        <备交易服务器IP>10.1.2.1</备交易服务器IP>
+        <主交易服务器端口>14000</主交易服务器端口>
+        <备交易服务器端口>15000</备交易服务器端口>
+        <接收交易服务器超时时间 remark="毫秒">60000</接收交易服务器超时时间>
+        <华夏转换配置文件>hxfront.xml</华夏转换配置文件>
+        <雁联转换配置文件>ylfront.xml</雁联转换配置文件>
+        <测试回路>0</测试回路>
+    </pack>
+</package>
+

@@ -1,0 +1,34 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+
+INCBASE = $(HOME)/include
+
+INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/bfxml 
+
+
+
+CPPFLAGS = -Wall -g  
+CPPDEFS = -DUNIX  -DHP_UX -DNDEBUG -D_THREAD_SAFE 
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(INC) $< -o $@
+
+OBJL =  BFDreb.o DrebStatInfo.o DrebTbl.o GlobalVar.o HeadCheck.o MemDB.o MsgProcThread.o PoolModule.o RouteTbl.o SendQueue.o ServiceTbl.o SocketInfo.o SocketMgr.o SvrTbl.o dreb.o 
+
+
+ALL:   bfdreb clean
+
+DREBLIB = -L$(HOME)/lib   -lbf_kernel  -lbf_xml -lpthread -ldl
+
+bfdreb: $(OBJL)
+	g++ $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL) $(INC) -L$(HOME)/lib    $(CPPDEFS) $(DREBLIB)
+	mv $@ $(HOME)/bin
+
+clean:
+	rm -f *.o

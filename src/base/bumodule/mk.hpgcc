@@ -1,0 +1,42 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+INCBASE = $(HOME)/include
+
+INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/bfxml -I$(INCBASE)/dbapi -I$(INCBASE)/bumodule -I$(INCBASE)/drtp
+
+CPPFLAGS = -Wall -g 
+CPPDEFS = -DUNIX  -DHP_UX -DNDEBUG -D_THREAD_SAFE -D_XOPEN_SOURCE_EXTENDED 
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(INC) $< -o $@
+
+
+
+OBJL =   BuFuncMgr.o BuLog.o BuModule.o BuXml.o CallBu.o FuncTbl.o 
+OBJLFPU =  FPCLink.o HeadCheck.o bffpu.o 
+OBJLBPU =  BPCLink.o HeadCheck.o bfbpu.o 
+
+
+BPULIB = -L$(HOME)/lib  -lbf_kernel -lbf_xml -lbf_dbapi -lsqlapi -lbf_bumodule
+
+
+ALL: libbf_bumodule.so libbf_bumodule.a bffpu clean
+
+libbf_bumodule.so: $(OBJL)
+	$(CPP) $(CPPFLAGS) $(CPPDEFS) -shared $(OBJL) -L$(HOME)/lib  -lbf_kernel -lbf_xml -lbf_dbapi -lsqlapi -lbf_bumodule   -o $@ 
+	mv $@ $(HOME)/lib
+libbf_bumodule.a: $(OBJL)
+	ar -rv $@ $(OBJL) 
+	mv $@ $(HOME)/lib
+bffpu: $(OBJLFPU)
+	$(CPP) $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJLFPU) $(INC) -L$(HOME)/lib    $(CPPDEFS) $(BPULIB)
+	mv $@ $(HOME)/bin 
+
+clean:
+	rm -f *.o

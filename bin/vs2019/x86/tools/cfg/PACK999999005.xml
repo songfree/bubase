@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package name="查询动态库信息">
+   <head>
+      <BINFLAG>0</BINFLAG>
+      <交易码>999999005</交易码>
+      <业务控制流水>0</业务控制流水>
+      <业务步骤>0</业务步骤>
+      <总包数>1</总包数>
+      <FIRSTFLAG>1</FIRSTFLAG>
+      <NEXTFLAG>0</NEXTFLAG>
+      <返回码>0</返回码>
+      <本包记录数>1</本包记录数>
+   </head>
+   <pack>
+      <dllname type="0" dec="0" length="60" align="0">sampled.dll</dllname>
+      <dllpath type="0" dec="0" length="60" align="0">D:\工作\BUBASE开发框架\examples\sample\Debug</dllpath>
+   </pack>
+</package>

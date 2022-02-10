@@ -1,0 +1,42 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+
+INCBASE = $(HOME)/include
+
+BU_INC= -I$(INCBASE) -I$(INCBASE)/kernel   -I$(INCBASE)/kvdata 
+
+
+
+CPP = xlC_r 
+CPPFLAGS = -g -qrtti=all -qcpluscmt -O2 -q64  
+CPPDEFS = -DAIX -DUNIX -DNDEBUG  -D_THREAD_SAFE  -D_REENTRANT
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(BU_INC) $< -o $@
+
+OBJL =   KvData.o  KVNode.o  
+OBJL2 =  main.o 
+
+ALL: libbf_kvdata.so libbf_kvdata.a testkvdata clean
+
+
+
+BCCLIB = -L$(HOME)/lib   -lbf_kernel -lbf_kvdata -lpthread -ldl
+
+
+libbf_kvdata.a: $(OBJL)
+	ar -X64 rv $@ $(OBJL)
+	mv $@ $(HOME)/lib
+libbf_kvdata.so: $(OBJL)
+	$(CPP) -qmkshrobj -brtl $(CPPFLAGS) $(CPPDEFS)  $(OBJL) -L$(HOME)/lib  -lpthread -ldl -lbf_kernel -o $@
+	mv $@ $(HOME)/lib
+testkvdata: $(OBJL2)
+	$(CPP) $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL2) $(BU_INC) -L$(HOME)/lib    $(CPPDEFS) $(BCCLIB)
+	mv $@ $(HOME)/bin
+clean:
+	rm -f *.o
+

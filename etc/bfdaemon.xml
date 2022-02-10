@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <head>
+      <public>
+         <loglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">5</loglevel>
+         <logfile remark="记录日志信息的文件名,前加日期">bfarb.log</logfile>
+         <logdir remark="日志存放的目录"></logdir>
+         <logtrans remark="是否打印转发日志" >0</logtrans>
+      </public>
+      <bpc>
+         <svrid remark="在dreb上注册的服务号">1011</svrid>
+         <svrpid remark="在dreb上注册的私有服务号">1</svrpid>
+         <due_times remark="当连接长时间未有数据时断开,秒">600</due_times>
+         <hearttime remark="和DREB的心条时间,秒">60</hearttime>
+         <CRC remark="是否crc校验">0</CRC>
+         <connect_timeout remark="连接未使用断开时间 秒">60</connect_timeout>
+         <heartport remark="心跳端口">8088</heartport>
+      </bpc>
+      <monitor use="1" host="1" remark="use为主动报告选项，0不报告 host为主机资源报告选择0不报告">
+        <drebid>0</drebid>
+        <drebpid>0</drebpid>
+        <svrid>0</svrid>
+        <svrpid>0</svrpid>
+        <txcode>99001</txcode>
+     </monitor>
+     <dreb>
+            <DREB1 ip="20.13.0.217" port="13911" bandwidth="100" remark="配置数据总线的参数" />
+            <DREB2 ip="20.13.0.217" port="13912" bandwidth="100" remark="配置数据总线的参数" />
+      </dreb>
+     <daemon>
+        <1001 remark="心跳的标识">
+            <name>通讯接口机服务器</name>
+            <prgname remark="程序的名称，不带路径">testdaemond.exe</prgname>
+            <prgpath remark="绝对或相对路径">\\tsclient\d\BUBASE\bin</prgpath>
+            <runpath remark="绝对或相对目录">\\tsclient\d\BUBASE\bin</runpath>
+            <startpara remark="启动进程所需的参数">\\tsclient\d\BUBASE\bin\testdaemon.xml</startpara>
+            <stopshell remark="停止进程的脚本，为空直接kill掉"></stopshell>
+            <restarnoheart remark="为1时表示两个心跳时间没有收到心跳则重启进程">1</restarnoheart>
+            <iscontrol remark="为1时表示可由此程序进行停止">1</iscontrol>
+            <windows_console remark="windows显示控制台">0</windows_console>
+        </1001>
+        <2001 remark="心跳的标识">
+            <name>通讯接口机服务器</name>
+            <prgname remark="程序的名称，不带路径">testdaemond.exe</prgname>
+            <prgpath remark="绝对或相对路径">\\tsclient\d\BUBASE\bin</prgpath>
+            <runpath remark="绝对或相对目录">\\tsclient\d\BUBASE\bin</runpath>
+            <startpara remark="启动进程所需的参数">\\tsclient\d\BUBASE\bin\testdaemon.xml</startpara>
+            <stopshell remark="停止进程的脚本，为空直接kill掉"></stopshell>
+            <restarnoheart remark="为1时表示两个心跳时间没有收到心跳则重启进程">1</restarnoheart>
+            <iscontrol remark="为1时表示可由此程序进行停止">1</iscontrol>
+            <windows_console remark="windows显示控制台">0</windows_console>
+        </2001>
+     </daemon>
+   </head>
+   <pack>
+	</pack>
+</package>

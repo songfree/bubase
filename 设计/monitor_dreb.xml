@@ -1,0 +1,35 @@
+<Monitor>
+    <公共节点>1001</公共节点>
+    <私有节点>1</私有节点>
+    <节点类型 name="DREB:0 BPC:1 类BPC:2">0</节点类型>
+    <报告类型 name="0正常1警告2错误">0</报告类型>
+    <启动时间>20131127 10:11:12</启动时间>
+    <主机资源>
+      <CPU>15</CPU>
+      <内存 total="64444" used="49222" />
+      <磁盘>
+         <磁盘 drive="/" total="30238" used="7189" />
+         <磁盘 drive="/app" total="20159" used="18871" />
+         <磁盘 drive="/boot" total="251" used="20" />
+         <磁盘 drive="/dev/shm" total="32223" used="0" />
+         <磁盘 drive="/home" total="59531" used="47096" />
+         <磁盘 drive="/tmp" total="20159" used="91" />
+      </磁盘>
+    </主机资源>
+    <连接信息>
+        <连接 ip="127.0.0.1" port="13911" index="0" 公共节点="9121" 私有节点="1" status="正常" />
+        <连接 ip="127.0.0.1" port="13912" index="1" 公共节点="9121" 私有节点="2" status="正常" />
+    </连接信息>
+    <DREB信息>
+        <DREBLIST name="直接连接的dreb列表">
+            <DREB index="1" id="" pid=""  />
+            <DREB index="1" id="" pid=""  />
+            <DREB index="1" id="" pid="" status="" />
+            <DREB index="1" id="" pid="" status="" />
+        </DREBLIST>
+        <SVRLIST name="注册的服务列表">
+            <SVR index="1" id="" pid="" status="" />
+            <SVR index="1" id="" pid="" status="" />
+        </SVRLIST>
+    </DREB信息>
+</Monitor>

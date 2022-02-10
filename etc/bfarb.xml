@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <head>
+      <public>
+         <loglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">5</loglevel>
+         <dataloglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">5</dataloglevel>
+         <logfile remark="记录日志信息的文件名,前加日期">bfarb.log</logfile>
+         <logsize remark="日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</logsize>
+         <datalogsize remark="DATA日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</datalogsize>
+         <logdir remark="日志存放的目录"></logdir>
+         <xdpfile remark="xdp报文定义文件">xdp.xml</xdpfile>
+         <changetime remark="主机大于此时间进行主备切换 秒">5</changetime>
+         <changesep remark="主机大于此时间进行主备切换 秒">5</changesep>
+      </public>
+      <dreb>
+            <DREB1 ip="127.0.0.1" port="9011" bandwidth="100" remark="配置数据总线的参数" />
+            <DREB1 ip="127.0.0.1" port="9012" bandwidth="100" remark="配置数据总线的参数" />
+      </dreb>
+       <monitor use="1" host="1" remark="use为主动报告选项，0不报告 host为主机资源报告选择0不报告">
+        <drebid>0</drebid>
+        <drebpid>0</drebpid>
+        <svrid>0</svrid>
+        <svrpid>0</svrpid>
+        <txcode>99001</txcode>
+     </monitor>
+      <bpc>
+         <svrid remark="在dreb上注册的服务号">1011</svrid>
+         <svrpid remark="在dreb上注册的私有服务号">1</svrpid>
+         <due_times remark="当连接长时间未有数据时断开,秒">600</due_times>
+         <dreb_ticktime remark="和DREB的心条时间,秒">60</dreb_ticktime>
+      </bpc>
+      
+   </head>
+   <pack />
+</package>

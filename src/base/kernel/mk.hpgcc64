@@ -1,0 +1,30 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+INCBASE = $(HOME)/include
+
+KERNEL_INC= -I$(INCBASE) -I$(INCBASE)/kernel 
+
+CPPFLAGS = -Wall -g -mlp64 
+CPPDEFS =  -DHP_UX -DLOGCURPATH -DNDEBUG -D_THREAD_SAFE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(KERNEL_INC) $< -o $@
+
+OBJL =  BF_BufferPool.o  BF_LogClient.o  BF_SimpleLog.o  BF_SocketUdp.o  BF_Time_Value.o  minilzo.o      XmlAttribute.o   XmlNode.o       XmlTransSign.o BF_Date_Time.o  BF_3Des.o BF_Md5.o        BF_Slist.o      BF_Thread.o     BF_Tools.o       ShareMemory.o  XmlAttributes.o  XmlNodeIndex.o  zip.o BF_Des.o         BF_Mutex.o      BF_SocketTcp.o  BF_Timer.o      BF_Xml.o         wgetopt.o      XmlAttrIndex.o   XmlParse.o BF_DesEncrypt.o  BF_HostInfo.o BF_ProcessMgr.o
+
+ALL:   libbf_kernel.so  clean
+
+libbf_kernel.a: $(OBJL)
+	ar rv $@ $(OBJL)
+	mv $@ $(HOME)/lib
+libbf_kernel.so: $(OBJL)
+	g++ $(CPPFLAGS) $(CPPDEFS) -shared $(OBJL) -L$(HOME)/lib   -lpthread -ldl -o $@
+	mv $@ $(HOME)/lib
+clean:
+	rm -f *.o

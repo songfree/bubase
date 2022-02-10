@@ -1,0 +1,9 @@
+m_cmbSubco.ResetContent();
+m_cmbSubco.FormatComboBox();
+m_cmbSubco.SetColumnWidth(200, 50);
+m_cmbSubco.SetColumnAlignStyle(DT_LEFT, DT_CENTER);
+for (int i = 0; i < g_MgrTool.m_stMgrInfo.nSubInfo; i++)
+{
+m_cmbSubco.AddRow(g_MgrTool.m_stMgrInfo.stSubInfo[i].szClientName,\
+g_MgrTool.m_stMgrInfo.stSubInfo[i].szClientID);
+}

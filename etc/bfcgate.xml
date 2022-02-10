@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package>
+   <head>
+       <public>
+         <loglevel remark="日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">5</loglevel>
+         <dataloglevel remark="DATA日志跟踪级别0严重错误1重要错误2一般错误3警告4提示警告5调试信息">5</dataloglevel>
+         <logfile remark="记录日志信息的文件名,前加日期">cgate.log</logfile>
+         <logdir remark="存放日志的目录"></logdir>
+         <logsize remark="日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</logsize>
+         <datalogsize remark="DATA日志文件的大小字节，<1024不限制，大于则分成多个日志文件">10240000</datalogsize>
+         <hearttime remark="连接未收到数据并送心跳的时间 秒">20</hearttime>
+         <disconnecttime remark="连接在此时间内未收到数据，则断开 秒">40</disconnecttime>
+         <dispatchtime remark="消息在队列里的超时时间 秒">30</dispatchtime>
+         <encrypt remark="应答给客户端的数据是否用会话密钥加密,明文0,1DES加密">1</encrypt>
+         <compress remark="发给客户端的数据是否压缩,当本程序及后台为win64位的程序时不能压缩">0</compress>
+         <uncompress remark="收到客户端的数据是否解压缩">0</uncompress>
+         <quotduetime remark="队列中的行情超过此时间将丢弃 秒">5</quotduetime>
+         <quotnum remark="行情队列里保留最新的行情数目">40</quotnum>
+         <quotsubscribe remark="是否支持行情订阅">1</quotsubscribe>
+         <clientsendthreadnum remark="针对客户端发送的线程数目">10</clientsendthreadnum>
+         <sendwindow remark="一个客户连接网络连接由不正常转为正常时发次的数据包数">16</sendwindow>
+       </public>
+       <iomode>
+          <runmode remark="模式0-select模型1-epoll模型(LINUX）2-iocp模型(WINDOWS">0</runmode>
+          <listenport remark="网关的侦听端口">8001</listenport>
+          <maxconnectnum remark="接收客户端的最大连接数">100</maxconnectnum>
+          <iothread remark="处理接收客户端的线程数，EPOLL为1,iocp为处理器个数">4</iothread>
+          <iocpacceptnum remark="IOCP时发送AcceptEx的个数">5</iocpacceptnum>
+       </iomode>
+       <bpc>
+         <svrid remark="在dreb上注册的服务号">1000</svrid>
+         <svrpid remark="在dreb上注册的私有服务号">1</svrpid>
+       </bpc>
+       <dreb>
+            <dreb1  ip="127.0.0.1" port="9011" bandwidth="1000" remark="dreb的IP及端口" />
+            <dreb2  ip="127.0.0.1" port="9012" bandwidth="1000" remark="dreb的IP及端口" />
+       </dreb>
+       <monitor use="0" host="1" remark="use为主动报告选项，0不报告 host为主机资源报告选择0不报告">
+           <nodeid>0</nodeid>
+           <nodepid>0</nodepid>
+           <svrid>0</svrid>
+           <svrpid>0</svrpid>
+           <txcode>99001</txcode>
+       </monitor>
+       <broadcast use="1" remark="use为0一直发，1禁止发 2允许发">
+           <txcode remark="出入金广播">9201</txcode>
+           <txcode remark="委托广播">9202</txcode>
+           <txcode remark="成交广播">9203</txcode>
+           <txcode remark="撤单广播">9204</txcode>
+           <txcode remark="合约登记广播">9440</txcode>
+           <txcode remark="日切广播">9814</txcode>
+           <txcode remark="操作员登录广播">9815</txcode>
+           <txcode remark="操作员录出广播">9816</txcode>
+           <txcode remark="连续交易日日切广播">9818</txcode>
+       </broadcast>
+       <pki use="0" dllpath="" dllname="cfcaapid.dll" method="getInstance" certpath="./cfca" certpwd="11111111" certpwdflag="0" remark="是否使用证书及证书动态库目录,名称、实例化方法 " />
+    </head>
+</package>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package name="深发展渠道包头">
+   <head>
+      <BINFLAG>0</BINFLAG>
+      <交易码>0</交易码>
+      <业务控制流水>0</业务控制流水>
+      <业务步骤>0</业务步骤>
+      <总包数>1</总包数>
+      <后续包标志>0</后续包标志>
+      <返回码>0</返回码>
+      <本包记录数>1</本包记录数>
+   </head>
+   <pack>
+      <交易渠道 type="0" dec="0" length="1" align="0">2</交易渠道>
+      <高级授权柜员 type="0" dec="0" length="8" align="0">2</高级授权柜员>
+      <授权柜员 type="0" dec="0" length="8" align="0">1</授权柜员>
+      <银行柜员 type="0" dec="0" length="8" align="0">7738</银行柜员>
+      <银行网点 type="0" dec="0" length="8" align="0">0001</银行网点>
+      <银行地区 type="0" dec="0" length="8" align="0">11</银行地区>
+      <前置流水号 type="0" dec="0" length="14" align="0">~20070206000123</前置流水号>
+      <交易发生时间 type="0" dec="0" length="8" align="0">@TIME</交易发生时间>
+      <交易发生日期 type="0" dec="0" length="8" align="0">@DATE</交易发生日期>
+      <返回码 type="0" dec="0" length="6" align="0">000000</返回码>
+      <交易码 type="0" dec="0" length="5" align="0">##</交易码>
+   </pack>
+</package>

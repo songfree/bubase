@@ -1,0 +1,34 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+
+INCBASE = $(HOME)/include
+
+INC= -I$(INCBASE) -I$(INCBASE)/kernel  -I$(INCBASE)/dreb -I$(INCBASE)/dbpub -I$(INCBASE)/xdp 
+
+
+CPPFLAGS = -m64 -g -Wall  -O2 -fpic 
+CPPDEFS = -m64 -DLINUX -DUNIX  -D_THREAD_SAFE 
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(INC) $< -o $@
+
+OBJL =  ArbMain.o  ArbResource.o  ArbTbl.o  DrebMsgThread.o  arb.o
+
+
+ALL:   bfarb clean
+
+
+
+BPCLIB = -L$(HOME)/lib  -lbf_kernel  -lbf_xdp -lbf_drebapi -lpthread -ldl -lbf_dbpub
+
+bfarb: $(OBJL)
+	g++ $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL) $(INC) -L$(HOME)/lib    $(CPPDEFS) $(BPCLIB)
+	mv $@ $(HOME)/bin
+clean:
+	rm -f *.o

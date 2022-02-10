@@ -1,0 +1,34 @@
+#Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+
+INCBASE = $(HOME)/include
+
+INC= -I$(INCBASE) -I$(INCBASE)/kernel  -I$(INCBASE)/dreb -I$(INCBASE)/dbpub
+
+
+CPP = xlC_r 
+CPPFLAGS = -g -qrtti=all -qcpluscmt  -O2  -q64
+CPPDEFS = -DAIX -DUNIX -DNDEBUG  -D_THREAD_SAFE  -D_REENTRANT
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(INC) $< -o $@
+
+OBJL =  bpc.o     Bpc_Timer.o  GResource.o  LinkThread.o  NextPack.o  PoolData.o    PuThread.o   SocketInfo.o BpcRun.o  FuncTbl.o    HostInfo.o   MsgThread.o   NextTbl.o   ProcessMgr.o  SendQueue.o  SocketMgr.o  DispathThread.o
+
+
+ALL:   bfbpc clean
+
+
+
+BPCLIB = -L$(HOME)/lib  -lbf_kernel    -lpthread -ldl -lbf_dbpub
+
+bfbpc: $(OBJL)
+	$(CPP) $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL) $(INC) -L$(HOME)/lib    $(CPPDEFS) $(BPCLIB)
+	mv $@ $(HOME)/bin
+clean:
+	rm -f *.o
+

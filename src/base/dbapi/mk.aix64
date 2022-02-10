@@ -1,0 +1,31 @@
+# Makefile for test
+# AIX version
+
+.SUFFIXES:
+.SUFFIXES: .cpp .obj .o
+
+CPP = g++
+
+INCBASE = $(HOME)/include
+
+INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/dbapi 
+
+CPPFLAGS = -maix64 -g -Wall  -O2 -fpic -brtl
+CPPDEFS =  -maix64 -DAIX -DUNIX  -DNDEBUG -D_THREAD_SAFE -D_MT 
+
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c   $(CPPDEFS)  $(INC)  $< -o $@
+
+OBJL =  DbApi.o SqlDataResult.o 
+
+ALL: libbf_dbapi.so clean
+
+libbf_dbapi.so: $(OBJL)
+	g++ $(CPPFLAGS) $(CPPDEFS) -shared $(OBJL) -L$(HOME)/lib   $(LIBDESTPATH)/libsqlapi.so  -o $@ 
+	mv $@ $(HOME)/lib
+libbf_dbapi.a: $(OBJL)
+	ar -X64  -rv $@ $(OBJL) 
+	mv $@ $(HOME)/lib
+clean:
+	rm -f *.o

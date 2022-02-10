@@ -1,0 +1,44 @@
+<Monitor>
+    <公共节点>1001</公共节点>
+    <私有节点>1</私有节点>
+    <节点类型 name="DREB:0 BPC:1 类BPC:2">0</节点类型>
+    <报告类型 name="0正常1警告2错误">0</报告类型>
+    <主机资源>
+        <CPU name="使用率%">80</CPU>
+        <内存 name="单位M" total="4096" used="2181" />
+        <磁盘>
+            <磁盘 name="单位K" drive="/" total="2000000000" used="100000000" />
+            <磁盘 name="单位K" drive="/home" total="2000000000" used="100000000" />
+            <磁盘 name="单位K" drive="/oracle" total="2000000000" used="100000000" />
+            <磁盘 name="单位K" drive="/opt" total="2000000000" used="100000000" />
+        </磁盘>
+    </主机资源>
+    <连接信息>
+        <连接 ip="" port="" 公共节点="" 私有节点="" index="" status="" />
+        <连接 ip="" port="" 公共节点="" 私有节点="" index="" status="" />
+    </连接信息>
+    <DREB信息>
+        <DREBLIST name="直接连接的dreb列表">
+            <DREB index="1" id="" pid=""  />
+            <DREB index="1" id="" pid=""  />
+            <DREB index="1" id="" pid="" status="" />
+            <DREB index="1" id="" pid="" status="" />
+        </DREBLIST>
+        <SVRLIST name="注册的服务列表">
+            <SVR index="1" id="" pid="" status="" />
+            <SVR index="1" id="" pid="" status="" />
+        </SVRLIST>
+    </DREB信息>
+    <BPC信息>
+         <BPULIST name="BPU组列表">
+            <BPU groupname="name" num="1" realnum="0" htans="0" dpmode="0" autostart="" prgname="" prgpath="" runpath="" para="" />
+            <BPU groupname="name" num="2" realnum="0" htans="1" dpmode="1" autostart="" prgname="" prgpath="" runpath="" para="" />
+        </BPULIST>
+    </BPC信息> 
+    <类BPC信息>
+        <DREBLIST name="直接连接的dreb列表">
+            <DREB index="1" id="" pid="" status="" />
+            <DREB index="1" id="" pid="" status="" />
+        </DREBLIST>
+    </类BPC信息>
+</Monitor>

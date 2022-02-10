@@ -1,0 +1,1 @@
+804810  18000508   2020120120807440         000044000657            00000000#rsp_msg=处理成功#trans_amount=0#exch_fare=0#htm_aip_trans_account_info=trade_assistant_id｜out_account_no｜aip_prod_name｜out_customer_name｜aip_prod_code｜out_customer_id｜seq_no｜exch_assistant_name｜exch_date｜trans_amount｜in_account_no｜exch_fare｜in_customer_name｜∧#

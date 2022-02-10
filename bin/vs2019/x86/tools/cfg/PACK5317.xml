@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package name="同城本行">
+   <head>
+      <BINFLAG>0</BINFLAG>
+      <交易码>5317</交易码>
+      <业务控制流水>0</业务控制流水>
+      <业务步骤>0</业务步骤>
+      <总包数>1</总包数>
+      <FIRSTFLAG>1</FIRSTFLAG>
+      <NEXTFLAG>0</NEXTFLAG>
+      <返回码>0</返回码>
+      <总记录数>1</总记录数>
+      <本包记录数>1</本包记录数>
+   </head>
+   <pack>
+      <银行账号 type="char">605840001221423555</银行账号>
+      <账户类型 type="char">0</账户类型>
+      <密码 type="char">9ecc15c58539d1c4</密码>
+      <银行柜员 type="char">8888</银行柜员>
+      <银行网点 type="char">440301324</银行网点>
+      <交易类型 type="char">7</交易类型>
+      <银行地区 type="char">1</银行地区>
+      <渠道 type="char">5</渠道>
+      <终端号 type="char">100</终端号>
+      <一本通存期 type="char">0</一本通存期>
+      <预留序号 type="char">1</预留序号>
+      <预留密码 type="char">1</预留密码>
+      <金额 type="char">0.01</金额>
+      <密码验证标志 type="char">0</密码验证标志>
+   </pack>
+</package>

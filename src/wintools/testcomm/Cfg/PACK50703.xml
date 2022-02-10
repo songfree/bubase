@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="GB2312"?>
+<package name="委托申报">
+   <head>
+      <BINFLAG>0</BINFLAG>
+      <交易码>50703</交易码>
+      <业务控制流水>0</业务控制流水>
+      <业务步骤>0</业务步骤>
+      <总包数>1</总包数>
+      <后续包标志>0</后续包标志>
+      <返回码>0</返回码>
+      <本包记录数>1</本包记录数>
+   </head>
+   <pack>
+      <委托手数 type="0" dec="0" length="6" align="0">10</委托手数>
+      <委托价格 type="0" dec="0" length="8" align="0">120.00</委托价格>
+      <投保标志 type="0" dec="0" length="1" align="0">0</投保标志>
+      <委托类型 type="0" dec="0" length="1" align="0">0</委托类型>
+      <开平标志 type="0" dec="0" length="1" align="0">0</开平标志>
+      <买卖方向 type="0" dec="0" length="1" align="0">0</买卖方向>
+      <合约代码 type="0" dec="0" length="8" align="0">Au99.99</合约代码>
+      <交易所代码 type="0" dec="0" length="1" align="0">G</交易所代码>
+      <密码验证标志 type="0" dec="0" length="1" align="0">1</密码验证标志>
+      <密码 type="0" dec="0" length="6" align="0">111111</密码>
+      <银行账号 type="0" dec="0" length="18" align="0">11339652971</银行账号>
+   </pack>
+</package>
