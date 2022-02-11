@@ -1003,14 +1003,14 @@ void CLinkThread::MonitorInfo(S_BPC_RSMSG &rcvdata)
 		}
 		connnode->SetAttribute("ip",false,m_pRes->g_vDrebLinkInfo[i].sIp);
 		connnode->SetAttribute("port",false,(int)m_pRes->g_vDrebLinkInfo[i].nPort);
-		connnode->SetAttribute("index",false,i+1);
-		connnode->SetAttribute("公共节点",false,m_pSockMgr->at(i+1)->m_nDrebId);
-		connnode->SetAttribute("私有节点",false,m_pSockMgr->at(i+1)->m_nDrebPrivateId);
-		if (m_pSockMgr->at(i+1)->m_sock == INVALID_SOCKET)
+		connnode->SetAttribute("index",false,i+2);
+		connnode->SetAttribute("公共节点",false,m_pSockMgr->at(i+2)->m_nDrebId);
+		connnode->SetAttribute("私有节点",false,m_pSockMgr->at(i+2)->m_nDrebPrivateId);
+		if (m_pSockMgr->at(i+2)->m_sock == INVALID_SOCKET)
 		{
 			connnode->SetAttribute("status",false,"未连接");
 		}
-		else if (m_pSockMgr->at(i+1)->m_bChecked)
+		else if (m_pSockMgr->at(i+2)->m_bChecked)
 		{
 			connnode->SetAttribute("status",false,"正常");
 		}
