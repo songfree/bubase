@@ -1,4 +1,4 @@
-此框架是借鉴KS的开发框架独立研发的面向服务的开发框架
+此框架是借鉴KS的开发框架独立研发的面向服务的开发框架 支持windows/linux等平台
 
 有问题可加QQ:738651沟通。
 
@@ -124,6 +124,25 @@ VS 32位库目录
 $(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);$(BUBASE_LIB_X86);    
 VS 32位包含目录 
 $(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);$(BUBASE_INCLUDE);
+
+
+LINUX编译说明：
+     将源码放入用户的HOME目录，结构如下：
+     bin
+     etc
+     lib
+     libapp
+     src
+     include
+     examples
+     
+     在.bash_profile里面加入
+     export LD_LIBRARY_PATH=$HOME/lib:$HOME/libapp:$LD_LIBRARY_PATH:.
+     export LANG=C                 源码编码采用GBK,非utf-8
+     PATH=$PATH:$HOME/bin:
+     
+     执行. .bash_profile使修改生效，然后进到src的各子目录下面make即可
+     
 
 
      
