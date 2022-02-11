@@ -1,7 +1,7 @@
 
 #! make -f
 
-DIRS = bfgw changedbpwd daemon monisvr monitor sgemonitor GTP kvdata
+DIRS = bfgw changedbpwd daemon monisvr  GTP kvdata
 all:
 	for dir in $(DIRS); do\
 		echo Making all in $$dir... ;\

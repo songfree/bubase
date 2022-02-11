@@ -19,12 +19,12 @@ DLLLIB  =  -lbf_kernel -lbf_dbpub -lbf_dbapi -lsqlapi    -lpthread
 
 OBJL = RiskDll.o  KernelPub.o
 
-ALL: libRiskDll.so clean
+ALL: libbusidll.so clean
 
-libRiskDll.so: $(OBJL)
+libbusidll.so: $(OBJL)
 	$(CPP) $(CPPFLAGS) $(CPPDEFS) -shared $(OBJL) -L$(HOME)/lib -L$(HOME)/libapp $(DLLLIB) -o $@ 
 	mv $@ $(HOME)/libapp
-libRiskDll.a: $(OBJL)
+libbusidll.a: $(OBJL)
 	ar -rv $@ $(OBJL) 
 	mv $@ $(HOME)/libapp
 clean:

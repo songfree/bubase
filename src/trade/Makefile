@@ -22,7 +22,7 @@ OBJL =   DrebMsgThread.o  PoolModule.o  SendQueue.o   SocketMgr.o  TradeResource
 
 ALL:   tradekernel clean
 
-BCCLIB = -L$(HOME)/lib   -lbf_kernel -lbf_dbpub -lbf_fibapi -lbf_dbapi  -lbf_xdp   -lpthread -ldl
+BCCLIB = -L$(HOME)/lib   -lbf_kernel -lbf_dbpub -lbf_drebapi -lbf_dbapi  -lbf_xdp   -lpthread -ldl
 
 tradekernel: $(OBJL)
 	g++ $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL) $(KERNEL_INC) -L$(HOME)/lib    $(CPPDEFS) $(BCCLIB)

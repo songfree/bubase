@@ -12,7 +12,7 @@ INC= -I../include    -I$(INCBASE)/xdp  -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCB
 
 CPPFLAGS =  -g -Wall  -O2 -fpic -m64
 CPPDEFS =  -DUNIX -DLINUX -DAIX -Wall -D_THREAD_SAFE
-DLLLIB  =  -lbf_kernel -lbf_dbpub -lbf_dbapi -lsqlapi -lRiskDll   -lpthread
+DLLLIB  =  -lbf_kernel -lbf_dbpub -lbf_dbapi -lsqlapi -lbusidll   -lpthread
 
 .cpp.o:
 	$(CPP) $(CPPFLAGS) -c   $(CPPDEFS)  $(INC)  $< -o $@
