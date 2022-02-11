@@ -226,7 +226,9 @@ bool CBF_AIO::Stop()
 {
 	m_pAioRes->g_bIsExit = true;
 	m_pSocketTcp.Close();
- 	m_pAioThread[0].m_pTimer.KillTimer(0);
+ 	//m_pAioThread[0].m_pTimer.KillTimer(0);
+	m_pAioThread[0].m_pTimer.Stop();
+	m_pAioThread[0].m_pTimer.Join();
 
  	m_pTimer.Stop();
 	int i;
