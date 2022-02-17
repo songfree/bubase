@@ -1,6 +1,6 @@
-此框架是借鉴KS的开发框架独立研发的面向服务的开发框架 支持windows/linux等平台
+此框架是借鉴KS的开发框架独立研发的面向服务的分布式开发框架 支持windows/linux等平台
 
-有问题可加QQ:738651沟通。
+感兴趣可加QQ:738651沟通。
 
 
 
@@ -94,7 +94,7 @@ BUBASE_BIN
  
                                                 
 VC编译说明：
-     设置系统的环境变量
+     设置系统的环境变量   D:\BUBASE及D:\BUBASE_BIN是个人使用的目录，可根据需要修改
      BUBASE_INCLUDE  = D:\BUBASE\include\kernel;D:\BUBASE\include\xdp;D:\BUBASE\include\xml;D:\BUBASE\include\gateway;D:\BUBASE\include\dreb;D:\BUBASE\include\dbpub;D:\BUBASE\include\dbapi;D:\BUBASE\include\cgateapi;D:\BUBASE\include\bumodule;D:\BUBASE\include\aio;D:\BUBASE\include\gtp;D:\BUBASE\include\kvdata   
           即实际的框架头文件目录
      BUBASE_LIB_X64  = D:\BUBASE_BIN\vc2012\x64\lib
