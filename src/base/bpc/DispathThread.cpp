@@ -179,6 +179,10 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 	{
 		while (time(NULL)-rtime < m_pRes->g_nDispatchTime)
 		{
+			if (m_pRes->g_bToExit)
+			{
+				return;
+			}
 			int i;
 			//分派模式，一直分派，不管空不空闲
 			for (i=m_nBegin;i<m_nEnd;i++)
@@ -229,6 +233,10 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 			{
 				m_nCurBpuIndex = m_nBegin;
 			}
+            if (m_pRes->g_bToExit)
+            {
+                return;
+            }
 			//分派模式，空闲分派
 			for ( ; m_nCurBpuIndex <m_nEnd ; m_nCurBpuIndex++)
 			{
