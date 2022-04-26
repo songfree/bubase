@@ -35,6 +35,9 @@ bool CInitTrade::Init(CIErrlog *log,CBF_Xml *xml,CMemDb *mdb)
 
 	m_pKernelPub.m_pLog = log;
 	m_pKernelPub.m_pMemDb = mdb;
+
+	return true;
+
 	//写内存表
 	//连接本地数据库，从本地读交易所、合约信息、机构信息、参数、操作员信息
 	if (!ConnectLocalDb())

@@ -177,6 +177,7 @@ bool CGlobalResource::Init(const char *apixml)
 		if (gateipportnode->GetNodeType() != NODETYPE_VALUE && gateipportnode->GetNodeType() != NODETYPE_ATTR)
 		{
 			gateipportnode = (CXmlNode *)gateipportnode->getNextSibling();
+			g_pLog.LogMp(LOG_ERROR, __FILE__, __LINE__,"GetNodeType ²»·û");
 			continue;
 		}
 		if (gateipportnode->GetAttribute("ip",false,oneip.sIp,false) == NULL)

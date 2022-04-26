@@ -117,7 +117,7 @@ class  CProcFuncTbl
 {
 protected:
 	
-	CMemTable <S_TBL_PROCFUNC> m_table;
+	CMemTableNew <S_TBL_PROCFUNC> m_table;
 	CPkeyInt<1>            m_pkey;               //¹¦ÄÜºÅµÄkey
 public:
 	CProcFuncTbl()

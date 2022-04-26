@@ -149,7 +149,7 @@ typedef struct  //长度6
 	unsigned short   b_cIndex;            //bpc外调或内调使用的数据，存放请求连接索引，根据此索引返回给调用的bpu
 } __PACKED__ BPC_CALLINFO;      //BPC调用使用的数据
 	
-typedef struct  //长度54+8+6  = 68
+typedef struct  //长度9+30+12+5+4+6+2  = 68
 {
 	char              cZip;         //压缩标志 0明文 1des加密密钥长度16 2压缩 3DES加密 4DES加密并压缩
 	char              cCmd;         //数据总线节点请求命令字，应答时不做变换   

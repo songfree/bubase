@@ -36,7 +36,7 @@ void RiskDll::GenAcc(const char *oldacc, int syscode,int destlen, char *txacc)
 
 RiskDll::RiskDll()
 {
-	
+	m_nRpcSerial=0;
 	InitFuncInfo(9999999,(FuncPointer )&RiskDll::RcvQuotation,"行情处理",1.0,"作者",1);
 
 	InitFuncInfo(9805,(FuncPointer )&RiskDll::QueryCustOrder,"查询客户报单",1.0,"作者",1);
@@ -46,6 +46,45 @@ RiskDll::RiskDll()
 
 	InitFuncInfo(9830,(FuncPointer )&RiskDll::Order,"委托报单",1.0,"作者",1);
 
+	InitFuncInfo(1021, (FuncPointer)&RiskDll::test1021, "委托报单", 1.0, "作者", 1);
+	InitFuncInfo(1023, (FuncPointer)&RiskDll::test1023, "委托报单", 1.0, "作者", 1);
+}
+
+int RiskDll::test1021(S_TRADE_DATA& data)
+{
+	m_nRpcSerial= m_pClientLink->GetSerial();
+
+	bzero(&(data.pData->sDBHead),sizeof(DREB_HEAD));
+	data.pData->sDBHead.cCmd = CMD_DPCALL;
+	data.pData->sDBHead.d_Dinfo.d_nServiceNo = 1023;
+    strcpy(data.pData->sBuffer, "test1023请求");
+    data.pData->sDBHead.nLen = strlen(data.pData->sBuffer);
+	if (m_pClientLink->RpcRequest(data, m_nRpcSerial, [=](S_TRADE_DATA &rpcdata, S_TRADE_DATA &ansdata) -> int
+		{
+			if (ansdata.pData->sDBHead.nLen>0)
+			{
+				m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "请求[%s] 应答[%s] requestid[%d]", rpcdata.pData->sBuffer, ansdata.pData->sBuffer, ansdata.pData->sDBHead.s_Sinfo.s_nSerial);
+			}
+			else
+			{
+				m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "rpc总线应答返回出错[%d] requestid[%d]", ansdata.pData->sDBHead.a_Ainfo.a_nRetCode, ansdata.pData->sDBHead.s_Sinfo.s_nSerial);
+			}
+			m_pClientLink->PoolFree(ansdata);
+			return 0;
+		}
+		
+	)<0)
+	{
+		m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "RpcRequest 返回<0");
+	}
+	return 0;
+}
+int RiskDll::test1023(S_TRADE_DATA& data)
+{
+    sprintf(data.pData->sBuffer,"test1023应答 %d",data.pData->sDBHead.s_Sinfo.s_nSerial);
+	data.pData->sDBHead.nLen = strlen(data.pData->sBuffer);
+	m_pClientLink->AnsData(data,0);
+	return 0;
 }
 
 RiskDll::~RiskDll()
@@ -87,6 +126,8 @@ int RiskDll::RcvQuotation(S_TRADE_DATA &data)
 	}
 	//收到行情后不需要应答，直接释放空间
 	m_pClientLink->PoolFree(data);
+
+	
 
 	//接收行情
 	//更新行情表

@@ -38,13 +38,13 @@ bool CMoniSvr::BuInit()
 		m_bIsInit = false;
 		return false;
 	}
-	sprintf(m_sSql,"select para_value from PFM_PARAMETER where para_name=:1");
+	sprintf(m_sSql,"select para_value from BFM_PARAMETER where para_name=:1");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = "SAVELOGNUM";
 	CSqlData data = m_pSqlCmd->LoadResultSql();
 	if (data.GetSqlCount() <1)
 	{
-		sprintf(m_sSql,"insert into  PFM_PARAMETER (para_name,para_note,para_value) values(:1,:2,:3)");
+		sprintf(m_sSql,"insert into  BFM_PARAMETER (para_name,para_note,para_value) values(:1,:2,:3)");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsString() = "SAVELOGNUM";
 		m_pSqlCmd->Param(2).setAsString() = "保存日志记录数";
@@ -61,13 +61,13 @@ bool CMoniSvr::BuInit()
 		return m_bIsInit;
 	}
 	m_nSaveLogNum = data.GetAtI(0,0);
-	sprintf(m_sSql,"select para_value from PFM_PARAMETER where para_name=:1");
+	sprintf(m_sSql,"select para_value from BFM_PARAMETER where para_name=:1");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = "STATUSTIMEOUT";
 	data = m_pSqlCmd->LoadResultSql();
 	if (data.GetSqlCount() <1)
 	{
-		sprintf(m_sSql,"insert into  PFM_PARAMETER (para_name,para_note,para_value) values(:1,:2,:3)");
+		sprintf(m_sSql,"insert into  BFM_PARAMETER (para_name,para_note,para_value) values(:1,:2,:3)");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsString() = "STATUSTIMEOUT";
 		m_pSqlCmd->Param(2).setAsString() = "状态超时时间(秒)";
@@ -85,13 +85,13 @@ bool CMoniSvr::BuInit()
 	}
 	m_nStatusTimeOut = data.GetAtI(0,0);
 
-	sprintf(m_sSql,"select para_value from PFM_PARAMETER where para_name=:1");
+	sprintf(m_sSql,"select para_value from BFM_PARAMETER where para_name=:1");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = "WRITEBFMLOG";
 	data = m_pSqlCmd->LoadResultSql();
 	if (data.GetSqlCount() <1)
 	{
-		sprintf(m_sSql,"insert into  PFM_PARAMETER (para_name,para_note,para_value) values(:1,:2,:3)");
+		sprintf(m_sSql,"insert into  BFM_PARAMETER (para_name,para_note,para_value) values(:1,:2,:3)");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsString() = "WRITEBFMLOG";
 		m_pSqlCmd->Param(2).setAsString() = "是否写监控日志";
@@ -201,7 +201,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 		m_nPcNodeId = 0;//机器节点默认值
 		//未找到,增加
 		//查找物理节点表是否有默认的节点
-		sprintf(m_sSql,"select count(*) from PFM_PC_NODE where pc_node_id=:1 ");
+		sprintf(m_sSql,"select count(*) from BFM_PC_NODE where pc_node_id=:1 ");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsLong() = 0;
 		sqldata = m_pSqlCmd->LoadResultSql();
@@ -214,7 +214,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 		if (nRet <1)
 		{
 			//增加默认机器节点
-			sprintf(m_sSql,"insert into PFM_PC_NODE (pc_node_id,pc_node_name,pc_ip1,pc_ip2,pc_area,pc_mem_warn,pc_cpu_warn,pc_disk_warn) values(:1,:2,:3,:4,:5,:6,:7,:8)");
+			sprintf(m_sSql,"insert into BFM_PC_NODE (pc_node_id,pc_node_name,pc_ip1,pc_ip2,pc_area,pc_mem_warn,pc_cpu_warn,pc_disk_warn) values(:1,:2,:3,:4,:5,:6,:7,:8)");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = 0;
 			m_pSqlCmd->Param(2).setAsString() = "默认机器节点";
@@ -313,33 +313,33 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 	if (pXml.GetNodeValueByPath("Monitor/主机资源/CPU",false,nCpuRate) != NULL)
 	{
 		//主机资源
-		sprintf(m_sSql,"select count(*) from PFM_PC_NODE_CPU where pc_node_id=:1");
+		sprintf(m_sSql,"select count(*) from BFM_PC_NODE_CPU where pc_node_id=:1");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsLong() = m_nPcNodeId;
 		sqldata = m_pSqlCmd->LoadResultSql();
 		nRet = sqldata.GetAtI(0,0);
 		if (nRet !=1 ) //没有则插入
 		{
-			sprintf(m_sSql,"insert into  PFM_PC_NODE_CPU (pc_node_id,pc_node_cpu) values(:1,:2)");
+			sprintf(m_sSql,"insert into  BFM_PC_NODE_CPU (pc_node_id,pc_node_cpu) values(:1,:2)");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = m_nPcNodeId;
 			m_pSqlCmd->Param(2).setAsLong() = nCpuRate;
 			if (!m_pSqlCmd->Execute())
 			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_PC_NODE_CPU表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_PC_NODE_CPU表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 				m_pSqlCmd->Rollback();
 				return -1;
 			}
 		}
 		else //更新
 		{
-			sprintf(m_sSql,"update PFM_PC_NODE_CPU set pc_node_cpu=:1 where pc_node_id=:2");
+			sprintf(m_sSql,"update BFM_PC_NODE_CPU set pc_node_cpu=:1 where pc_node_id=:2");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = nCpuRate;
 			m_pSqlCmd->Param(2).setAsLong() = m_nPcNodeId;
 			if (!m_pSqlCmd->Execute())
 			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新PFM_PC_NODE_CPU表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新BFM_PC_NODE_CPU表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 				m_pSqlCmd->Rollback();
 				return -1;
 			}
@@ -347,35 +347,35 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 		//内存
 		pXml.GetNodeAttribute("Monitor/主机资源/内存",false,"total",false,nRamTotal);
 		pXml.GetNodeAttribute("Monitor/主机资源/内存",false,"used",false,nRamUsed);
-		sprintf(m_sSql,"select count(*) from PFM_PC_NODE_RAM where pc_node_id=:1");
+		sprintf(m_sSql,"select count(*) from BFM_PC_NODE_RAM where pc_node_id=:1");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsLong() = m_nPcNodeId;
 		sqldata = m_pSqlCmd->LoadResultSql();
 		nRet = sqldata.GetAtI(0,0);
 		if (nRet !=1 ) //没有则插入
 		{
-			sprintf(m_sSql,"insert into  PFM_PC_NODE_RAM (pc_node_id,pc_total_ram,pc_used_ram) values(:1,:2,:3)");
+			sprintf(m_sSql,"insert into  BFM_PC_NODE_RAM (pc_node_id,pc_total_ram,pc_used_ram) values(:1,:2,:3)");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = m_nPcNodeId;
 			m_pSqlCmd->Param(2).setAsLong() = nRamTotal;
 			m_pSqlCmd->Param(3).setAsLong() = nRamUsed;
 			if (!m_pSqlCmd->Execute())
 			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_PC_NODE_RAM表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_PC_NODE_RAM表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 				m_pSqlCmd->Rollback();
 				return -1;
 			}
 		}
 		else
 		{
-			sprintf(m_sSql,"update PFM_PC_NODE_RAM set pc_total_ram=:1,pc_used_ram=:2 where pc_node_id=:3");
+			sprintf(m_sSql,"update BFM_PC_NODE_RAM set pc_total_ram=:1,pc_used_ram=:2 where pc_node_id=:3");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = nRamTotal;
 			m_pSqlCmd->Param(2).setAsLong() = nRamUsed;
 			m_pSqlCmd->Param(3).setAsLong() = m_nPcNodeId;
 			if (!m_pSqlCmd->Execute())
 			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新PFM_PC_NODE_RAM表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新BFM_PC_NODE_RAM表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 				m_pSqlCmd->Rollback();
 				return -1;
 			}
@@ -410,7 +410,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				}
 				nDiskUsed = atol(tmpattr->GetAttrValue(false).c_str());
 				//写入磁盘表
-				sprintf(m_sSql,"select count(*) from PFM_PC_NODE_DISK where pc_node_id=:1 and pc_disk_name=:2");
+				sprintf(m_sSql,"select count(*) from BFM_PC_NODE_DISK where pc_node_id=:1 and pc_disk_name=:2");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = m_nPcNodeId;
 				m_pSqlCmd->Param(2).setAsString() = sDiskDrive.c_str();
@@ -418,7 +418,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				nRet = sqldata.GetAtI(0,0);
 				if (nRet !=1 ) //没有则插入
 				{
-					sprintf(m_sSql,"insert into  PFM_PC_NODE_DISK (pc_node_id,pc_disk_name,pc_disk_total,pc_disk_used) values(:1,:2,:3,:4)");
+					sprintf(m_sSql,"insert into  BFM_PC_NODE_DISK (pc_node_id,pc_disk_name,pc_disk_total,pc_disk_used) values(:1,:2,:3,:4)");
 					m_pSqlCmd->setCommandText(m_sSql);
 					m_pSqlCmd->Param(1).setAsLong() = m_nPcNodeId;
 					m_pSqlCmd->Param(2).setAsString() = sDiskDrive.c_str();
@@ -426,14 +426,14 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 					m_pSqlCmd->Param(4).setAsLong() = nDiskUsed;
 					if (!m_pSqlCmd->Execute())
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_PC_NODE_DISK表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_PC_NODE_DISK表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 						m_pSqlCmd->Rollback();
 						return -1;
 					}
 				}
 				else
 				{
-					sprintf(m_sSql,"update PFM_PC_NODE_DISK set pc_disk_total=:1,pc_disk_used=:2 where pc_node_id=:3 and pc_disk_name=:4");
+					sprintf(m_sSql,"update BFM_PC_NODE_DISK set pc_disk_total=:1,pc_disk_used=:2 where pc_node_id=:3 and pc_disk_name=:4");
 					m_pSqlCmd->setCommandText(m_sSql);
 					m_pSqlCmd->Param(1).setAsLong() = nDiskTotal;
 					m_pSqlCmd->Param(2).setAsLong() = nDiskUsed;
@@ -441,7 +441,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 					m_pSqlCmd->Param(4).setAsString() = sDiskDrive.c_str();
 					if (!m_pSqlCmd->Execute())
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新PFM_PC_NODE_DISK表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新BFM_PC_NODE_DISK表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 						m_pSqlCmd->Rollback();
 						return -1;
 					}
@@ -509,7 +509,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				nStatus = 1;
 			}
 			//更新表
-			sprintf(m_sSql,"select count(*) from PFM_APP_CONNECT where public_id=:1 and private_id=:2 and dst_ip=:3 and dst_port=:4");
+			sprintf(m_sSql,"select count(*) from BFM_APP_CONNECT where public_id=:1 and private_id=:2 and dst_ip=:3 and dst_port=:4");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 			m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -519,7 +519,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 			nRet = sqldata.GetAtI(0,0);
 			if (nRet !=1 ) //没有则插入
 			{
-				sprintf(m_sSql,"insert into  PFM_APP_CONNECT (public_id,private_id,dst_public_id,dst_private_id,dst_ip,dst_port,conn_type,conn_status,lasttime) values(:1,:2,:3,:4,:5,:6,:7,:8,:9)");
+				sprintf(m_sSql,"insert into  BFM_APP_CONNECT (public_id,private_id,dst_public_id,dst_private_id,dst_ip,dst_port,conn_type,conn_status,lasttime) values(:1,:2,:3,:4,:5,:6,:7,:8,:9)");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 				m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -532,7 +532,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				m_pSqlCmd->Param(9).setAsLong() = time(NULL);
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_APP_CONNECT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_APP_CONNECT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
@@ -541,7 +541,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 			{
 				if (nStatus == 0) //更新目标节点号
 				{
-					sprintf(m_sSql,"update PFM_APP_CONNECT set dst_public_id=:1,dst_private_id=:2,conn_status=:3,lasttime=:4 where public_id=:5 and private_id=:6 and dst_ip=:7 and dst_port=:8");
+					sprintf(m_sSql,"update BFM_APP_CONNECT set dst_public_id=:1,dst_private_id=:2,conn_status=:3,lasttime=:4 where public_id=:5 and private_id=:6 and dst_ip=:7 and dst_port=:8");
 					m_pSqlCmd->setCommandText(m_sSql);
 					m_pSqlCmd->Param(1).setAsLong() = nPubId;
 					m_pSqlCmd->Param(2).setAsLong() = nPrivateId;
@@ -554,7 +554,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				}
 				else
 				{
-					sprintf(m_sSql,"update PFM_APP_CONNECT set conn_status=:1,lasttime=:2 where public_id=:3 and private_id=:4 and dst_ip=:5 and dst_port=:6");
+					sprintf(m_sSql,"update BFM_APP_CONNECT set conn_status=:1,lasttime=:2 where public_id=:3 and private_id=:4 and dst_ip=:5 and dst_port=:6");
 					m_pSqlCmd->setCommandText(m_sSql);
 					m_pSqlCmd->Param(1).setAsLong() = nStatus;
 					m_pSqlCmd->Param(2).setAsLong() = time(NULL);
@@ -565,7 +565,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				}
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新PFM_APP_CONNECT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新BFM_APP_CONNECT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
@@ -630,7 +630,7 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 				continue;
 			}
 			nIndex = atoi(tmpattr->GetAttrValue(false).c_str());
-			sprintf(m_sSql,"select count(*) from PFM_DREB_CONNLIST where public_id=:1 and private_id=:2 and dst_public_id=:3 and dst_private_id=:4");
+			sprintf(m_sSql,"select count(*) from BFM_DREB_CONNLIST where public_id=:1 and private_id=:2 and dst_public_id=:3 and dst_private_id=:4");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 			m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -640,7 +640,7 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 			nRet = sqldata.GetAtI(0,0);
 			if (nRet !=1 ) //没有则插入
 			{
-				sprintf(m_sSql,"insert into  PFM_DREB_CONNLIST (public_id,private_id,dst_public_id,dst_private_id,conn_index,conn_status,lasttime) values(:1,:2,:3,:4,:5,:6,:7)");
+				sprintf(m_sSql,"insert into  BFM_DREB_CONNLIST (public_id,private_id,dst_public_id,dst_private_id,conn_index,conn_status,lasttime) values(:1,:2,:3,:4,:5,:6,:7)");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 				m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -651,14 +651,14 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 				m_pSqlCmd->Param(7).setAsLong() = time(NULL);
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
 			}
 			else //更新
 			{
-				sprintf(m_sSql,"update PFM_DREB_CONNLIST set conn_index=:1,conn_status=:2,lasttime=:3 where public_id=:4 and private_id=:5 and dst_public_id=:6 and dst_private_id=:7");
+				sprintf(m_sSql,"update BFM_DREB_CONNLIST set conn_index=:1,conn_status=:2,lasttime=:3 where public_id=:4 and private_id=:5 and dst_public_id=:6 and dst_private_id=:7");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = nIndex;
 				m_pSqlCmd->Param(2).setAsLong() = nStatus;
@@ -669,7 +669,7 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 				m_pSqlCmd->Param(7).setAsLong() = nPid;
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
@@ -718,7 +718,7 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 			{
 				nStatus = 1;
 			}
-			sprintf(m_sSql,"select count(*) from PFM_DREB_CONNLIST where public_id=:1 and private_id=:2 and dst_public_id=:3 and dst_private_id=:4");
+			sprintf(m_sSql,"select count(*) from BFM_DREB_CONNLIST where public_id=:1 and private_id=:2 and dst_public_id=:3 and dst_private_id=:4");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 			m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -728,7 +728,7 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 			nRet = sqldata.GetAtI(0,0);
 			if (nRet !=1 ) //没有则插入
 			{
-				sprintf(m_sSql,"insert into  PFM_DREB_CONNLIST (public_id,private_id,dst_public_id,dst_private_id,conn_index,conn_status,lasttime) values(:1,:2,:3,:4,:5,:6,:7)");
+				sprintf(m_sSql,"insert into  BFM_DREB_CONNLIST (public_id,private_id,dst_public_id,dst_private_id,conn_index,conn_status,lasttime) values(:1,:2,:3,:4,:5,:6,:7)");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 				m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -739,14 +739,14 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 				m_pSqlCmd->Param(7).setAsLong() = time(NULL);
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
 			}
 			else //更新
 			{
-				sprintf(m_sSql,"update PFM_DREB_CONNLIST set conn_index=:1,conn_status=:2,lasttime=:3 where public_id=:4 and private_id=:5 and dst_public_id=:6 and dst_private_id=:7");
+				sprintf(m_sSql,"update BFM_DREB_CONNLIST set conn_index=:1,conn_status=:2,lasttime=:3 where public_id=:4 and private_id=:5 and dst_public_id=:6 and dst_private_id=:7");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = nIndex;
 				m_pSqlCmd->Param(2).setAsLong() = nStatus;
@@ -757,7 +757,7 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 				m_pSqlCmd->Param(7).setAsLong() = nPid;
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
@@ -870,7 +870,7 @@ int CMoniSvr::BpcReport(CBF_Xml *xml)
 			{
 				nStatus = 0;
 			}
-			sprintf(m_sSql,"select count(*) from PFM_BPULIST where public_id=:1 and private_id=:2 and bpu_name=:3");
+			sprintf(m_sSql,"select count(*) from BFM_BPULIST where public_id=:1 and private_id=:2 and bpu_name=:3");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 			m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -879,7 +879,7 @@ int CMoniSvr::BpcReport(CBF_Xml *xml)
 			nRet = sqldata.GetAtI(0,0);
 			if (nRet !=1 ) //没有则插入
 			{
-				sprintf(m_sSql,"insert into  PFM_BPULIST (public_id,private_id,bpu_name,bpu_num,real_num,htflag,dpmode,autostart,prgname,prgpath,runpath,para,lasttime,bpu_status) values(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14)");
+				sprintf(m_sSql,"insert into  BFM_BPULIST (public_id,private_id,bpu_name,bpu_num,real_num,htflag,dpmode,autostart,prgname,prgpath,runpath,para,lasttime,bpu_status) values(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14)");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 				m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -897,14 +897,14 @@ int CMoniSvr::BpcReport(CBF_Xml *xml)
 				m_pSqlCmd->Param(14).setAsLong() = nStatus;
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_BPULIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_BPULIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
 			}
 			else //更新
 			{
-				sprintf(m_sSql,"update PFM_BPULIST set bpu_num=:1,real_num=:2,htflag=:3,dpmode=:4,autostart=:5,prgname=:6,prgpath=:7,runpath=:8,para=:9,lasttime=:10,bpu_status=:14 where public_id=:11 and private_id=:12 and bpu_name=:13");
+				sprintf(m_sSql,"update BFM_BPULIST set bpu_num=:1,real_num=:2,htflag=:3,dpmode=:4,autostart=:5,prgname=:6,prgpath=:7,runpath=:8,para=:9,lasttime=:10,bpu_status=:14 where public_id=:11 and private_id=:12 and bpu_name=:13");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = nBpuNum;
 				m_pSqlCmd->Param(2).setAsLong() = nRealNum;
@@ -922,7 +922,7 @@ int CMoniSvr::BpcReport(CBF_Xml *xml)
 				m_pSqlCmd->Param(14).setAsLong() = nStatus;
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_BPULIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_BPULIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
@@ -956,7 +956,7 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 	{
 		sRptName = "CGATE";
 		m_pDate.Update();
-		sprintf(m_sSql,"select count(*) from PFM_CGATE_INFO where public_id=:1 and private_id=:2");
+		sprintf(m_sSql,"select count(*) from BFM_CGATE_INFO where public_id=:1 and private_id=:2");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 		m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -964,7 +964,7 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 		nRet = sqldata.GetAtI(0,0);
 		if (nRet !=1 ) //没有则插入
 		{
-			sprintf(m_sSql,"insert into  PFM_CGATE_INFO (public_id,private_id,report_name,report_date,report_time,connect_num) values(:1,:2,:3,:4,:5,:6)");
+			sprintf(m_sSql,"insert into  BFM_CGATE_INFO (public_id,private_id,report_name,report_date,report_time,connect_num) values(:1,:2,:3,:4,:5,:6)");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 			m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -974,7 +974,7 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 			m_pSqlCmd->Param(6).setAsLong() = nConnectNum;
 			if (!m_pSqlCmd->Execute())
 			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_CGATE_INFO表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_CGATE_INFO表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 				m_pSqlCmd->Rollback();
 			}
 			else
@@ -984,7 +984,7 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 		}
 		else
 		{	
-			sprintf(m_sSql,"update PFM_CGATE_INFO set report_date=:1,report_time=:2,connect_num=:3 where public_id=:4 and private_id=:5");
+			sprintf(m_sSql,"update BFM_CGATE_INFO set report_date=:1,report_time=:2,connect_num=:3 where public_id=:4 and private_id=:5");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsString() = m_pDate.ToStringD8().c_str();
 			m_pSqlCmd->Param(2).setAsLong() =  atoi(m_pDate.ToStringT6().c_str());
@@ -993,7 +993,7 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 			m_pSqlCmd->Param(5).setAsLong() = m_nNodePrivateId;
 			if (!m_pSqlCmd->Execute())
 			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新PFM_CGATE_INFO表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新BFM_CGATE_INFO表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 				m_pSqlCmd->Rollback();
 			}
 			else
@@ -1031,7 +1031,7 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"类BPC报告 [%d %d ] status[%d] info[%s]",\
 				m_nNodeId,m_nNodePrivateId,nStatus,sRptTxt.c_str());
 			//写入表
-			sprintf(m_sSql,"select count(*) from PFM_BPC2_REPORT where public_id=:1 and private_id=:2 and report_name=:3");
+			sprintf(m_sSql,"select count(*) from BFM_BPC2_REPORT where public_id=:1 and private_id=:2 and report_name=:3");
 			m_pSqlCmd->setCommandText(m_sSql);
 			m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 			m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -1040,7 +1040,7 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 			nRet = sqldata.GetAtI(0,0);
 			if (nRet !=1 ) //没有则插入
 			{
-				sprintf(m_sSql,"insert into  PFM_BPC2_REPORT (public_id,private_id,report_name,report_status,report_txt,lasttime) values(:1,:2,:3,:4,:5,:6)");
+				sprintf(m_sSql,"insert into  BFM_BPC2_REPORT (public_id,private_id,report_name,report_status,report_txt,lasttime) values(:1,:2,:3,:4,:5,:6)");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = m_nNodeId;
 				m_pSqlCmd->Param(2).setAsLong() = m_nNodePrivateId;
@@ -1050,14 +1050,14 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 				m_pSqlCmd->Param(6).setAsLong() = time(NULL);
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_BPC2_REPORT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_BPC2_REPORT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
 			}
 			else //更新
 			{
-				sprintf(m_sSql,"update PFM_BPC2_REPORT set report_status=:1,report_txt=:2,lasttime=:3 where public_id=:4 and private_id=:5 and report_name=:6");
+				sprintf(m_sSql,"update BFM_BPC2_REPORT set report_status=:1,report_txt=:2,lasttime=:3 where public_id=:4 and private_id=:5 and report_name=:6");
 				m_pSqlCmd->setCommandText(m_sSql);
 				m_pSqlCmd->Param(1).setAsLong() = nStatus;
 				m_pSqlCmd->Param(2).setAsString() = sRptTxt.c_str();
@@ -1068,7 +1068,7 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 				
 				if (!m_pSqlCmd->Execute())
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入PFM_BPC2_REPORT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入BFM_BPC2_REPORT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
@@ -1117,8 +1117,40 @@ bool CMoniSvr::GetSerial(char *logserial)
 	}
 	else
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"暂不支持ORACLE和DB2之外的数据库，请联系公司");
-		return false;
+	    //mysql
+        //CREATE TABLE seq(
+        //    `name` varchar(20) NOT NULL,
+        //    `val` int(10) unsigned NOT NULL,
+        //    PRIMARY KEY(`name`)
+        //    );
+        //insert into seq values('seq', 1);
+
+        //DELIMITER $$
+        //    CREATE FUNCTION seq(seq_name char(20)) returns int
+        //    begin
+        //    UPDATE seq SET val = last_insert_id(val + 1) WHERE name = seq_name;
+        //RETURN last_insert_id();
+        //END $$
+        sprintf(tmpsql, "select seq('seq')");
+        if (!m_pSqlCmd->Execute(tmpsql))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "执行[%s]出错 [%s]", \
+                tmpsql, m_pSqlCmd->GetCmdErrInfo());
+            return false;
+        }
+        if (!m_pSqlCmd->isResultSet())
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "执行[%s]无结果集", tmpsql);
+            return false;
+        }
+        if (!m_pSqlCmd->FetchNext())
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "执行[%s]无结果集", tmpsql);
+            return false;
+        }
+        sno = m_pSqlCmd->Field(0).asLong();
+		//m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"暂不支持ORACLE和DB2之外的数据库，请联系公司");
+		//return false;
 	}
 	
 	m_pDate.Update();
@@ -1177,51 +1209,51 @@ int CMoniSvr::UpdateByLastTime()
 		m_pSqlCmd->Rollback();
 		return -1;
 	}
-	sprintf(m_sSql,"update PFM_APP_CONNECT set conn_status=:1 where lasttime<:2 and conn_status=:3");
+	sprintf(m_sSql,"update BFM_APP_CONNECT set conn_status=:1 where lasttime<:2 and conn_status=:3");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsLong() = 2;//超时异常
 	m_pSqlCmd->Param(2).setAsLong() = lasttime;
 	m_pSqlCmd->Param(3).setAsLong() = 0;//只更新正常的
 	if (!m_pSqlCmd->Execute())
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新PFM_APP_CONNECT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新BFM_APP_CONNECT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 		m_pSqlCmd->Rollback();
 		return -1;
 	}
 	//更新表中超时的状态为不正常
-	sprintf(m_sSql,"update PFM_DREB_CONNLIST set conn_status=:1 where  lasttime<:2 and conn_status=:3");
+	sprintf(m_sSql,"update BFM_DREB_CONNLIST set conn_status=:1 where  lasttime<:2 and conn_status=:3");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsLong() = 2;//超时异常
 	m_pSqlCmd->Param(2).setAsLong() = lasttime;
 	m_pSqlCmd->Param(3).setAsLong() = 0;//只更新正常的
 	if (!m_pSqlCmd->Execute())
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新PFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新BFM_DREB_CONNLIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 		m_pSqlCmd->Rollback();
 		return -1;
 	}
 	
 	//更新表中超时的状态为不正常
-	sprintf(m_sSql,"update PFM_BPULIST set bpu_status=:1 where  lasttime<:2 and bpu_status=:3");
+	sprintf(m_sSql,"update BFM_BPULIST set bpu_status=:1 where  lasttime<:2 and bpu_status=:3");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsLong() = 2;//状态为超时异常
 	m_pSqlCmd->Param(2).setAsLong() = lasttime;
 	m_pSqlCmd->Param(3).setAsLong() = 0;//只更新正常的
 	if (!m_pSqlCmd->Execute())
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新PFM_BPULIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新BFM_BPULIST表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 		m_pSqlCmd->Rollback();
 		return -1;
 	}
 	//更新表中超时的状态为不正常
-	sprintf(m_sSql,"update PFM_BPC2_REPORT set report_status=:1 where lasttime<:2 and report_status=:3");
+	sprintf(m_sSql,"update BFM_BPC2_REPORT set report_status=:1 where lasttime<:2 and report_status=:3");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsLong() = 2;//状态为超时异常
 	m_pSqlCmd->Param(2).setAsLong() = lasttime;
 	m_pSqlCmd->Param(3).setAsLong() = 0;//只更新正常的
 	if (!m_pSqlCmd->Execute())
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新PFM_BPC2_REPORT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"更新BFM_BPC2_REPORT表出错 %s",m_pSqlCmd->GetCmdErrInfo());
 		m_pSqlCmd->Rollback();
 		return -1;
 	}

@@ -29,19 +29,7 @@ typedef struct
 class CSvrTbl  
 {
 public:
-	// 函数名: Next
-	// 编程  : 王明松 2009-10-29 17:08:54
-	// 返回  : bool 
-	// 参数  : S_SVR_ROUTE &svr
-	// 描述  : 下一条记录
-	bool Next(S_SVR_ROUTE &svr);
 	
-	// 函数名: First
-	// 编程  : 王明松 2009-10-29 17:08:46
-	// 返回  : bool 
-	// 参数  : S_SVR_ROUTE &svr
-	// 描述  : 第一条记录
-	bool First(S_SVR_ROUTE &svr);
 
 	/// 函数名: UnRegister
 	/// 编程  : 王明松 2009-10-27 14:54:02
@@ -98,7 +86,9 @@ public:
 	/// 参数  : int svrid
 	/// 参数  : vector<S_SVR_ROUTE> &svr
 	/// 描述  : 通过服务ID查询服务记录
-	bool SelectBySvr(int svrid,vector<S_SVR_ROUTE> &svr);
+	bool SelectBySvr(int svrid, std::vector<S_SVR_ROUTE> &svr);
+
+	bool Select(std::vector<S_SVR_ROUTE*>& svr);
 
 	// 函数名: SelectBySvr
 	// 编程  : 王明松 2016-1-13 13:42:33
@@ -106,7 +96,7 @@ public:
 	// 参数  : unsigned int svrid
 	// 参数  : vector<S_SVR_ROUTE *> &svr
 	// 描述  : 通过服务ID取服务信息，去掉连接关闭的
-	bool SelectBySvr(unsigned int svrid,vector<S_SVR_ROUTE *> &svr);
+	bool SelectBySvr(unsigned int svrid, std::vector<S_SVR_ROUTE *> &svr);
 
 	/// 函数名: Insert
 	/// 编程  : 王明松 2009-10-27 14:25:26
@@ -120,13 +110,13 @@ public:
 	CIErrlog *m_pLog;
 protected:
 	
-	CMemTable <S_SVR_ROUTE> m_table;        //通讯平台内存表
+	CMemTableNew <S_SVR_ROUTE> m_table;        //通讯平台内存表
 	
 	CIndexInt<1>             m_index_node;   //服务id索引
 	CIndexInt<2>             m_pkey;         //服务id+私有id索引，唯一索引
 
 
-//	CBF_Mutex m_mutex;	
+	CBF_Mutex m_mutex;	
 };
 
 #endif // !defined(AFX_SVRTBL_H__2C910750_3DE2_4D30_99E9_BAC6EFB6338B__INCLUDED_)

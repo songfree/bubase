@@ -9,6 +9,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include <functional>
 #include "BpcHead.h"
 //客户端连接接口类，主程序继承实现，供业务模块调用
 
@@ -22,6 +23,9 @@ typedef struct
 	unsigned int rTime;          //接收数据的时间点
 	PBPCCOMMSTRU pData; //数据
 }S_TRADE_DATA;
+
+
+typedef  int (*CallBackFunc)(S_TRADE_DATA &reqdata, S_TRADE_DATA &ansdata);	  //注意要释放ansdata里面的pdata，和业务模块一样释放 reqdata也可以释放，但要注意reqdata.pdata要置为NULL，否则框架会释放
 
 class CIClientLink  
 {
@@ -43,6 +47,21 @@ public:
 	// 描述  : 发送给客户端数据  数据格式为总线头+数据  src=0表示总线  src=1表示socket直连
 	virtual int Send2Client(S_TRADE_DATA &data)=0;
 
+    // 函数名: AnsData
+    // 编程  : 王明松 2017-7-20 9:28:49
+    // 返回  : virtual int 
+    // 参数  : S_TRADE_DATA &data  src=1时data.pData->sBpcHead.nIndex为socket连接序号
+	// 参数  : char nextflag  0无后续包  1 有后续包  10最后一个数据包
+    // 描述  : 应答数据  数据格式为总线头+数据  src=0表示总线  src=1表示socket直连  如果要求每个应答报文严格有序，要求，填pData->sDBHead.NEXT_INFO里的2个值
+	virtual int AnsData(S_TRADE_DATA& data,char nextflag) = 0;
+
+    // 函数名: RpcRequest
+    // 编程  : 王明松 2017-7-20 9:28:49
+    // 返回  : virtual int 
+    // 参数  : S_TRADE_DATA &data  src=1时data.pData->sBpcHead.nIndex为socket连接序号
+    // 参数  : char nextflag  0无后续包  1 有后续包  10最后一个数据包
+    // 描述  : 应答数据  数据格式为总线头+数据  src=0表示总线  src=1表示socket直连
+    virtual int RpcRequest(S_TRADE_DATA& data, int requestid, std::function<int(S_TRADE_DATA& reqdata, S_TRADE_DATA& ansdata)> func) = 0;
 
 	// 函数名: PushRcvQueue
 	// 编程  : 王明松 2017-8-14 9:37:13
@@ -83,6 +102,11 @@ public:
 	// 参数  : S_TRADE_DATA &data
 	// 描述  : 释放空间
 	virtual void PoolFree(S_TRADE_DATA &data)=0;
+
+	//取递增的流水号
+	virtual int  GetSerial()=0;
+	//取递增的本地号 报单号
+	virtual UINT64_ GetLocalNo()=0;
 
 };
 

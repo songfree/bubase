@@ -26,7 +26,8 @@
 #include "BF_HostInfo.h"
 #include "dreberrcode.h"
 #include "BF_Xml.h"
-
+#include "DrebMsgProcBase.h"
+#include "IBF_DrebServer.h"
 
 #ifdef DREBAPI_EXPORTS
 #define DREBAPI_EXPORT __declspec(dllexport)
@@ -38,23 +39,23 @@
 #endif
 #endif
 
-class DREBAPI_EXPORT CBF_DrebServer : public CBF_Thread  
+class DREBAPI_EXPORT CBF_DrebServer : public CIBF_DrebServer,CBF_Thread
 {
 public:
-	int GetDataLogLevel();
+	virtual int GetDataLogLevel();
 
 	// 函数名: GetErrMsg
 	// 编程  : 王明松 2015-7-21 10:28:00
 	// 返回  : std::string 
 	// 描述  : 取得出错信息
-	std::string GetErrMsg();
+	virtual std::string GetErrMsg();
 
 	// 函数名: SetDataLogLevel
 	// 编程  : 王明松 2015-7-15 15:01:38
 	// 返回  : void 
 	// 参数  : int loglevel
 	// 描述  : 设置报文日志级别，即时生效
-	void SetDataLogLevel(int loglevel);
+	virtual void SetDataLogLevel(int loglevel);
 
 
 	// 函数名: UnzipBuf
@@ -62,13 +63,13 @@ public:
 	// 返回  : bool 
 	// 参数  : BPCCOMMSTRU &data
 	// 描述  : 解开报文数据，针对监控指令
-	bool UnzipBuf(BPCCOMMSTRU &data);
+	virtual bool UnzipBuf(BPCCOMMSTRU &data);
 
 	// 函数名: GetLogPoint
 	// 编程  : 王明松 2014-12-12 10:31:28
 	// 返回  : CIErrlog * 
 	// 描述  : 返回日志类指针，可通过此指针写入日志信息
-	CIErrlog * GetLogPoint();
+	virtual CIErrlog * GetLogPoint();
 
 	// 函数名: GetDrebInfo
 	// 编程  : 王明松 2014-12-10 16:35:34
@@ -80,7 +81,7 @@ public:
 	// 参数  : int &privateid  私有节点号
 	// 参数  : char *status  状态   "未连接"  "正常"   "正在连接"
 	// 描述  : 获取DREB总线连接信息
-	bool GetDrebInfo(int index,char *sip,int &port,int &drebid,int &privateid,char *status);
+	virtual bool GetDrebInfo(int index,char *sip,int &port,int &drebid,int &privateid,char *status);
 
 	// 函数名: GetBufferPoolInfo
 	// 编程  : 王明松 2014-12-10 16:30:51
@@ -89,7 +90,7 @@ public:
 	// 参数  : int &unused   还有多少块未使用
 	// 参数  : int &bufsize  每块大小
 	// 描述  : 获取内存缓冲池信息
-	void GetBufferPoolInfo(int &total, int &unused,int &bufsize);
+	virtual void GetBufferPoolInfo(int &total, int &unused,int &bufsize);
 
 	// 函数名: RegisterDreb
 	// 编程  : 王明松 2013-4-8 15:10:22
@@ -97,14 +98,14 @@ public:
 	// 参数  : int index        dreb连接索引
 	// 参数  : CInt *funclist   交易列表
 	// 描述  : 在连接的DREB上发注册消息,将交易码注册到总线上,这样可以按交易码路由，但广播不受此限制，可调用多次来进行注册
-	void RegisterDreb(int index,vector<int> *funclist);
+	virtual void RegisterDreb(int index,vector<int> *funclist);
 
 
 	// 函数名: UnRegisterDreb
 	// 编程  : 王明松 2014-12-12 10:07:43
 	// 返回  : void 
 	// 描述  : 取消在dreb上注册的交易
-	void UnRegisterDreb();
+	virtual void UnRegisterDreb();
 
 	// 函数名: GetMsgData
 	// 编程  : 王明松 2014-12-10 15:06:39
@@ -113,7 +114,7 @@ public:
 	// 参数  : unsigned int waitetms=1000  没有消息的等待时间
 	// 参数  : bool get_front=true  true从头取,false从尾取 
 	// 描述  : 从队列里取消息进行处理，注意要调用poolfree释放rdata里的空间
-	bool GetMsgData(S_BPC_RSMSG &rdata,unsigned int waitetms=1000,bool get_front=true);
+	virtual bool GetMsgData(S_BPC_RSMSG &rdata,unsigned int waitetms=1000,bool get_front=true);
 
 	// 函数名: SendMsg
 	// 编程  : 王明松 2014-12-10 15:00:22
@@ -122,48 +123,49 @@ public:
 	// 描述  : 向DREB发送数据 注意bpchead里的index填写，若是应答原样即可，新请求可填一个比较大的值，这样让本api选择一个连接发送
 	//          注意在本方法里会主动释放sdata空间
 	//          a_cNodePrivateId来标识是否转移交易，当总线收到判断此标识为100时，不对s_info进行重置
-	int SendMsg(S_BPC_RSMSG &sdata);
+	virtual int SendMsg(S_BPC_RSMSG &sdata);
 
 	// 函数名: Stop
 	// 编程  : 王明松 2014-12-10 14:15:10
 	// 返回  : void 
 	// 描述  : 停止api线程
-	void Stop();
+	virtual void Stop();
 
 	// 函数名: Start
 	// 编程  : 王明松 2014-12-10 14:14:58
 	// 返回  : bool 
 	// 描述  : 启动api线程
-	bool Start();
+	virtual bool Start();
 
 
 	// 函数名: MonitorThread
 	// 编程  : 王明松 2014-12-15 8:48:34
 	// 返回  : void 
 	// 描述  : 监控线程是否停止，若停了则重启
-	void MonitorThread();
+	virtual void MonitorThread();
 
 	// 函数名: Init
 	// 编程  : 王明松 2014-12-5 15:52:02
 	// 返回  : bool 
 	// 参数  : CBF_DrebResource *res
+	// 参数  :,CDrebMsgProcBase* spi=NULL   当有回调时，api线程直接回调，否则放入队列
 	// 描述  : 本api初始化
-	bool Init(CBF_DrebResource *res);
+	virtual bool Init(CBF_DrebResource *res,CDrebMsgProcBase* spi=NULL);
 
 	// 函数名: PoolFree
 	// 编程  : 王明松 2014-12-5 11:32:37
 	// 返回  : void 
 	// 参数  : void *ppoint
 	// 描述  : 释放空间
-	void PoolFree(void *ppoint);
+	virtual void PoolFree(void *ppoint);
 
 	// 函数名: PoolMalloc
 	// 编程  : 王明松 2014-12-5 11:32:41
 	// 返回  : void * 
 	// 描述  : 分配一个空间
-	void * PoolMalloc();
+	virtual void * PoolMalloc();
 
-	CBF_BufferPool *GetBufferPool();
+	virtual CBF_BufferPool *GetBufferPool();
 
 	// 函数名: GetHostInfo
 	// 编程  : 王明松 2014-12-10 14:27:21
@@ -171,11 +173,12 @@ public:
 	// 参数  : S_MONITOR_HOST &host
 	// 参数  : vector<S_MONITOR_DISK>&disk
 	// 描述  : 获取主机cpu、内存、磁盘信息，前提是资源的标志g_nMonitorHost为1
-	void GetHostInfo(S_MONITOR_HOST &host,vector<S_MONITOR_DISK>&disk);
+	virtual void GetHostInfo(S_MONITOR_HOST &host,vector<S_MONITOR_DISK>&disk);
 
 	CBF_DrebServer();
 	virtual ~CBF_DrebServer();
 
+	CDrebMsgProcBase* m_spi;//回调类指针
 private:
 	// 函数名: Run
 	// 编程  : 王明松 2010-3-12 13:00:15

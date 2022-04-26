@@ -56,6 +56,11 @@ int CProcThread::Run()
 	{
 		if (m_pRcvQueue->GetData(m_sData))
 		{
+		    //增加rpc应答回调   当为rpc应答时，根据requestid查找调用信息，回调
+			if (1 == m_sData.pData->sDBHead.cRaflag)
+			{
+
+			}
 //			m_sData.pData->sDBHead.s_Sinfo.s_nGateIndex = m_nIndex;
 			// songfree 20180510 modi 改用b_Cinfo保存处理线程序号
 			m_sData.pData->sDBHead.b_Cinfo.b_cIndex = m_nIndex;

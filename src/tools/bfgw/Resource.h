@@ -42,6 +42,8 @@ public:
 	char              g_sModuleName[300];//程序名
 
 	char              m_sStartDate[20];//启动日期
+
+	int    g_nCrcFlag;//是否校验crc
 	
 	int g_nLoglevel;//日志级别 默认为5
 	std::string g_sLogFileName;//日志文件名

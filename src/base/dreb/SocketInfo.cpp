@@ -290,7 +290,11 @@ int CSocketInfo::OnSend()
 	CBF_PMutex pp(&m_mutex);
 	RDQUEUE::iterator prq,prn;
 	int sendNum=0;
-
+    if (m_pSendQueue == NULL)
+    {
+        m_log->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "连接index=%d type=%d 发送队列为NULL", m_index, m_nType);
+        return -1;
+    }
 	for (prn=m_pSendQueue->m_qSendData.datas.begin();prn!=m_pSendQueue->m_qSendData.datas.end();)
 	{
 		prq = prn;

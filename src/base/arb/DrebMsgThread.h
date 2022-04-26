@@ -65,7 +65,7 @@ public:
 	bool      m_bIsCheck;
 	CIErrlog  *m_pLog;
 
-	virtual  bool Init(CBF_DrebServer   *bus,CBF_DrebResource *res);
+	virtual  bool Init(CIBF_DrebServer* bus,CBF_DrebResource *res);
 
 	// 函数名: Start
 	// 编程  : 王明松 2015-4-23 15:52:29

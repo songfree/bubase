@@ -3051,7 +3051,7 @@ public:
 	typedef std::deque<Record> VECTOR_;       //定义保存内存表数据的类型，deque的下标相当于rowid
 	std::list<int>    m_rowidpool;              //保存删除的内存表数据ID，相当于rowid，下次增加时直接使用         
 	VECTOR_      m_table;                  //表数据
-	std::vector<bool> m_inuseid;                //rowid对应的数据是否删除
+	std::deque<bool> m_inuseid;                //rowid对应的数据是否删除
 	int  m_current;
 public:
 	
@@ -3353,6 +3353,13 @@ public:
         return data<field.data;
     }
 };
+//Index_tuple使用例子
+//CKeyField<Index_tuple<tuple<UINT64_,std::string>>> m_key; 
+//Index_tuple<tuple<UINT64_,std::string>> aa ;
+//        aa.data = {info.user_id,info.mac};
+//        if (m_key.Find(aa)) {
+
+
 
 //不重复的索引基类
 template<typename Record>

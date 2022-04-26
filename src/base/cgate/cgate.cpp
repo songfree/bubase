@@ -7,6 +7,7 @@
 #include "GateWay.h"
 #include "Bpc_Timer.h"
 
+
 #ifdef WIN32
 #ifdef _DEBUG
 #pragma comment(lib, "bf_aiod.lib") 
@@ -20,7 +21,6 @@
 #pragma message("Automatically linking with  bf_kernel.lib bf_dbpub.lib")
 #endif
 #endif
-
 
 char *g_pExitFlag=NULL;
 int  g_pRunFlag=1;

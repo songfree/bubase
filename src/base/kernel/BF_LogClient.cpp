@@ -1037,8 +1037,8 @@ void CBF_LogClient::OnSend()
 		m_nSendLen = S_LOG_HEADLEN + LOGSERVER_HEADLEN + logdata->datalen;
 		sprintf(m_sSendBuffer,"%04d",logdata->datalen+S_LOG_HEADLEN);
 		//字节序转换，统一转为LE  当本机为BE时反转
-		CBF_Tools::Reverse((unsigned char *)logdata->datalen,sizeof(logdata->datalen));
-		CBF_Tools::Reverse((unsigned char *)logdata->fileline,sizeof(logdata->fileline));
+		CBF_Tools::Reverse((unsigned char *)&(logdata->datalen),sizeof(logdata->datalen));
+		CBF_Tools::Reverse((unsigned char *)&(logdata->fileline),sizeof(logdata->fileline));
 		memcpy(m_sSendBuffer+LOGSERVER_HEADLEN,data,m_nSendLen-LOGSERVER_HEADLEN);
 		m_pMemPool.PoolFree(data);
 		data = NULL;

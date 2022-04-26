@@ -74,5 +74,41 @@
     <ClInclude Include="TradeResource.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="include\CodeTable.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Db_BaseInfo.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Db_Custom.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Db_Public.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Db_Set.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Db_Trader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IClientLink.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IExchLink.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IInitial.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IProcBase.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\KernelPub.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MemDb.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

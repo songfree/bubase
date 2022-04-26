@@ -12,7 +12,18 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-class CCgateLog  
+
+#ifdef CGATEAPI_EXPORTS
+#define CGATEAPI_EXPORT __declspec(dllexport)
+#else
+#ifdef WIN_DLL
+#define CGATEAPI_EXPORT __declspec(dllimport)
+#else
+#define CGATEAPI_EXPORT 
+#endif
+#endif
+
+class CGATEAPI_EXPORT CCgateLog
 {
 public:
 	bool IsStoped();

@@ -22,9 +22,9 @@ bool CRouteTbl::Insert(S_DREB_ROUTE rt)
 {
 	int id;
 	//通过主键查找，不存在则增加
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Find(id,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep))
 	{
-//		CBF_PMutex pp(&m_mutex);
 		id = m_table.Add(rt);//增加到表
 		m_pkey.Add(id,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep);//增加主键
 		m_index_node.Add(id,rt.nNodeId);//增加索引
@@ -38,13 +38,13 @@ bool CRouteTbl::Insert(S_DREB_ROUTE rt)
 bool CRouteTbl::Update(S_DREB_ROUTE rt)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep))
 	{
 		return false;
 	}
 	int id;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	m_table.m_table[id] = rt;
 	return false;
 }
@@ -52,13 +52,13 @@ bool CRouteTbl::Update(S_DREB_ROUTE rt)
 bool CRouteTbl::DeleteByPk(S_DREB_ROUTE rt)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep))
 	{
 		return false;
 	}
 	int id;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	m_pkey.Delete(iset,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep);
 	m_index_node.Delete(iset,rt.nNodeId);
 	m_index_index.Delete(iset,rt.nIndex);
@@ -70,6 +70,7 @@ bool CRouteTbl::DeleteByPk(S_DREB_ROUTE rt)
 bool CRouteTbl::DeleteByIndex(int index)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_index.Select(iset,index))
 	{
 		return false;
@@ -78,7 +79,6 @@ bool CRouteTbl::DeleteByIndex(int index)
 	int id;
 	bool bret;
 	bret = iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	while (bret)
 	{
 		m_pkey.Delete(iset,m_table.m_table[id].nNodeId,m_table.m_table[id].cNodePrivateId,m_table.m_table[id].nIndex,m_table.m_table[id].nStep);
@@ -90,26 +90,10 @@ bool CRouteTbl::DeleteByIndex(int index)
 	return true;
 }
 
-// bool CRouteTbl::SelectByNode(int nodeid,vector<S_DREB_ROUTE> &rt)
-// {
-// 	CInt iset;
-// 	if (!m_index_node.Select(iset,nodeid))
-// 	{
-// 		return false;
-// 	}
-// 	int id;
-// 	bool bRet;
-// 	bRet = iset.First(id);
-// 	while (bRet)
-// 	{
-// 		rt.push_back(m_table.m_table[id]);
-// 		bRet = iset.Next(id);
-// 	}
-// 	return true;
-// }
-bool CRouteTbl::SelectByNode(int nodeid,vector<S_DREB_ROUTE *> &rt)
+bool CRouteTbl::SelectByNode(int nodeid,std::vector<S_DREB_ROUTE *> &rt)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_node.Select(iset,nodeid))
 	{
 		return false;
@@ -151,27 +135,11 @@ bool CRouteTbl::SelectByNode(int nodeid,vector<S_DREB_ROUTE *> &rt)
 	return true;
 	
 }
-// bool CRouteTbl::SelectByIndex(int index,vector<S_ROUTE_TBL> &rt)
-// {
-// 	CInt iset;
-// 	if (!m_index_index.Select(iset,index))
-// 	{
-// 		return false;
-// 	}
-// 	int id;
-// 	bool bRet;
-// 	bRet = iset.First(id);
-// 	while (bRet)
-// 	{
-// 		rt.push_back(m_table.m_table[id]);
-// 		bRet = iset.Next(id);
-// 	}
-// 	return true;
-// }
 
-bool CRouteTbl::SelectByIndex(int index,vector<S_DREB_ROUTE *> &rt)
+bool CRouteTbl::SelectByIndex(int index, std::vector<S_DREB_ROUTE *> &rt)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_index.Select(iset,index))
 	{
 		return false;
@@ -187,27 +155,10 @@ bool CRouteTbl::SelectByIndex(int index,vector<S_DREB_ROUTE *> &rt)
 	return true;
 }
 
-// 
-// bool CRouteTbl::SelectByPrivateNode(int nodeid, int privateid, vector<S_ROUTE_TBL> &rt)
-// {
-// 	CInt iset;
-// 	if (!m_index_private.Select(iset,nodeid,privateid))
-// 	{
-// 		return false;
-// 	}
-// 	int id;
-// 	bool bRet;
-// 	bRet = iset.First(id);
-// 	while (bRet)
-// 	{
-// 		rt.push_back(m_table.m_table[id]);
-// 		bRet = iset.Next(id);
-// 	}
-// 	return true;
-// }
-bool CRouteTbl::SelectByPrivateNode(int nodeid, int privateid, vector<S_DREB_ROUTE *> &rt)
+bool CRouteTbl::SelectByPrivateNode(int nodeid, int privateid, std::vector<S_DREB_ROUTE *> &rt)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_private.Select(iset,nodeid,privateid))
 	{
 		return false;
@@ -248,19 +199,11 @@ bool CRouteTbl::SelectByPrivateNode(int nodeid, int privateid, vector<S_DREB_ROU
 	}
 	return true;
 }
-bool CRouteTbl::First(S_DREB_ROUTE &dreb)
-{
-	return m_table.First(dreb);
-}
-
-bool CRouteTbl::Next(S_DREB_ROUTE &dreb)
-{
-	return m_table.Next(dreb);
-}
 
 bool CRouteTbl::UpdateRoute(S_DREB_ROUTE rt)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_private.Select(iset,rt.nNodeId,rt.cNodePrivateId))
 	{
 		return Insert(rt);
@@ -287,82 +230,39 @@ bool CRouteTbl::UpdateRoute(S_DREB_ROUTE rt)
 	return Insert(rt);;
 }
 
-// bool CRouteTbl::GetRouteByIndex(int index,vector<S_ROUTE_TBL> &rtlist)
-// {
-// 	bool bRet;
-// 	int id;
-// 
-// 	bRet = m_index_index.First(id);
-// 	while (bRet)
-// 	{
-// 		if (m_table.m_table[id].nIndex == index)
-// 		{
-// 			bRet = m_index_index.Next(id);
-// 			continue;
-// 		}
-// 		rtlist.push_back(m_table.m_table[id]);
-// 		bRet = m_index_index.Next(id);
-// 	}
-// 	return true;
-// }
-bool CRouteTbl::GetRouteByIndex(int index,vector<S_DREB_ROUTE *> &rtlist)
+bool CRouteTbl::GetRouteByIndex(int index, std::vector<S_DREB_ROUTE *> &rtlist)
 {
 	bool bRet;
 	int id;
-	
-	bRet = m_index_index.First(id);
+	CBF_PMutex pp(&m_mutex);
+	CInt iset;
+	m_index_index.Select(iset,index);
+	bRet = iset.First(id);
+	if (!bRet)
+	{
+		return false;
+	}
 	while (bRet)
 	{
-		if (m_table.m_table[id].nIndex == index)
-		{
-			bRet = m_index_index.Next(id);
-			continue;
-		}
 		rtlist.push_back(&(m_table.m_table[id]));
-		bRet = m_index_index.Next(id);
+		bRet = iset.Next(id);
 	}
 	return true;
 }
-// 
-// bool CRouteTbl::NextById(S_ROUTE_TBL &dreb)
-// {
-// 	int id;
-// 	if (!m_index_private.Next(id))
-// 	{
-// 		return false;
-// 	}
-// 	m_table.GetById(id,dreb);
-// 	return true;
-// }
-// 
-// 
-// bool CRouteTbl::FirstById(S_ROUTE_TBL &dreb)
-// {
-// 	int id;
-// 	if (!m_index_private.First(id))
-// 	{
-// 		return false;
-// 	}
-// 	m_table.GetById(id,dreb);
-// 	return true;
-// }
 
-S_DREB_ROUTE * CRouteTbl::FirstById()
+bool  CRouteTbl::SelectById(std::vector<S_DREB_ROUTE*>& rtlist)
 {
-	int id;
-	if (!m_index_private.First(id))
+    int id;
+	CBF_PMutex pp(&m_mutex);
+	bool bret = m_index_private.First(id);
+    if (!bret)
+    {
+        return false;
+    }
+	while (bret)
 	{
-		return NULL;
+		rtlist.push_back(&(m_table.m_table[id]));
+		bret = m_index_private.Next(id);
 	}
-	return &(m_table.m_table[id]);
-}
-S_DREB_ROUTE *CRouteTbl::NextById()
-{
-	int id;
-	if (!m_index_private.Next(id))
-	{
-		return NULL;
-	}
-	return &(m_table.m_table[id]);
-	
+	return true;
 }

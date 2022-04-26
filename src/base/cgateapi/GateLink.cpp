@@ -323,6 +323,7 @@ int CGateLink::GetReqData(PCGATE_COMMSTRU data,int timeout)
 {
 	if (m_pApiSocket.m_pReqQueue.GetData(*data,timeout*1000))
 	{
+        m_pRes.g_pLog.LogBin(LOG_DEBUG, __FILE__, __LINE__, "推送或广播数据",data->buffer,data->head.nLen);
 		return m_pApiSocket.m_pReqQueue.GetSize()+1;
 	}
 	//队列没有数据了，判断连接状态

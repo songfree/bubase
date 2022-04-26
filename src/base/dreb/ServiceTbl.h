@@ -31,12 +31,7 @@ class CServiceTbl
 {
 public:
 
-	// 函数名: DeleteById
-	// 编程  : 王明松 2016-1-12 9:05:14
-	// 返回  : bool 
-	// 参数  : int rowid
-	// 描述  : 根据rowid删除记录，包括索引
-	bool DeleteById(int rowid);
+	
 
 	// 函数名: UpdateRouteServiceByIndex
 	// 编程  : 王明松 2013-10-28 14:37:42
@@ -53,8 +48,8 @@ public:
 	// 参数  : int index
 	// 参数  : vector<S_SERVICE_ROUTE> &rtlist
 	// 描述  : 根据dreb连接序号取要在此连接上发送的服务路由信息
-	bool GetRouteServiceByIndex(int drebid,int privateid,int index,vector<S_SERVICE_ROUTE> &rtlist);
-	bool GetRouteServiceByIndex(int drebid,int privateid,int index,vector<S_SERVICE_ROUTE *> &rtlist);
+	bool GetRouteServiceByIndex(int drebid,int privateid,int index,std::vector<S_SERVICE_ROUTE> &rtlist);
+	bool GetRouteServiceByIndex(int drebid,int privateid,int index,std::vector<S_SERVICE_ROUTE *> &rtlist);
 
 	// 函数名: UnRegisterSvr
 	// 编程  : 王明松 2010-9-7 10:26:06
@@ -79,9 +74,8 @@ public:
 	// 返回  : bool 
 	// 参数  : vector<S_SERVICE_ROUTE *> &rtlist
 	// 描述  : 获取所有的功能，按索引 dreb服务排序
-//	bool GetAllServiceOrderDrebSvr(vector<S_SERVICE_ROUTE> &rtlist);
 
-	bool GetAllServiceOrderDrebSvr(vector<S_SERVICE_ROUTE *> &rtlist);
+	bool GetAllServiceOrderDrebSvr(std::vector<S_SERVICE_ROUTE *> &rtlist);
 
 	// 函数名: SelectBySvr
 	// 编程  : 王明松 2010-7-27 11:27:00
@@ -90,11 +84,11 @@ public:
 	// 参数  : int privatesvr
 	// 参数  : vector<S_SERVICE_ROUTE> &rtlist
 	// 描述  : 获取功能，只取1个
-	bool SelectBySvr(int svr,int privatesvr ,vector<S_SERVICE_ROUTE> &rtlist);
-	bool SelectBySvr(int svr,int privatesvr ,vector<S_SERVICE_ROUTE *> &rtlist);
+	bool SelectBySvr(int svr,int privatesvr , std::vector<S_SERVICE_ROUTE> &rtlist);
+	bool SelectBySvr(int svr,int privatesvr , std::vector<S_SERVICE_ROUTE *> &rtlist);
 
-	bool SelectByFuncSvr(int func,int svr,vector<S_SERVICE_ROUTE *> &rtlist);
-	bool SelectByDrebFuncSvr(int drebid,int func,int svr, vector<S_SERVICE_ROUTE *> &rtlist);
+	bool SelectByFuncSvr(int func,int svr, std::vector<S_SERVICE_ROUTE *> &rtlist);
+	bool SelectByDrebFuncSvr(int drebid,int func,int svr, std::vector<S_SERVICE_ROUTE *> &rtlist);
 
 	// 函数名: SelectBySvr
 	// 编程  : 王明松 2010-7-27 11:26:45
@@ -102,22 +96,12 @@ public:
 	// 参数  : int svr
 	// 参数  : vector<S_SERVICE_ROUTE> &rtlist
 	// 描述  : 通过服务号获取唯一的服务列表
-	bool SelectBySvr(int svr,vector<S_SERVICE_ROUTE> &rtlist);
-	bool SelectBySvr(int svr,vector<S_SERVICE_ROUTE *> &rtlist);
+	bool SelectBySvr(int svr, std::vector<S_SERVICE_ROUTE> &rtlist);
+	bool SelectBySvr(int svr, std::vector<S_SERVICE_ROUTE *> &rtlist);
 
-	// 函数名: Next
-	// 编程  : 王明松 2010-7-27 11:26:34
-	// 返回  : bool 
-	// 参数  : S_SERVICE_ROUTE &rt
-	// 描述  : 下一个功能
-	bool Next(S_SERVICE_ROUTE &rt);
 
-	// 函数名: First
-	// 编程  : 王明松 2010-7-27 11:26:23
-	// 返回  : bool 
-	// 参数  : S_SERVICE_ROUTE &rt
-	// 描述  : 第一个功能
-	bool First(S_SERVICE_ROUTE &rt);
+	bool Select(std::vector<S_SERVICE_ROUTE*>& rtlist);
+
 
 	// 函数名: SelectByPk
 	// 编程  : 王明松 2010-7-27 11:26:15
@@ -168,7 +152,7 @@ public:
 	// 参数  : unsigned int func
 	// 参数  : vector<S_SERVICE_ROUTE> &rt
 	// 描述  : 通过功能号获取功能列表
-	bool SelectByFunc(unsigned int func,vector<S_SERVICE_ROUTE> &rt);
+	bool SelectByFunc(unsigned int func, std::vector<S_SERVICE_ROUTE> &rt);
 
 	// 函数名: SelectByFunc
 	// 编程  : 王明松 2010-7-27 11:25:48
@@ -176,7 +160,7 @@ public:
 	// 参数  : unsigned int func
 	// 参数  : vector<S_SERVICE_ROUTE> &rt
 	// 描述  : 通过功能号获取功能列表  结果按步进升序排序
-	bool SelectByFunc(unsigned int func,vector<S_SERVICE_ROUTE*> &rt);
+	bool SelectByFunc(unsigned int func, std::vector<S_SERVICE_ROUTE*> &rt);
 
 	// 函数名: Insert
 	// 编程  : 王明松 2010-7-27 11:25:25
@@ -191,8 +175,14 @@ public:
 
 	CIErrlog *m_pLog;
 protected:
-	
-	CMemTable <S_SERVICE_ROUTE> m_table;        //SERVICE 内存表
+    // 函数名: DeleteById
+    // 编程  : 王明松 2016-1-12 9:05:14
+    // 返回  : bool 
+    // 参数  : int rowid
+    // 描述  : 根据rowid删除记录，包括索引
+    bool DeleteById(int rowid);
+
+	CMemTableNew <S_SERVICE_ROUTE> m_table;        //SERVICE 内存表
 
 	CIndexInt<6>             m_pkey;         //index+dreb+dreb私有号+服务号+服务私有号+功能号，唯一索引
 
@@ -211,7 +201,7 @@ protected:
 	CIndexInt<2>             m_index_funcsvr;   //服务功能号+服务号索引
 
 	CIndexInt<3>             m_index_drebfuncsvr;   //总线id+服务功能号+服务号索引
-//	CBF_Mutex m_mutex;	
+	CBF_Mutex m_mutex;	
 };
 
 #endif // !defined(AFX_SERVICETBL_H__5398A809_0D06_4C51_B7DB_2E189754723A__INCLUDED_)

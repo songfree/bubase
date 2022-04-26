@@ -26,7 +26,7 @@ CBF_DrebServerApi::~CBF_DrebServerApi()
 
 }
 
-bool CBF_DrebServerApi::Init(const char *conxmlfile)
+bool CBF_DrebServerApi::Init(const char *conxmlfile,CDrebMsgProcBase* spi)
 {
 	m_pRes.log = &log;
 //	log.LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始Init res");
@@ -39,7 +39,7 @@ bool CBF_DrebServerApi::Init(const char *conxmlfile)
 	log.LogMp(LOG_DEBUG,__FILE__,__LINE__,"连接的DREB数目[%d]",m_pRes.g_vDrebLinkInfo.size());
 	//数据总线初始化
 //	log.LogMp(LOG_DEBUG,__FILE__,__LINE__,"api init ");
-	if (!m_pDrebApi.Init(&m_pRes))
+	if (!m_pDrebApi.Init(&m_pRes,spi))
 	{
 		sprintf(m_errMsg,"DREBAPI初始化失败");
 		log.LogMp(LOG_ERROR,__FILE__,__LINE__,m_errMsg);

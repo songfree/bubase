@@ -24,9 +24,9 @@ bool CServiceTbl::Insert(S_SERVICE_ROUTE rt)
 	CInt iset;
 	bool bRet;
 	//通过主键查找，不存在则增加
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Find(id,rt.nIndex,rt.nNodeId,rt.cNodePrivateId,rt.nSvrMainId,rt.cSvrPrivateId,rt.nFuncNo))
 	{
-//		CBF_PMutex pp(&m_mutex);
 		rt.nUpdateTime = time(NULL);
 		id = m_table.Add(rt);//增加到表
 		m_pkey.Add(id,rt.nIndex,rt.nNodeId,rt.cNodePrivateId,rt.nSvrMainId,rt.cSvrPrivateId,rt.nFuncNo);//增加主键
@@ -45,10 +45,11 @@ bool CServiceTbl::Insert(S_SERVICE_ROUTE rt)
 	return false;
 }
 
-bool CServiceTbl::SelectByFunc(unsigned int func,vector<S_SERVICE_ROUTE> &rt)
+bool CServiceTbl::SelectByFunc(unsigned int func,std::vector<S_SERVICE_ROUTE> &rt)
 {
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_func.Select(iset,func))
 	{
 		return false;
@@ -75,10 +76,11 @@ bool CServiceTbl::SelectByFunc(unsigned int func,vector<S_SERVICE_ROUTE> &rt)
 	}
 	return true;
 }
-bool CServiceTbl::SelectByFunc(unsigned int func,vector<S_SERVICE_ROUTE *> &rt)
+bool CServiceTbl::SelectByFunc(unsigned int func, std::vector<S_SERVICE_ROUTE *> &rt)
 {
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_func.Select(iset,func))
 	{
 		return false;
@@ -135,6 +137,7 @@ bool CServiceTbl::SelectByFunc(unsigned int func,vector<S_SERVICE_ROUTE *> &rt)
 bool CServiceTbl::Update(S_SERVICE_ROUTE rt)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,rt.nIndex,rt.nNodeId,rt.cNodePrivateId,rt.nSvrMainId,rt.cSvrPrivateId,rt.nFuncNo))
 	{
 		return false;
@@ -156,13 +159,13 @@ bool CServiceTbl::Update(S_SERVICE_ROUTE rt)
 bool CServiceTbl::Delete(int index,int nodeid,int nodeprivated,int svrid, int privateid,unsigned int func)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,index,nodeid,nodeprivated,svrid,privateid,func))
 	{
 		return false;
 	}
 	int id;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	m_pkey.Delete(iset,index,nodeid,nodeprivated,svrid,privateid,func);
 	m_index_func.Delete(iset,func);
 	m_index_drebindex.Delete(iset,m_table.m_table[id].nIndex);
@@ -179,6 +182,7 @@ bool CServiceTbl::Delete(int index,int nodeid,int nodeprivated,int svrid, int pr
 bool CServiceTbl::SelectByPk(int index,int nodeid,int nodeprivated,int svrid, int privateid,unsigned int func, S_SERVICE_ROUTE &rt)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,index,nodeid,nodeprivated,svrid,privateid,func))
 	{
 		return false;
@@ -191,6 +195,7 @@ bool CServiceTbl::SelectByPk(int index,int nodeid,int nodeprivated,int svrid, in
 S_SERVICE_ROUTE * CServiceTbl::SelectByPk(int index,int nodeid,int nodeprivated,int svrid, int privateid,unsigned int func)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,index,nodeid,nodeprivated,svrid,privateid,func))
 	{
 		return NULL;
@@ -199,21 +204,28 @@ S_SERVICE_ROUTE * CServiceTbl::SelectByPk(int index,int nodeid,int nodeprivated,
 	iset.First(id);
 	return &(m_table.m_table[id]);
 }
-
-bool CServiceTbl::First(S_SERVICE_ROUTE &rt)
+bool CServiceTbl::Select(std::vector<S_SERVICE_ROUTE*>& rtlist)
 {
-	return m_table.First(rt);
+	int id;
+	CBF_PMutex pp(&m_mutex);
+	bool bret = m_pkey.First(id);
+	if (!bret)
+	{
+		return false;
+	}
+	while (bret)
+	{
+		rtlist.push_back(&(m_table.m_table[id]));
+		bret = m_pkey.Next(id);
+	}
+	return true;
 }
 
-bool CServiceTbl::Next(S_SERVICE_ROUTE &rt)
-{
-	return m_table.Next(rt);
-}
-
-bool CServiceTbl::SelectBySvr(int svr, vector<S_SERVICE_ROUTE> &rtlist)
+bool CServiceTbl::SelectBySvr(int svr, std::vector<S_SERVICE_ROUTE> &rtlist)
 {
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_svr.Select(iset,svr))
 	{
 		return false;
@@ -256,10 +268,11 @@ bool CServiceTbl::SelectBySvr(int svr, vector<S_SERVICE_ROUTE> &rtlist)
 	return true;
 }
 
-bool CServiceTbl::SelectBySvr(int svr, vector<S_SERVICE_ROUTE *> &rtlist)
+bool CServiceTbl::SelectBySvr(int svr, std::vector<S_SERVICE_ROUTE *> &rtlist)
 {
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_svr.Select(iset,svr))
 	{
 		return false;
@@ -319,10 +332,11 @@ bool CServiceTbl::SelectBySvr(int svr, vector<S_SERVICE_ROUTE *> &rtlist)
 	}
 	return true;
 }
-bool CServiceTbl::SelectBySvr(int svr, int privatesvr, vector<S_SERVICE_ROUTE> &rtlist)
+bool CServiceTbl::SelectBySvr(int svr, int privatesvr, std::vector<S_SERVICE_ROUTE> &rtlist)
 {
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_svrpri.Select(iset,svr,privatesvr))
 	{
 		return false;
@@ -364,10 +378,11 @@ bool CServiceTbl::SelectBySvr(int svr, int privatesvr, vector<S_SERVICE_ROUTE> &
 	}
 	return true;
 }
-bool CServiceTbl::SelectBySvr(int svr, int privatesvr, vector<S_SERVICE_ROUTE *> &rtlist)
+bool CServiceTbl::SelectBySvr(int svr, int privatesvr, std::vector<S_SERVICE_ROUTE *> &rtlist)
 {
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_svrpri.Select(iset,svr,privatesvr))
 	{
 		return false;
@@ -419,10 +434,11 @@ bool CServiceTbl::SelectBySvr(int svr, int privatesvr, vector<S_SERVICE_ROUTE *>
 	}
 	return true;
 }
-bool CServiceTbl::SelectByFuncSvr(int func,int svr, vector<S_SERVICE_ROUTE *> &rtlist)
+bool CServiceTbl::SelectByFuncSvr(int func,int svr, std::vector<S_SERVICE_ROUTE *> &rtlist)
 {
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_funcsvr.Select(iset,func,svr))
 	{
 		return false;
@@ -474,10 +490,11 @@ bool CServiceTbl::SelectByFuncSvr(int func,int svr, vector<S_SERVICE_ROUTE *> &r
 	}
 	return true;
 }
-bool CServiceTbl::SelectByDrebFuncSvr(int drebid,int func,int svr, vector<S_SERVICE_ROUTE *> &rtlist)
+bool CServiceTbl::SelectByDrebFuncSvr(int drebid,int func,int svr, std::vector<S_SERVICE_ROUTE *> &rtlist)
 {
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_drebfuncsvr.Select(iset,drebid,func,svr))
 	{
 		return false;
@@ -529,18 +546,11 @@ bool CServiceTbl::SelectByDrebFuncSvr(int drebid,int func,int svr, vector<S_SERV
 	}
 	return true;
 }
-bool CServiceTbl::GetAllServiceOrderDrebSvr(vector<S_SERVICE_ROUTE *> &rtlist)
+bool CServiceTbl::GetAllServiceOrderDrebSvr(std::vector<S_SERVICE_ROUTE *> &rtlist)
 {
 	bool bRet;
 	int id;
-	//	CBF_PMutex pp(&m_mutex);
-// 	bRet = m_pkey.First(id);
-// 	while (bRet)
-// 	{
-// 		rtlist.push_back(&(m_table.m_table[id]));
-// 		bRet = m_pkey.Next(id);
-// 	}
-
+	CBF_PMutex pp(&m_mutex);
 	bRet = m_index_indexroute.First(id);
 	while (bRet)
 	{
@@ -553,6 +563,7 @@ bool CServiceTbl::GetAllServiceOrderDrebSvr(vector<S_SERVICE_ROUTE *> &rtlist)
 bool CServiceTbl::DeleteByIndex(int drebindex)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_drebindex.Select(iset,drebindex))
 	{
 		return true;
@@ -578,6 +589,7 @@ bool CServiceTbl::DeleteByIndex(int drebindex)
 bool CServiceTbl::UnRegisterSvr(int nodeid, int nodeprivated, int svrid, int privateid)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_route.Select(iset,nodeid,nodeprivated,svrid,privateid))
 	{
 		return false;
@@ -604,12 +616,13 @@ bool CServiceTbl::UnRegisterSvr(int nodeid, int nodeprivated, int svrid, int pri
 	return true;
 }
 
-bool CServiceTbl::GetRouteServiceByIndex(int drebid,int privateid,int index,vector<S_SERVICE_ROUTE> &rtlist)
+bool CServiceTbl::GetRouteServiceByIndex(int drebid,int privateid,int index, std::vector<S_SERVICE_ROUTE> &rtlist)
 {
 	bool bRet;
 	int id;
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	bRet = m_pkey.First(id);
 	while (bRet)
 	{
@@ -642,12 +655,13 @@ bool CServiceTbl::GetRouteServiceByIndex(int drebid,int privateid,int index,vect
 	}
 	return true;
 }
-bool CServiceTbl::GetRouteServiceByIndex(int drebid,int privateid,int index,vector<S_SERVICE_ROUTE *> &rtlist)
+bool CServiceTbl::GetRouteServiceByIndex(int drebid,int privateid,int index, std::vector<S_SERVICE_ROUTE *> &rtlist)
 {
 	bool bRet;
 	int id;
 	CInt iset;
 	CInt delset;
+	CBF_PMutex pp(&m_mutex);
 	bRet = m_pkey.First(id);
 	while (bRet)
 	{
@@ -685,6 +699,7 @@ bool CServiceTbl::UpdateRouteServiceByIndex(int index)
 	bool bRet;
 	int id;
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	bRet = m_pkey.First(id);
 	while (bRet)
 	{
@@ -727,7 +742,6 @@ bool CServiceTbl::DeleteById(int rowid)
 {
 	CInt iset;
 	iset.Add(rowid);
-//	CBF_PMutex pp(&m_mutex);
 	m_pkey.Delete(iset,m_table.m_table[rowid].nIndex,m_table.m_table[rowid].nNodeId,m_table.m_table[rowid].cNodePrivateId,m_table.m_table[rowid].nSvrMainId,m_table.m_table[rowid].cSvrPrivateId,m_table.m_table[rowid].nFuncNo);
 	m_index_func.Delete(iset,m_table.m_table[rowid].nFuncNo);
 	m_index_drebindex.Delete(iset,m_table.m_table[rowid].nIndex);

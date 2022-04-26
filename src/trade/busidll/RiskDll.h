@@ -327,11 +327,14 @@ public:
 	// 描述  : 委托
 	int Order(S_TRADE_DATA &data);
 
-	
+	int test1021(S_TRADE_DATA& data);
+	int test1023(S_TRADE_DATA& data);
+
+	int m_nRpcSerial;
 };
 //注意：下面的定义在每个类里面都要有，主程序根据此方法获取本类的实例
 extern "C" 
 { 
-    DLL_EXPORT RiskDll * getInstance() ; 
+	KERNELPUB_EXPORT RiskDll * getInstance() ;
 }
 #endif // !defined(AFX_RISKDLL_H__82682589_B43E_4DCC_B644_EC0A4A5D19DB__INCLUDED_)

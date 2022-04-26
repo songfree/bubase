@@ -20,6 +20,7 @@ CResource::CResource()
 	g_nHeartRun = 5;
 	g_nDisconnectTime = 60;
 	g_nPrintRSData = 0;
+	g_nCrcFlag = 0;
 }
 
 CResource::~CResource()
@@ -61,7 +62,12 @@ bool CResource::Init(const char *confile)
 		g_sLogFilePath="";
 	}
 	g_pLog.SetLogPara(g_nLoglevel,g_sLogFilePath.c_str(),g_sLogFileName.c_str());
-	
+
+    if (g_pXml.GetNodeValueByPath("package/head/public/CRC", false, g_nCrcFlag) == NULL)
+    {
+		sprintf(m_sErrMsg, "配置文件错,无[package/head/public/CRC]节点");
+        g_nCrcFlag = 0;
+    }
 
 	if (g_pXml.GetNodeValueByPath("package/head/public/logtrans",false,g_nPrintRSData) == NULL)
 	{

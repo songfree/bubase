@@ -21,7 +21,7 @@ CDrebMsgThread::~CDrebMsgThread()
 {
 	m_pLog = NULL;
 }
-bool CDrebMsgThread::Init(CBF_DrebServer   *bus,CBF_DrebResource *res)
+bool CDrebMsgThread::Init(CIBF_DrebServer * bus,CBF_DrebResource *res)
 {
 	m_pDrebApi = bus;
 	m_pRes = res;
@@ -209,13 +209,14 @@ void CDrebMsgThread::OnMsgConnectBack(S_BPC_RSMSG &rcvdata)
 void CDrebMsgThread::OnMsgDrebAns(S_BPC_RSMSG &rcvdata)
 {
 	//应答数据
-#ifdef _ENGLISH_
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"Recv DREB RSP");
-#else
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"收到DREB的应答响应");
-#endif
+
 	if (rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo == APP_QUERY_HOST)
 	{
+#ifdef _ENGLISH_
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "Recv DREB RSP");
+#else
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "收到DREB的应答响应");
+#endif
 		OnQueryArbAns(rcvdata);
 		return;
 	}

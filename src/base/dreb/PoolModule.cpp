@@ -431,6 +431,7 @@ void CPoolModule::OnPing(int conindex)
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"分配内存空间出错");
 		return ;
 	}
+	bzero(&(recvmessage->message.head), sizeof(DREB_HEAD));
 	recvmessage->msghead.msgtype=MSG_PING;
 	recvmessage->msghead.index=conindex;
 	recvmessage->msghead.connecttime=m_pSocketMgr->at(conindex)->m_nConntime;
@@ -479,6 +480,7 @@ void CPoolModule::OnClose(int conindex,const char *msg,const char *filename,int 
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"分配内存空间出错");
 		return ;
 	}
+	bzero(&(recvmessage->message.head), sizeof(DREB_HEAD));
 	recvmessage->msghead.index=conindex;
 	recvmessage->msghead.msgtype=MSG_CLOSE;
 	recvmessage->msghead.socket=m_pSocketMgr->at(conindex)->m_sock;
@@ -522,6 +524,7 @@ void CPoolModule::OnConnected(int conindex)
 			m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"分配内存空间出错");
 			return ;
 		}
+		bzero(&(recvmessage->message.head), sizeof(DREB_HEAD));
 		recvmessage->msghead.msgtype = MSG_CONNECT;
 		recvmessage->msghead.index=conindex;
 		recvmessage->msghead.connecttime= m_pSocketMgr->at(conindex)->m_nConntime;
@@ -718,6 +721,7 @@ void CPoolModule::OnRecv(int conindex)
 		recvmessage->msghead.msgtype = MSG_READ;
 		recvmessage->msghead.socket = m_pSocketMgr->at(conindex)->m_sock;
 		recvmessage->msghead.sockettype = m_pSocketMgr->at(conindex)->m_nType;
+		m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "OnMsgProc MSG_READ cCmd[%s]", GetDrebCmdType(recvmessage->message.head.cCmd).c_str());
 		OnMsgProc(recvmessage);
 //		m_pRes->LogTime();
 		m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"处理完一条数据 缓冲数据长度[%d]",m_pSocketMgr->at(conindex)->m_nRcvBufLen);

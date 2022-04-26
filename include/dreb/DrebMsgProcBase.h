@@ -8,7 +8,8 @@
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
-#include "BF_DrebServer.h"
+#include "IBF_DrebServer.h"
+#include "BF_DrebResource.h"
 
 //此为DREBAPI使用的一个例子，可继承来实现
 //此线程从api队列里取数据进行处理
@@ -59,13 +60,13 @@ public:
 	// 参数  : CBF_DrebServer   *bus
 	// 参数  : CBF_DrebResource *res
 	// 描述  : 处理线程初始化
-	virtual  bool Init(CBF_DrebServer   *bus,CBF_DrebResource *res)
+	virtual  bool Init(CIBF_DrebServer* bus,CBF_DrebResource *res)
 	{
 		m_pDrebApi = bus;
 		m_pRes = res;
 		return true;
 	}
-	CBF_DrebServer   *m_pDrebApi;//api实例
+	CIBF_DrebServer * m_pDrebApi;//api实例
 	CBF_DrebResource *m_pRes;    //配置项
 
 	S_BPC_RSMSG      m_rMsgData;
@@ -151,6 +152,58 @@ public:
 			return "";
 		}
 	}
+
+
+    // 函数名: ProcessDrebData
+    // 编程  : 王明松 2015-4-23 15:53:34
+    // 返回  : virtual void 
+    // 参数  : S_BPC_RSMSG &rcvdata
+    // 描述  : 处理从总线接收过来的数据	 如果用spi回调，则这里就是回调的入口，api收到数据后会调用此接口
+    virtual void ProcessDrebData(S_BPC_RSMSG& rcvdata)
+    {
+        if (rcvdata.sMsgBuf->sDBHead.cZip != 0)
+        {
+            if (!m_pDrebApi->UnzipBuf(*rcvdata.sMsgBuf))
+            {
+                sprintf(rcvdata.sMsgBuf->sBuffer, "数据解压缩出错");
+                rcvdata.sMsgBuf->sDBHead.nLen = strlen(rcvdata.sMsgBuf->sBuffer);
+                rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_BPU_MONITORDATA;
+                rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
+                rcvdata.sMsgBuf->sDBHead.cZip = 0;
+                m_pDrebApi->SendMsg(rcvdata);
+                return;
+            }
+        }
+        switch (rcvdata.sMsgBuf->sBpcHead.cMsgType)
+        {
+        case MSG_GETBPCNEXT://在bpc上取后续包
+            OnGetBpcNextPack(rcvdata);
+            break;
+        case MSG_GETNEXT://在BPU上取后续包，要发给BPU处理
+            OnGetBpuNextPack(rcvdata);
+            break;
+        case MSG_REQ://DREB上收到的请求
+            OnMsgRequest(rcvdata);
+            break;
+        case MSG_MONITOR_SAP://DREB上收到的监控指令
+            OnMsgMonitor(rcvdata);
+            break;
+        case MSG_CONNECTDREB://DREB返回连接成功，可以在这里进行注册交易等
+            OnMsgConnectBack(rcvdata);
+            break;
+        case MSG_DREBANS://DREB返回外调等的应答
+            OnMsgDrebAns(rcvdata);
+            break;
+        case MSG_BPCMONITOR://主动上报监控信息
+            OnMsgReportBpc(rcvdata);
+            break;
+        default:
+            m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+            break;
+        }
+        return;
+    }
 protected:
 	bool  m_bIsRunning;
 
@@ -178,56 +231,7 @@ protected:
 
 	}
 
-	// 函数名: ProcessDrebData
-	// 编程  : 王明松 2015-4-23 15:53:34
-	// 返回  : virtual void 
-	// 参数  : S_BPC_RSMSG &rcvdata
-	// 描述  : 处理从总线接收过来的数据
-	virtual void ProcessDrebData(S_BPC_RSMSG &rcvdata)
-	{
-	    if (rcvdata.sMsgBuf->sDBHead.cZip != 0)
-		{
-			if (!m_pDrebApi->UnzipBuf(*rcvdata.sMsgBuf))
-			{
-				sprintf(rcvdata.sMsgBuf->sBuffer,"数据解压缩出错");
-				rcvdata.sMsgBuf->sDBHead.nLen = strlen(rcvdata.sMsgBuf->sBuffer);
-				rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_BPU_MONITORDATA;
-				rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
-				rcvdata.sMsgBuf->sDBHead.cZip = 0;
-				m_pDrebApi->SendMsg(rcvdata);
-				return ;
-			}
-		}
-		switch (rcvdata.sMsgBuf->sBpcHead.cMsgType)
-		{
-			case MSG_GETBPCNEXT://在bpc上取后续包
-				OnGetBpcNextPack(rcvdata);
-				break;
-			case MSG_GETNEXT://在BPU上取后续包，要发给BPU处理
-				OnGetBpuNextPack(rcvdata);
-				break;
-			case MSG_REQ://DREB上收到的请求
-				OnMsgRequest(rcvdata);
-				break;
-			case MSG_MONITOR_SAP://DREB上收到的监控指令
-				OnMsgMonitor(rcvdata);
-				break;
-			case MSG_CONNECTDREB://DREB返回连接成功，可以在这里进行注册交易等
-				OnMsgConnectBack(rcvdata);
-				break;
-			case MSG_DREBANS://DREB返回外调等的应答
-				OnMsgDrebAns(rcvdata);
-				break;	
-			case MSG_BPCMONITOR://主动上报监控信息
-				OnMsgReportBpc(rcvdata);
-				break;	
-			default:
-				m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
-				rcvdata.sMsgBuf = NULL;
-				break;
-		}
-		return;
-	}
+	
 
 	// 函数名: OnGetBpcNextPack
 	// 编程  : 王明松 2015-4-23 15:53:52

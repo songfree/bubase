@@ -285,10 +285,10 @@ bool CTradeMain::Init(const char *confile)
 	{
 #ifdef _ENGLISH_
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"open exch library [%s] error",m_sExchDll.exchdllname.c_str());
-		printf("open exch library[%s] error\n",m_sInitDll.initdllname.c_str());
+		printf("open exch library[%s] error\n", m_sExchDll.exchdllname.c_str());
 #else
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"打开交易所动态库[%s]失败",m_sExchDll.exchdllname.c_str());
-		printf("打开交易所动态库[%s]失败\n",m_sInitDll.initdllname.c_str());
+		printf("打开交易所动态库[%s]失败\n", m_sExchDll.exchdllname.c_str());
 #endif
 		return false;
 	}
@@ -455,7 +455,7 @@ bool CTradeMain::Init(const char *confile)
 
 	m_bIsInit = true;
 	m_pRes.g_nStatus = 1;
-	
+	m_pRpcData.m_pMemPool = m_pListenThread.m_pMemPool;
 	return true;
 }
 
@@ -674,7 +674,7 @@ void CTradeMain::Monitor()
 	}
 #endif
  	//更新消息头，将过期的删除
-
+	m_pRpcData.Delete();//删除过期的RPC数据，内存在此释放
 
 	//打印队列数目
 	
@@ -841,10 +841,48 @@ int CTradeMain::PushRcvQueue(S_TRADE_DATA &data)
 //请求时 b_Cinfo.b_cIndex 保存线程的ID，应答返回时根据此ID放到应答队列中
 int CTradeMain::PushAnsQueue(S_TRADE_DATA &data)
 {
-	if (data.pData == NULL)
+    if (data.pData == NULL)
+    {
+        return -1;
+    }
+	printf("dreb ans rpc_table size[%d] rpc_id[%d]\n", m_pRpcData.Size(), data.pData->sDBHead.s_Sinfo.s_nSerial);
+
+	S_RPC_DATA rpcdata;
+	if (m_pRpcData.Select(data.pData->sDBHead.s_Sinfo.s_nSerial, rpcdata))
 	{
-		return -1;
+		 //是rpc调用
+		if (m_pRpcData.Delete(data.pData->sDBHead.s_Sinfo.s_nSerial)<0)
+		{
+			printf("rpc_table delete error size[%d] \n", m_pRpcData.Size());
+		}
+		else
+		{
+			printf("rpc_table delete sucess size[%d] \n", m_pRpcData.Size());
+		}
+		try
+		{
+			(rpcdata.func)(rpcdata.data, data);
+		}
+		catch (...)
+		{
+			m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "回调出错 requestid[%d]", data.pData->sDBHead.s_Sinfo.s_nSerial);
+		}
+		
+		if (rpcdata.data.pData != NULL) 
+		{
+			printf("PoolFree \n");
+            m_pListenThread.m_pMemPool->PoolFree(rpcdata.data.pData);
+			rpcdata.data.pData = NULL;
+		}
+		return 0;
+
 	}
+	else
+	{
+		printf("rpc_id[%d] not found\n", data.pData->sDBHead.s_Sinfo.s_nSerial);
+		m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "请求的流水[%d]不是rpc", data.pData->sDBHead.s_Sinfo.s_nSerial);
+	}
+	
 	if (data.pData->sDBHead.b_Cinfo.b_cIndex <0 || data.pData->sDBHead.b_Cinfo.b_cIndex > m_pRes.g_nProcTheadNum-1)
 	{
 #ifdef _ENGLISH_
@@ -856,6 +894,7 @@ int CTradeMain::PushAnsQueue(S_TRADE_DATA &data)
 		data.pData = NULL;
 		return -1;
 	}
+	//同步请求应答，请求线程在队列里面等待应答，这里放入后请求线程GetAnsData即可取到应答
 	m_lProcthread[data.pData->sDBHead.b_Cinfo.b_cIndex]->m_pAnsQueue.PushData(data);
 	return 0;	
 }
@@ -889,6 +928,7 @@ int CTradeMain::proctimer(int id)
 	if (id == 1000) //使用1000ID来定时保存本地报单号等数据
 	{
 		g_pPubData.WriteToFile(m_sSerialDataFile);
+		
 		return 0;
 	}
 	S_TRADE_DATA data;
@@ -928,4 +968,87 @@ int CTradeMain::PoolMalloc(S_TRADE_DATA &data)
 		return -1;
 	}
 	return 0;
+}
+// 函数名: AnsData
+   // 编程  : 王明松 2017-7-20 9:28:49
+   // 返回  : virtual int 
+   // 参数  : S_TRADE_DATA &data  src=1时data.pData->sBpcHead.nIndex为socket连接序号
+   // 参数  : char nextflag  0无后续包  1 有后续包  10最后一个数据包
+   // 描述  : 应答数据  数据格式为总线头+数据  src=0表示总线  src=1表示socket直连
+int CTradeMain::AnsData(S_TRADE_DATA& data, char nextflag)
+{
+	
+    S_BPC_RSMSG msg;
+    msg.sMsgBuf = data.pData;
+	data.pData = NULL;
+    if (msg.sMsgBuf == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "AnsData 发送数据 数据指针为NULL");
+        return -1;
+    }
+	msg.sMsgBuf->sDBHead.cNextFlag = nextflag;
+	msg.sMsgBuf->sDBHead.cRaflag = 1;
+    return m_pDrebApi.SendMsg(msg);
+
+}
+
+
+// 函数名: RpcRequest
+// 编程  : 王明松 2017-7-20 9:28:49
+// 返回  : virtual int 
+// 参数  : S_TRADE_DATA &data  src=1时data.pData->sBpcHead.nIndex为socket连接序号
+// 参数  : char nextflag  0无后续包  1 有后续包  10最后一个数据包
+// 描述  : 应答数据  数据格式为总线头+数据  src=0表示总线  src=1表示socket直连
+int CTradeMain::RpcRequest(S_TRADE_DATA& data, int requestid, std::function<int(S_TRADE_DATA& reqdata, S_TRADE_DATA& ansdata)> func)
+{
+	//记录requestid及请求报文，在应答回来的时候，如果是	RpcRequest，直接将报文放入接收队列，由处理线程取出再根据requestid得到原请求报文，再调用回调函数处理
+    if (data.pData == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "RpcRequest 发送数据 数据指针为NULL");
+        return -1;
+    }
+	data.pData->sDBHead.cCmd = CMD_DPCALL;
+	data.pData->sDBHead.cRaflag = 0;
+	data.pData->sDBHead.s_Sinfo.s_nSerial = requestid;
+	data.pData->sBpcHead.nIndex = 100;	//由api选择哪个总线连接发送
+	S_RPC_DATA rpcdata;
+	rpcdata.request_id = requestid;
+	rpcdata.rpctime= time(NULL);
+	rpcdata.func = func;
+	//分配内存
+	rpcdata.data.pData = (PBPCCOMMSTRU)m_pListenThread.m_pMemPool->PoolMalloc();
+    if (rpcdata.data.pData == NULL)
+    {
+#ifdef _ENGLISH_
+        m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "malloc msg data error");
+#else
+        m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "分配内存出错");
+#endif
+        return -1;
+    }
+	//复制原请求报文
+    memcpy(rpcdata.data.pData,data.pData,sizeof(BPCCOMMSTRU));
+	if (m_pRpcData.Insert(rpcdata) < 0)
+	{
+		PoolFree(rpcdata.data);
+		m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "RpcRequest requestid[%d]重复", rpcdata.request_id);
+		return -1;
+	}
+	printf("rpc_table size[%d] rpc_id[%d]\n", m_pRpcData.Size(), rpcdata.request_id);
+    S_BPC_RSMSG msg;
+    msg.sMsgBuf = data.pData;
+    data.pData = NULL;
+    return m_pDrebApi.SendMsg(msg);
+
+}
+
+//取递增的流水号
+int   CTradeMain::GetSerial()
+{
+	return m_pRes.GetSerial();
+}
+//取递增的本地号
+UINT64_  CTradeMain::GetLocalNo()
+{
+	return g_pPubData.GetLocalSerial();
 }

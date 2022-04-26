@@ -24,6 +24,7 @@ CBF_DrebServer::CBF_DrebServer()
 	
 	bzero(&m_sHostInfo,sizeof(m_sHostInfo));
 	m_nCurIndex = 0;
+	m_spi = NULL;
 }
 
 CBF_DrebServer::~CBF_DrebServer()
@@ -41,13 +42,14 @@ void CBF_DrebServer::PoolFree(void *ppoint)
 	m_pMemPool.PoolFree(ppoint);
 }
 
-bool CBF_DrebServer::Init(CBF_DrebResource *res)
+bool CBF_DrebServer::Init(CBF_DrebResource *res, CDrebMsgProcBase* spi)
 {
 	if (m_bIsInit)
 	{
 		sprintf(m_errMsg,"已经初始化过");
 		return false;
 	}
+	
 	m_pRes = res;
 	m_pLog.SetMaxLogSize(m_pRes->g_nMaxLogSize);
 	m_pLog.SetLogPara(m_pRes->g_nLoglevel,m_pRes->g_sLogFilePath.c_str(),m_pRes->g_sLogFileName.c_str());
@@ -88,7 +90,7 @@ bool CBF_DrebServer::Init(CBF_DrebResource *res)
 		sprintf(m_errMsg,"启动日志线程失败");
 		return false;
 	}
-
+	m_spi = spi;
 	m_bIsInit = true;
 	return true;
 }
@@ -446,6 +448,8 @@ bool CBF_DrebServer::ReMallocData(int index,S_BPC_RSMSG *data)
 #endif
 		return false;
 	}
+	bzero(&(data->sMsgBuf->sDBHead), sizeof(DREB_HEAD));
+	bzero(&(data->sMsgBuf->sBpcHead), sizeof(S_BPC_HEAD));
 	data->sMsgBuf->sBpcHead.nConnectTime= m_pSockMgr.at(index)->m_nConntime;
 	data->sMsgBuf->sBpcHead.nIndex = index;
 	data->sMsgBuf->sBpcHead.nRtime = time(NULL);
@@ -694,7 +698,14 @@ void CBF_DrebServer::ProcessDreb(S_BPC_RSMSG &rcvdata)
 			rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN+rcvdata.sMsgBuf->sDBHead.nLen;
 			rcvdata.sMsgBuf->sBpcHead.cMsgType = MSG_GETNEXT;
 			rcvdata.nRtime = time(NULL);
-			m_qRcvQueue.PushData(rcvdata);
+			if (m_spi != NULL) //有设定回调
+			{
+				m_spi->ProcessDrebData(rcvdata);
+			}
+			else //放入队列
+			{
+				m_qRcvQueue.PushData(rcvdata);
+			}
 			return;
 		}
 		switch (rcvdata.sMsgBuf->sDBHead.cCmd)
@@ -714,19 +725,40 @@ void CBF_DrebServer::ProcessDreb(S_BPC_RSMSG &rcvdata)
 				rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN+rcvdata.sMsgBuf->sDBHead.nLen;
 				rcvdata.sMsgBuf->sBpcHead.cMsgType = MSG_REQ;
 				rcvdata.nRtime = time(NULL);
-				m_qRcvQueue.PushData(rcvdata);
+                if (m_spi != NULL) //有设定回调
+                {
+                    m_spi->ProcessDrebData(rcvdata);
+                }
+                else //放入队列
+                {
+                    m_qRcvQueue.PushData(rcvdata);
+                }
 				break;	
 			case CMD_MONITOR_BPC:
 				rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN+rcvdata.sMsgBuf->sDBHead.nLen;
 				rcvdata.sMsgBuf->sBpcHead.cMsgType = MSG_MONITOR_SAP;
 				rcvdata.nRtime = time(NULL);
-				m_qRcvQueue.PushData(rcvdata);
+                if (m_spi != NULL) //有设定回调
+                {
+                    m_spi->ProcessDrebData(rcvdata);
+                }
+                else //放入队列
+                {
+                    m_qRcvQueue.PushData(rcvdata);
+                }
 				break;	
 			default:
 				rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN+rcvdata.sMsgBuf->sDBHead.nLen;
 				rcvdata.sMsgBuf->sBpcHead.cMsgType = MSG_REQ;
 				rcvdata.nRtime = time(NULL);
-				m_qRcvQueue.PushData(rcvdata);
+                if (m_spi != NULL) //有设定回调
+                {
+                    m_spi->ProcessDrebData(rcvdata);
+                }
+                else //放入队列
+                {
+                    m_qRcvQueue.PushData(rcvdata);
+                }
 		}
 		return;
 		
@@ -762,7 +794,14 @@ void CBF_DrebServer::ProcessDreb(S_BPC_RSMSG &rcvdata)
 				rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN+rcvdata.sMsgBuf->sDBHead.nLen;
 				rcvdata.sMsgBuf->sBpcHead.cMsgType = MSG_CONNECTDREB;
 				rcvdata.nRtime = time(NULL);
-				m_qRcvQueue.PushData(rcvdata);
+                if (m_spi != NULL) //有设定回调
+                {
+                    m_spi->ProcessDrebData(rcvdata);
+                }
+                else //放入队列
+                {
+                    m_qRcvQueue.PushData(rcvdata);
+                }
 				break;
 			case CMD_DEL_SVR:
 				m_pMemPool.PoolFree(rcvdata.sMsgBuf);
@@ -782,7 +821,14 @@ void CBF_DrebServer::ProcessDreb(S_BPC_RSMSG &rcvdata)
 				rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN+rcvdata.sMsgBuf->sDBHead.nLen;
 				rcvdata.sMsgBuf->sBpcHead.cMsgType = MSG_DREBANS;
 				rcvdata.nRtime = time(NULL);
-				m_qRcvQueue.PushData(rcvdata);
+                if (m_spi != NULL) //有设定回调
+                {
+                    m_spi->ProcessDrebData(rcvdata);
+                }
+                else //放入队列
+                {
+                    m_qRcvQueue.PushData(rcvdata);
+                }
 				break;	
 			default:
 				m_pMemPool.PoolFree(rcvdata.sMsgBuf);
@@ -871,6 +917,8 @@ void CBF_DrebServer::OnMonitor()
 		m_pLog.LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"分配消息空间出错");
 		return ;
 	}
+    bzero(&(mdata.sMsgBuf->sDBHead), sizeof(DREB_HEAD));
+    bzero(&(mdata.sMsgBuf->sBpcHead), sizeof(S_BPC_HEAD));
 	int len = DREBDATASIZE;
 	if (!pXml.ToBuffer(mdata.sMsgBuf->sBuffer,len))
 	{

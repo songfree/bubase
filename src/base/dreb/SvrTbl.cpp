@@ -33,9 +33,9 @@ bool CSvrTbl::Insert(S_SVR_ROUTE svr)
 {
 	int id;
 	//通过主键查找，不存在则增加
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Find(id,svr.nSvrMainId,svr.cSvrPrivateId))
 	{
-//		CBF_PMutex pp(&m_mutex);
 		id = m_table.Add(svr);//增加到表
 		m_pkey.Add(id,svr.nSvrMainId,svr.cSvrPrivateId);//增加主键
 		m_index_node.Add(id,svr.nSvrMainId);//增加索引
@@ -44,9 +44,10 @@ bool CSvrTbl::Insert(S_SVR_ROUTE svr)
 	return false;
 }
 
-bool CSvrTbl::SelectBySvr(int svrid,vector<S_SVR_ROUTE> &svr)
+bool CSvrTbl::SelectBySvr(int svrid, std::vector<S_SVR_ROUTE> &svr)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_node.Select(iset,svrid))
 	{
 		return false;
@@ -61,9 +62,10 @@ bool CSvrTbl::SelectBySvr(int svrid,vector<S_SVR_ROUTE> &svr)
 	}
 	return true;
 }
-bool CSvrTbl::SelectBySvr(unsigned int svrid,vector<S_SVR_ROUTE *> &svr)
+bool CSvrTbl::SelectBySvr(unsigned int svrid, std::vector<S_SVR_ROUTE *> &svr)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_node.Select(iset,svrid))
 	{
 		return false;
@@ -84,6 +86,7 @@ bool CSvrTbl::SelectBySvr(unsigned int svrid,vector<S_SVR_ROUTE *> &svr)
 bool CSvrTbl::SelectPrivateid(int svrid, int privateid, S_SVR_ROUTE &svr)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,svrid,privateid))
 	{
 		return false;
@@ -96,6 +99,7 @@ bool CSvrTbl::SelectPrivateid(int svrid, int privateid, S_SVR_ROUTE &svr)
 S_SVR_ROUTE * CSvrTbl::SelectPrivateid(unsigned int svrid, int privateid)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,svrid,privateid))
 	{
 		return NULL;
@@ -111,13 +115,13 @@ S_SVR_ROUTE * CSvrTbl::SelectPrivateid(unsigned int svrid, int privateid)
 bool CSvrTbl::Delete(int svrid, int privateid)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,svrid,privateid))
 	{
 		return false;
 	}
 	int id;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	m_pkey.Delete(iset,svrid,privateid);
 	m_index_node.Delete(iset,svrid);
 	m_table.Delete(id);
@@ -127,13 +131,13 @@ bool CSvrTbl::Delete(int svrid, int privateid)
 bool CSvrTbl::Update(S_SVR_ROUTE svr)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,svr.nSvrMainId,svr.cSvrPrivateId))
 	{
 		return false;
 	}
 	int id=0;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 
 	m_table.m_table[id].nIndex = svr.nIndex;
 	m_table.m_table[id].bIsClose = svr.bIsClose;
@@ -149,13 +153,13 @@ bool CSvrTbl::Update(S_SVR_ROUTE svr)
 bool CSvrTbl::OnClose(int svrid, int privateid)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,svrid,privateid))
 	{
 		return false;
 	}
 	int id;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	m_table.m_table[id].bIsClose = true;
 	m_table.m_table[id].nIndex = 0;
 	m_table.m_table[id].nCloseTime = time(NULL);
@@ -165,13 +169,13 @@ bool CSvrTbl::OnClose(int svrid, int privateid)
 bool CSvrTbl::UnRegister(int svrid, int privateid)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,svrid,privateid))
 	{
 		return false;
 	}
 	int id=0;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	if (m_table.m_table[id].pSendQueue != NULL)
 	{
 		delete m_table.m_table[id].pSendQueue;
@@ -182,12 +186,19 @@ bool CSvrTbl::UnRegister(int svrid, int privateid)
 	m_table.Delete(id);
 	return true;
 }
-bool CSvrTbl::First(S_SVR_ROUTE &svr)
+bool CSvrTbl::Select(std::vector<S_SVR_ROUTE*>& svr)
 {
-	return m_table.First(svr);
-}
-
-bool CSvrTbl::Next(S_SVR_ROUTE &svr)
-{
-	return m_table.Next(svr);
+	int id;
+	CBF_PMutex pp(&m_mutex);
+	bool bret = m_pkey.First(id);
+	if (!bret)
+	{
+		return false;
+	}
+	while (bret)
+	{
+		svr.push_back(&m_table.m_table[id]);
+		bret = m_pkey.Next(id);
+	}
+	return true;
 }

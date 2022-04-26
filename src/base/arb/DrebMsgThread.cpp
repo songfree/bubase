@@ -19,7 +19,7 @@ CDrebMsgThread::~CDrebMsgThread()
 {
 
 }
-bool CDrebMsgThread::Init(CBF_DrebServer   *bus,CBF_DrebResource *res)
+bool CDrebMsgThread::Init(CIBF_DrebServer* bus,CBF_DrebResource *res)
 {
 	m_pDrebApi = bus;
 	m_pRes = res;

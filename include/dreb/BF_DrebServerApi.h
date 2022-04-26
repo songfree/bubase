@@ -14,6 +14,7 @@
 #include "IErrLog.h"
 
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -122,8 +123,9 @@ public:
 	// 编程  : 王明松 2015-7-21 9:55:28
 	// 返回  : bool 
 	// 参数  : const char *conxmlfile
+	// 参数  :,CDrebMsgProcBase* spi=NULL   当有回调时，api线程直接回调，否则放入队列
 	// 描述  : 初始化API
-	bool Init(const char *conxmlfile);
+	bool Init(const char *conxmlfile, CDrebMsgProcBase* spi=NULL);
 
 	CBF_DrebServerApi();
 	virtual ~CBF_DrebServerApi();
@@ -147,6 +149,7 @@ protected:
 	bool MonitorInfo(S_BPC_RSMSG &rcvdata);
 
 	CBF_SimpleLog      log;
+	
 };
 
 

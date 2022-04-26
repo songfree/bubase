@@ -40,11 +40,9 @@
 class CRouteTbl  
 {
 public:
-// 	bool FirstById(S_ROUTE_TBL &dreb);
-// 	bool NextById(S_ROUTE_TBL &dreb);
 
-	S_DREB_ROUTE * FirstById();
-	S_DREB_ROUTE * NextById();
+	//获取所有的路由信息按id pid排序
+	bool  SelectById(std::vector<S_DREB_ROUTE*>& rtlist);
 
 	// 函数名: GetRouteByIndex
 	// 编程  : 王明松 2013-9-17 18:47:14
@@ -52,8 +50,7 @@ public:
 	// 参数  : int index
 	// 参数  : vector<S_ROUTE_TBL> &rtlist
 	// 描述  : 通过连接索引获取路由(即除连接index外的路由都取出来)
-//	bool GetRouteByIndex(int index,vector<S_DREB_ROUTE> &rtlist);
-	bool GetRouteByIndex(int index,vector<S_DREB_ROUTE *> &rtlist);
+	bool GetRouteByIndex(int index, std::vector<S_DREB_ROUTE *> &rtlist);
 
 	// 函数名: UpdateRoute
 	// 编程  : 王明松 2013-9-17 18:47:33
@@ -62,30 +59,6 @@ public:
 	// 描述  : 更新路由
 	bool UpdateRoute(S_DREB_ROUTE rt);
 	
-	// 函数名: Next
-	// 编程  : 王明松 2009-10-29 17:08:54
-	// 返回  : bool 
-	// 参数  : S_ROUTE_TBL &dreb
-	// 描述  : 下一条记录
-	bool Next(S_DREB_ROUTE &dreb);
-	
-	// 函数名: First
-	// 编程  : 王明松 2009-10-29 17:08:46
-	// 返回  : bool 
-	// 参数  : S_ROUTE_TBL &dreb
-	// 描述  : 第一条记录
-	bool First(S_DREB_ROUTE &dreb);
-
-	// 函数名: SelectByPrivateNode
-	// 编程  : 王明松 2009-10-29 10:26:04
-	// 返回  : bool 
-	// 参数  : int nodeid
-	// 参数  : int privateid
-	// 参数  : vector<S_ROUTE_TBL> &rt
-	// 描述  : 根据数据总线节点私有ID查找路由
-//	bool SelectByPrivateNode(int nodeid,int privateid,vector<S_DREB_ROUTE > &rt);
-
-
 
 	// 函数名: SelectByPrivateNode
 	// 编程  : 王明松 2016-1-13 9:24:13
@@ -94,7 +67,7 @@ public:
 	// 参数  : int privateid
 	// 参数  : vector<S_ROUTE_TBL *> &rt  仅返回最小步进的路由，若有多个相同最小步进的，按带宽从小大到排序
 	// 描述  : 根据数据总线节点私有节点路由，若直接的断开则去路由表查找
-	bool SelectByPrivateNode(int nodeid,int privateid,vector<S_DREB_ROUTE *> &rt);
+	bool SelectByPrivateNode(int nodeid,int privateid, std::vector<S_DREB_ROUTE *> &rt);
 
 	// 函数名: SelectByIndex
 	// 编程  : 王明松 2009-10-28 16:29:15
@@ -102,8 +75,7 @@ public:
 	// 参数  : int index
 	// 参数  : vector<S_ROUTE_TBL> &rt
 	// 描述  : 根据连接查找路由
-//	bool SelectByIndex(int index,vector<S_ROUTE_TBL> &rt);
-	bool SelectByIndex(int index,vector<S_DREB_ROUTE *> &rt);
+	bool SelectByIndex(int index, std::vector<S_DREB_ROUTE *> &rt);
 
 	// 函数名: SelectByNode
 	// 编程  : 王明松 2009-10-28 16:28:52
@@ -111,9 +83,7 @@ public:
 	// 参数  : int nodeid
 	// 参数  : vector<S_ROUTE_TBL> &rt
 	// 描述  : 根据数据总线节点ID查找所有路由
-//	bool SelectByNode(int nodeid,vector<S_ROUTE_TBL> &rt);
-
-	bool SelectByNode(int nodeid,vector<S_DREB_ROUTE *> &rt);
+	bool SelectByNode(int nodeid, std::vector<S_DREB_ROUTE *> &rt);
 
 	// 函数名: DeleteByIndex
 	// 编程  : 王明松 2009-10-28 16:28:30
@@ -150,7 +120,7 @@ public:
 	CIErrlog *m_pLog;
 protected:
 	
-	CMemTable <S_DREB_ROUTE> m_table;        //数据总线节点内存表
+	CMemTableNew <S_DREB_ROUTE> m_table;        //数据总线节点内存表
 	
 	CIndexInt<1>             m_index_node;   //数据总线节点id索引
 	CIndexInt<4>             m_pkey;         //数据总线节点id+私有id+连接序号+步进，唯一索引
@@ -158,7 +128,7 @@ protected:
 	CIndexInt<2>             m_index_private;   //数据总线节点id+私有id索引
 	
 	
-//	CBF_Mutex m_mutex;
+	CBF_Mutex m_mutex;
 };
 
 

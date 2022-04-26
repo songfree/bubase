@@ -13,7 +13,7 @@
 #include "Xdp.h"
 #include "BF_Timer.h"
 #include "PoolData.h"
-
+#include "BF_DrebServer.h"
 
 class CDrebMsgThread : public CDrebMsgProcBase  
 {
@@ -84,7 +84,7 @@ public:
 	CIClientLink *m_pAnsProc;
 	
 
-	virtual  bool Init(CBF_DrebServer   *bus,CBF_DrebResource *res);
+	virtual  bool Init(CIBF_DrebServer* bus,CBF_DrebResource *res);
 
 	// 函数名: Start
 	// 编程  : 王明松 2015-4-23 15:52:29

@@ -31,10 +31,10 @@ CDrebTbl::~CDrebTbl()
 bool CDrebTbl::Insert(S_DREB_ROUTE dreb)
 {
 	int id;
+	CBF_PMutex pp(&m_mutex);
 	//通过主键查找，不存在则增加
 	if (!m_pkey.Find(id,dreb.nNodeId,dreb.cNodePrivateId))
 	{
-//		CBF_PMutex pp(&m_mutex);
 		id = m_table.Add(dreb);//增加到表
 		m_pkey.Add(id,dreb.nNodeId,dreb.cNodePrivateId);//增加主键
 		m_index_node.Add(id,dreb.nNodeId);//增加索引
@@ -44,9 +44,10 @@ bool CDrebTbl::Insert(S_DREB_ROUTE dreb)
 	return false;
 }
 
-bool CDrebTbl::SelectByNode(int nodeid, vector<S_DREB_ROUTE> &dreb)
+bool CDrebTbl::SelectByNode(int nodeid, std::vector<S_DREB_ROUTE> &dreb)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_node.Select(iset,nodeid))
 	{
 		return false;
@@ -62,9 +63,10 @@ bool CDrebTbl::SelectByNode(int nodeid, vector<S_DREB_ROUTE> &dreb)
 	return true;
 }
 
-bool CDrebTbl::SelectByNode(int nodeid, vector<S_DREB_ROUTE *> &dreb)
+bool CDrebTbl::SelectByNode(int nodeid, std::vector<S_DREB_ROUTE *> &dreb)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_node.Select(iset,nodeid))
 	{
 		return false;
@@ -112,6 +114,7 @@ bool CDrebTbl::SelectByNode(int nodeid, vector<S_DREB_ROUTE *> &dreb)
 bool CDrebTbl::SelectPrivateid(int nodeid, int privateid, S_DREB_ROUTE &dreb)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,nodeid,privateid))
 	{
 		return false;
@@ -124,6 +127,7 @@ bool CDrebTbl::SelectPrivateid(int nodeid, int privateid, S_DREB_ROUTE &dreb)
 S_DREB_ROUTE * CDrebTbl::SelectPrivateid(int nodeid, int privateid)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,nodeid,privateid))
 	{
 		return NULL;
@@ -135,13 +139,13 @@ S_DREB_ROUTE * CDrebTbl::SelectPrivateid(int nodeid, int privateid)
 bool CDrebTbl::Delete(int nodeid, int privateid)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,nodeid,privateid))
 	{
 		return false;
 	}
 	int id;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	m_pkey.Delete(iset,nodeid,privateid);
 	m_index_node.Delete(iset,nodeid);
 	m_index_index.Delete(iset,m_table.m_table[id].nIndex);
@@ -152,13 +156,13 @@ bool CDrebTbl::Delete(int nodeid, int privateid)
 bool CDrebTbl::Update(S_DREB_ROUTE dreb)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,dreb.nNodeId,dreb.cNodePrivateId))
 	{
 		return false;
 	}
 	int id;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	if (m_table.m_table[id].nStep >= dreb.nStep) //
 	{
 		m_table.m_table[id].nStep = dreb.nStep;
@@ -178,13 +182,13 @@ bool CDrebTbl::Update(S_DREB_ROUTE dreb)
 bool CDrebTbl::OnClose(int nodeid, int privateid)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_pkey.Select(iset,nodeid,privateid))
 	{
 		return false;
 	}
 	int id;
 	iset.First(id);
-//	CBF_PMutex pp(&m_mutex);
 	m_table.m_table[id].bIsClose = true;
 	m_table.m_table[id].nStep = 100;
 	m_table.m_table[id].nIndex = 0;
@@ -194,31 +198,14 @@ bool CDrebTbl::OnClose(int nodeid, int privateid)
 
 bool CDrebTbl::UnRegister(int nodeid, int privateid)
 {
+
 	return Delete(nodeid,privateid);
 }
 
-bool CDrebTbl::SelectByIndex(int index, S_DREB_ROUTE &dreb)
-{
-	CInt iset;
-	if (!m_index_index.Select(iset,index))
-	{
-		return false;
-	}
-	int id;
- 	bool bRet;
- 	bRet = iset.First(id);
-	//只会有一个
-// 	while (bRet)
-// 	{
-// 		dreb.push_back(m_table.m_table[id]);
-// 		bRet = iset.Next(id);
-// 	}
-	dreb = m_table.m_table[id];
-	return true;
-}
 S_DREB_ROUTE * CDrebTbl::SelectByIndex(int index)
 {
 	CInt iset;
+	CBF_PMutex pp(&m_mutex);
 	if (!m_index_index.Select(iset,index))
 	{
 		return NULL;
@@ -234,25 +221,39 @@ S_DREB_ROUTE * CDrebTbl::SelectByIndex(int index)
 	// 	}
 	return &(m_table.m_table[id]);
 }
-S_DREB_ROUTE * CDrebTbl::First()
+bool CDrebTbl::Select(std::vector<S_DREB_ROUTE*>& dreb)
 {
-	int id;
-	bool bRet = m_pkey.First(id);
-	if (!bRet)
+	CBF_PMutex pp(&m_mutex);
+	int rid;
+	bool bret = m_pkey.First(rid);
+	if (!bret)
 	{
-		return NULL;
+		return false;
 	}
-	
-	return &(m_table.m_table[id]);
+	while (bret)
+	{
+		dreb.push_back(&(m_table.m_table[rid]));
+		bret = m_pkey.Next(rid);
+	}
+	return true;
 }
-
-S_DREB_ROUTE * CDrebTbl::Next()
+bool CDrebTbl::SelectRouteByIndex(int index,std::vector<S_DREB_ROUTE*>& dreb)
 {
+    CBF_PMutex pp(&m_mutex);
 	int id;
-	bool bRet = m_pkey.Next(id);
-	if (!bRet)
+    bool bret = m_index_index.First(id);
+	if (!bret)
 	{
-		return NULL;
+		return false;
 	}
-	return &(m_table.m_table[id]);
+    while (bret)
+    {
+        //index不相同且连接正常的
+        if (m_table.m_table[id].nIndex != index && !m_table.m_table[id].bIsClose)
+        {
+			dreb.push_back(&(m_table.m_table[id]));
+        }
+        bret = m_index_index.Next(id);
+    }
+    return true;
 }

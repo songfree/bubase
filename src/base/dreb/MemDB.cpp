@@ -36,7 +36,6 @@ void CMemDB::SetPara(int svrtime, int servicetime)
 bool CMemDB::RegisterSvr(int svrid, int privateid, int index,CSendQueue **pque)
 {
 	S_SVR_ROUTE svr;
-//	CBF_PMutex pp(&m_mutex);
 	if (!m_svrTbl.SelectPrivateid(svrid,privateid,svr))
 	{
 		//新注册
@@ -88,14 +87,12 @@ bool CMemDB::RegisterSvr(int svrid, int privateid, int index,CSendQueue **pque)
 
 bool CMemDB::CloseSvr(int svrid, int privateid)
 {
-//	CBF_PMutex pp(&m_mutex);
 	//删除功能列表
 	return m_svrTbl.OnClose(svrid,privateid);
 }
 
 bool CMemDB::UnRegisterSvr(int svrid, int privateid)
 {
-//	CBF_PMutex pp(&m_mutex);
 	//删除功能列表
 	return m_svrTbl.UnRegister(svrid,privateid);
 }
@@ -106,7 +103,6 @@ bool CMemDB::SelectASvr(int svrid, S_SVR_ROUTE &svr)
 	vector<S_SVR_ROUTE> svrlist;
 	vector<int>s_list;
 	vector<int>c_list;
-//	CBF_PMutex pp(&m_mutex);
 	if (!m_svrTbl.SelectBySvr(svrid,svrlist))
 	{
 		return false;
@@ -174,7 +170,6 @@ bool CMemDB::SelectASvr(int svrid, S_SVR_ROUTE &svr)
 
 bool CMemDB::SelectSvr(int svrid, int privateid, S_SVR_ROUTE &svr)
 {
-//	CBF_PMutex pp(&m_mutex);
 	if (!m_svrTbl.SelectPrivateid(svrid,privateid,svr))
 	{
 		return false;
@@ -190,7 +185,6 @@ bool CMemDB::SelectSvr(int svrid, int privateid, S_SVR_ROUTE &svr)
 bool CMemDB::RegisterDreb(int nodeid, int privateid, int index,int bdrate, CSendQueue **psque)
 {
 	S_DREB_ROUTE dreb;
-//	CBF_PMutex pp(&m_mutex);
 	if (!m_drebTbl.SelectPrivateid(nodeid,privateid,dreb))
 	{
 		//新注册
@@ -239,23 +233,19 @@ bool CMemDB::RegisterDreb(int nodeid, int privateid, int index,int bdrate, CSend
 
 bool CMemDB::CloseDreb(int nodeid, int privateid, int index)
 {
-//	CBF_PMutex pp(&m_mutex);
 	m_routeTbl.DeleteByIndex(index);
 	return m_drebTbl.OnClose(nodeid,privateid);
 }
 
 bool CMemDB::UnRegisterDreb(int nodeid, int privateid, int index)
 {
-//	CBF_PMutex pp(&m_mutex);
 	m_routeTbl.DeleteByIndex(index);
 	return m_drebTbl.UnRegister(nodeid,privateid);
 }
 
 bool CMemDB::AddRoute(S_DREB_ROUTE rt)
 {
-	S_DREB_ROUTE dreb;
-//	CBF_PMutex pp(&m_mutex);
-	if (!m_drebTbl.SelectByIndex(rt.nIndex,dreb))
+	if (NULL == m_drebTbl.SelectByIndex(rt.nIndex))
 	{
 		return false;
 	}
@@ -265,13 +255,13 @@ bool CMemDB::AddRoute(S_DREB_ROUTE rt)
 
 bool CMemDB::SelectRoute(int nodeid, S_DREB_ROUTE &dreb)
 {
-	vector<S_DREB_ROUTE *>dl;
+	std::vector<S_DREB_ROUTE *>dl;
 	//先从连接的通讯平台查找
 	if (m_drebTbl.SelectByNode(nodeid,dl))
 	{
 		return GetARoute(dl,dreb);
 	}
-	vector<S_DREB_ROUTE *>rt;
+	std::vector<S_DREB_ROUTE *>rt;
 	if (!m_routeTbl.SelectByNode(nodeid,rt))
 	{
 		return false;
@@ -303,7 +293,7 @@ bool CMemDB::SelectRoute(int nodeid, int privateid, S_DREB_ROUTE &dreb)
 		m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"指定的总线节点[%d %d] 已断开 nStep[%d] 尝试从路由表里查找路由",nodeid,privateid,dr->nStep);
 		//尝试从路由表里找找看吧
 	}
-	vector<S_DREB_ROUTE *>rt;
+	std::vector<S_DREB_ROUTE *>rt;
 	if (!m_routeTbl.SelectByPrivateNode(nodeid,privateid,rt))
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"指定的总线节点[%d %d] 在总线路由表里查找不存在",nodeid,privateid);
@@ -325,7 +315,7 @@ bool CMemDB::SelectRoute(int nodeid, int privateid, S_DREB_ROUTE &dreb)
 	return GetARoute(rt,dreb);
 }
 
-bool CMemDB::GetARoute(vector<S_DREB_ROUTE *> rt, S_DREB_ROUTE &dreb)
+bool CMemDB::GetARoute(std::vector<S_DREB_ROUTE *> rt, S_DREB_ROUTE &dreb)
 {
 	int i;
 	//因为已按步进和带宽排序，所以只需要比较带宽即可
@@ -392,104 +382,7 @@ bool CMemDB::GetARoute(vector<S_DREB_ROUTE *> rt, S_DREB_ROUTE &dreb)
 	}
 }
 
-// bool CMemDB::GetARoute(vector<S_SERVICE_QUERY_RESULT> rt,S_DREB_ROUTE &dreb,S_SVR_ROUTE &svr)
-// {
-// 	if (rt.size()<1)
-// 	{
-// 		return false;
-// 	}
-// 	if (rt.size() == 1) //结果只有一个
-// 	{
-// 		dreb.bIsClose = rt[0].bIsClose;
-// 		dreb.cNodePrivateId = rt[0].cNodePrivateId;
-// 		dreb.nbandwidth = rt[0].nbandwidth;
-// 		dreb.nCloseTime = rt[0].nCloseTime;
-// 		dreb.nIndex = rt[0].nIndex;
-// 		dreb.nNodeId = rt[0].nNodeId;
-// 		dreb.nStep = rt[0].nStep;
-// 		dreb.pSendQueue = rt[0].pSendQueue;
-// 		svr.nSvrMainId = rt[0].nSvrMainId;
-// 		svr.cSvrPrivateId = rt[0].cSvrPrivateId;
-// 		return true;
-// 	}
-// 	int i,j;
-// 	vector <S_SERVICE_QUERY_RESULT *> data;
-// 	data.push_back(&rt[0]);
-// 	//比较步进
-// 	for (i=1;i<rt.size();i++)
-// 	{
-// 		if (rt[i].nStep < data[0]->nStep)
-// 		{
-// 			data.clear();
-// 			data.push_back(&rt[i]);
-// 		}
-// 		else if (rt[i].nStep == data[0]->nStep)
-// 		{
-// 			data.push_back(&rt[i]);
-// 		}
-// 	}
-// 	if (data.size() == 1) //步进最小的只有一个
-// 	{
-// 		dreb.bIsClose = data[0]->bIsClose;
-// 		dreb.cNodePrivateId = data[0]->cNodePrivateId;
-// 		dreb.nbandwidth = data[0]->nbandwidth;
-// 		dreb.nCloseTime = data[0]->nCloseTime;
-// 		dreb.nIndex = data[0]->nIndex;
-// 		dreb.nNodeId = data[0]->nNodeId;
-// 		dreb.nStep = data[0]->nStep;
-// 		dreb.pSendQueue = data[0]->pSendQueue;
-// 		svr.nSvrMainId = data[0]->nSvrMainId;
-// 		svr.cSvrPrivateId = data[0]->cSvrPrivateId;
-// 		return true;
-// 	}
-// 	//步进相同的比较带宽
-// 
-// 	vector <S_SERVICE_QUERY_RESULT *> databd;
-// 	databd.push_back(data[0]);
-// 	//比较带宽
-// 	for (i=1;i<data.size();i++)
-// 	{
-// 		if (data[i]->nbandwidth > databd[0]->nbandwidth)
-// 		{
-// 			databd.clear();
-// 			databd.push_back(data[i]);
-// 		}
-// 		else if (data[i]->nbandwidth == data[0]->nbandwidth)
-// 		{
-// 			databd.push_back(data[i]);
-// 		}
-// 	}
-// 	
-// 	if (databd.size() == 1) //带宽最大的只有一个
-// 	{
-// 		dreb.bIsClose = databd[0]->bIsClose;
-// 		dreb.cNodePrivateId = databd[0]->cNodePrivateId;
-// 		dreb.nbandwidth = databd[0]->nbandwidth;
-// 		dreb.nCloseTime = databd[0]->nCloseTime;
-// 		dreb.nIndex = databd[0]->nIndex;
-// 		dreb.nNodeId = databd[0]->nNodeId;
-// 		dreb.nStep = databd[0]->nStep;
-// 		dreb.pSendQueue = databd[0]->pSendQueue;
-// 		svr.nSvrMainId = databd[0]->nSvrMainId;
-// 		svr.cSvrPrivateId = databd[0]->cSvrPrivateId;
-// 		return true;
-// 	}
-// 	//完全相同的有多个，随机取一个
-// 	srand(CBF_Date_Time::GetTickCount());
-// 	int id = rand() % (databd.size());
-// 	dreb.bIsClose = databd[id]->bIsClose;
-// 	dreb.cNodePrivateId = databd[id]->cNodePrivateId;
-// 	dreb.nbandwidth = databd[id]->nbandwidth;
-// 	dreb.nCloseTime = databd[id]->nCloseTime;
-// 	dreb.nIndex = databd[id]->nIndex;
-// 	dreb.nNodeId = databd[id]->nNodeId;
-// 	dreb.nStep = databd[id]->nStep;
-// 	dreb.pSendQueue = databd[id]->pSendQueue;
-// 	svr.nSvrMainId = databd[id]->nSvrMainId;
-// 	svr.cSvrPrivateId = databd[id]->cSvrPrivateId;
-// 	return true;
-// }
-bool CMemDB::GetARoute(vector<S_SERVICE_ROUTE *> rt, S_DREB_ROUTE &dreb)
+bool CMemDB::GetARoute(std::vector<S_SERVICE_ROUTE *> rt, S_DREB_ROUTE &dreb)
 {
 	int i;
 	//因为已按步进和带宽排序，所以只需要比较带宽即可
@@ -555,7 +448,7 @@ bool CMemDB::GetARoute(vector<S_SERVICE_ROUTE *> rt, S_DREB_ROUTE &dreb)
 		return true;
 	}
 }
-bool CMemDB::GetARoute(vector<S_SERVICE_ROUTE *> rt, S_SERVICE_ROUTE &dreb)
+bool CMemDB::GetARoute(std::vector<S_SERVICE_ROUTE *> rt, S_SERVICE_ROUTE &dreb)
 {
 	int i;
 	//因为已按步进和带宽排序，所以只需要比较带宽即可
@@ -603,93 +496,19 @@ bool CMemDB::GetARoute(vector<S_SERVICE_ROUTE *> rt, S_SERVICE_ROUTE &dreb)
 		return true;
 	}
 }
-// bool CMemDB::GetARoute(vector<S_DREB_ROUTE *> rt, S_DREB_ROUTE &dreb)
-// {
-// 	int i;
-// 	//因为已按步进和带宽排序，所以只需要比较带宽即可
-// 	int rtsize= rt.size();
-// 	if (rtsize<1)
-// 	{
-// 		return false;
-// 	}
-// 	if (1 == rtsize)
-// 	{
-// 		dreb.bIsClose = false;
-// 		dreb.cNodePrivateId = rt[0]->cNodePrivateId;
-// 		dreb.nbandwidth = rt[0]->nbandwidth;
-// 		dreb.nIndex = rt[0]->nIndex;
-// 		dreb.nNodeId = rt[0]->nNodeId;
-// 		dreb.nStep = rt[0]->nStep;
-// 		dreb.pSendQueue = rt[0]->pSendQueue;
-// 		m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"总线直连表路由 总线路由[%d %d] nStep[%d] nIndex[%d]",\
-// 				dreb.nNodeId,dreb.cNodePrivateId,dreb.nStep,dreb.nIndex);
-// 		return true;
-// 	}
-// 	int lastIndex=-1;
-// 	unsigned int bd=rt[rtsize-1]->nbandwidth;//最大的一个带宽
-// 	for (i=rtsize-2 ; i>=0 ; i--)
-// 	{
-// 		if (rt[i]->nbandwidth < bd) 
-// 		{
-// 			//有小的就退出，不用再找了
-// 			lastIndex = i;//最小
-// 			break;
-// 		}
-// 	}
-// 	int resNum= rtsize-1 - lastIndex;
-// 	
-// 	if (1 == resNum ) //说明只有一个
-// 	{
-// 		dreb.bIsClose = false;
-// 		dreb.cNodePrivateId = rt[rtsize-1]->cNodePrivateId;
-// 		dreb.nbandwidth = rt[rtsize-1]->nbandwidth;
-// 		dreb.nIndex = rt[rtsize-1]->nIndex;
-// 		dreb.nNodeId = rt[rtsize-1]->nNodeId;
-// 		dreb.nStep = rt[rtsize-1]->nStep;
-// 		dreb.pSendQueue = rt[rtsize-1]->pSendQueue;
-// 		m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"总线直连表路由 总线路由[%d %d] nStep[%d] nIndex[%d]",\
-// 				dreb.nNodeId,dreb.cNodePrivateId,dreb.nStep,dreb.nIndex);
-// 		return true;
-// 	}
-// 	else //有多个相同的
-// 	{
-// 		//完全相同的有多个，随机取一个
-// 		srand(CBF_Date_Time::GetTickCount());
-// 		int id = rand() % resNum;
-// 		id = id+lastIndex+1;
-// 		dreb.bIsClose = false;
-// 		dreb.cNodePrivateId = rt[id]->cNodePrivateId;
-// 		dreb.nbandwidth = rt[id]->nbandwidth;
-// 		dreb.nIndex = rt[id]->nIndex;
-// 		dreb.nNodeId = rt[id]->nNodeId;
-// 		dreb.nStep = rt[id]->nStep;
-// 		dreb.pSendQueue = rt[rtsize-1]->pSendQueue;
-// 		m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"总线直连表路由 总线路由[%d %d] nStep[%d] nIndex[%d]",\
-// 				dreb.nNodeId,dreb.cNodePrivateId,dreb.nStep,dreb.nIndex);
-// 		return true;
-// 	}
-// }
 
-bool CMemDB::GetRouteByIndex(int index, vector<S_DREB_ROUTE *> &rt)
+bool CMemDB::GetRouteByIndex(int index, std::vector<S_DREB_ROUTE *> &rt)
 {
-	S_DREB_ROUTE *dreb=NULL;
-//	CBF_PMutex pp(&m_mutex);
-	dreb = m_drebTbl.First();
-	while (dreb != NULL)
+	m_drebTbl.SelectRouteByIndex(index,rt);
+	m_routeTbl.GetRouteByIndex(index,rt);
+	if (rt.size() < 1)
 	{
-		//index不相同且连接正常的
-		if (dreb->nIndex != index && !dreb->bIsClose)
-		{
-			rt.push_back(dreb);
-		}
-		dreb = m_drebTbl.Next();
+		return false;
 	}
-	
-	return m_routeTbl.GetRouteByIndex(index,rt);
-
+	return true;
 }
 
-bool CMemDB::AddRoute(int index,vector<S_DREB_ROUTE>rtlist)
+bool CMemDB::AddRoute(int index, std::vector<S_DREB_ROUTE>rtlist)
 {
 	S_DREB_ROUTE dreb;
 	for (int i=0;i<rtlist.size();i++)
@@ -703,89 +522,80 @@ bool CMemDB::AddRoute(int index,vector<S_DREB_ROUTE>rtlist)
 	return true;
 }
 
-bool CMemDB::GetAllSvr(vector<S_SVR_ROUTE> &svrlist)
+bool CMemDB::GetAllSvr(std::vector<S_SVR_ROUTE> &svrlist)
 {
-	bool bret;
-	S_SVR_ROUTE data;
-	bret = m_svrTbl.First(data);
-	while (bret)
+	std::vector<S_SVR_ROUTE*> reslist;
+	m_svrTbl.Select(reslist);
+	for (unsigned int i=0 ; i< reslist.size(); i++)
 	{
-		if (data.bIsClose && time(NULL)-data.nCloseTime>m_nDeleteTime)
+		if (reslist[i]->bIsClose && time(NULL)- reslist[i]->nCloseTime>m_nDeleteTime)
 		{
-			UnRegisterSvr(data.nSvrMainId,data.cSvrPrivateId);
+			UnRegisterSvr(reslist[i]->nSvrMainId, reslist[i]->cSvrPrivateId);
 		}
 		else
 		{
-			svrlist.push_back(data);
+			svrlist.push_back(*reslist[i]);
 		}
-		bret = m_svrTbl.Next(data);
 	}
 	return true;
 }
 
-bool CMemDB::GetRouteList(vector<S_DREB_ROUTE *> &rt)
+bool CMemDB::GetRouteList(std::vector<S_DREB_ROUTE *> &rt)
 {
-	S_DREB_ROUTE *data=NULL;
-//	CBF_PMutex pp(&m_mutex);
-	data = m_routeTbl.FirstById();
-	while (data != NULL)
-	{
-		rt.push_back(data);
-		data = m_routeTbl.NextById();
-	}
-	return true;	
+	m_routeTbl.SelectById(rt);
+    if (rt.size() < 1)
+    {
+        return false;
+    }
+    return true;
 }
-bool CMemDB::GetAllRoute(vector<S_DREB_ROUTE *> &rt)
+bool CMemDB::GetAllRoute(std::vector<S_DREB_ROUTE *> &rt)
 {
-	S_DREB_ROUTE *dreb=NULL;
-//	CBF_PMutex pp(&m_mutex);
-	dreb = m_drebTbl.First();
-	while (dreb != NULL)
+	std::vector<S_DREB_ROUTE*>dreblist;
+	m_drebTbl.Select(dreblist);
+	for(unsigned int i=0; i<dreblist.size(); i++) 
 	{
-		if (dreb->nIndex>0)
+		if (dreblist[i]->nIndex>0)
 		{
-			rt.push_back(dreb);
+			rt.push_back(dreblist[i]);
 		}
-		dreb = m_drebTbl.Next();
 	}
-
-	dreb = m_routeTbl.FirstById();
-	while (dreb != NULL)
+	m_routeTbl.SelectById(rt);
+	if (rt.size() < 1)
 	{
-		rt.push_back(dreb);
-		dreb = m_routeTbl.NextById();
+		return false;
 	}
 	return true;	
 }
 
-bool CMemDB::GetAllDreb(vector<S_DREB_ROUTE *> &dp,bool inclocal)
+bool CMemDB::GetAllDreb(std::vector<S_DREB_ROUTE *> &dp,bool inclocal)
 {
-	S_DREB_ROUTE *dreb=NULL;
-//	CBF_PMutex pp(&m_mutex);
-	dreb = m_drebTbl.First();
-	while (dreb!=NULL)
+	std::vector<S_DREB_ROUTE*>dreblist;
+	if (!m_drebTbl.Select(dreblist))
+	{
+		return false;
+	}
+	for (unsigned int i=0; i<dreblist.size() ; i++)
 	{
 		if (!inclocal)
 		{
-			if (dreb->nIndex>0)
+			if (dreblist[i]->nIndex>0)
 			{
-				dp.push_back(dreb);
+				dp.push_back(dreblist[i]);
 			}
 		}
-		dreb = m_drebTbl.Next();
 	}
 	return true;
 }
 
-bool CMemDB::GetAllServiceOrder(vector<S_SERVICE_ROUTE *> &rtlist)
+bool CMemDB::GetAllServiceOrder(std::vector<S_SERVICE_ROUTE *> &rtlist)
 {
-//	CBF_PMutex pp(&m_mutexService);
 	return m_serviceTbl.GetAllServiceOrderDrebSvr(rtlist);
 }
 
 bool CMemDB::SelectRouteByFunc(unsigned int func, S_DREB_ROUTE &rt)
 {
-	vector<S_SERVICE_ROUTE *> slist;
+	std::vector<S_SERVICE_ROUTE *> slist;
 
 	//查找交易列表，按步进升序排序
 	if (!m_serviceTbl.SelectByFunc(func,slist)) //找到功能列表  
@@ -797,7 +607,7 @@ bool CMemDB::SelectRouteByFunc(unsigned int func, S_DREB_ROUTE &rt)
 
 bool CMemDB::SelectRouteBySvr(int svr, S_DREB_ROUTE &rt)
 {
-	vector<S_SERVICE_ROUTE *> slist;
+	std::vector<S_SERVICE_ROUTE *> slist;
 	
 	if (!m_serviceTbl.SelectBySvr(svr,slist))
 	{
@@ -824,7 +634,7 @@ bool CMemDB::SelectRouteBySvr(int svr, S_DREB_ROUTE &rt)
 }
 bool CMemDB::SelectRouteByFuncSvr(int func,int svr, S_DREB_ROUTE &rt)
 {
-	vector<S_SERVICE_ROUTE *> slist;
+	std::vector<S_SERVICE_ROUTE *> slist;
 
 	if (!m_serviceTbl.SelectByFuncSvr(func,svr,slist))
 	{
@@ -851,7 +661,7 @@ bool CMemDB::SelectRouteByFuncSvr(int func,int svr, S_DREB_ROUTE &rt)
 }
 bool CMemDB::SelectRouteByDrebFuncSvr(int drebid,int func,int svr, S_SERVICE_ROUTE &rt)
 {
-	vector<S_SERVICE_ROUTE *> slist;
+	std::vector<S_SERVICE_ROUTE *> slist;
 
 	if (!m_serviceTbl.SelectByFuncSvr(func,svr,slist))
 	{
@@ -879,7 +689,7 @@ bool CMemDB::SelectRouteByDrebFuncSvr(int drebid,int func,int svr, S_SERVICE_ROU
 
 bool CMemDB::SelectRouteBySvr(int svr,int privatesvr, S_DREB_ROUTE &rt)
 {
-	vector<S_SERVICE_ROUTE *> slist;
+	std::vector<S_SERVICE_ROUTE *> slist;
 	if (!m_serviceTbl.SelectBySvr(svr,privatesvr,slist))
 	{
 		return false;
@@ -906,14 +716,12 @@ bool CMemDB::SelectRouteBySvr(int svr,int privatesvr, S_DREB_ROUTE &rt)
 
 bool CMemDB::UnRegisterService(int nodeid, int privateid,int svr, int svrprivate)
 {
-//	CBF_PMutex pp(&m_mutexService);
 	return m_serviceTbl.UnRegisterSvr(nodeid,privateid,svr,svrprivate);
 }
 
 bool CMemDB::AddServiceRoute(S_SERVICE_ROUTE rt)
 {
 	S_SERVICE_ROUTE *rttmp=NULL;
-//	CBF_PMutex pp(&m_mutexService);
 	rttmp = m_serviceTbl.SelectByPk(rt.nIndex,rt.nNodeId,rt.cNodePrivateId,rt.nSvrMainId,rt.cSvrPrivateId,rt.nFuncNo);
 	if (rttmp != NULL)
 	{
@@ -951,27 +759,23 @@ bool CMemDB::AddServiceRoute(S_SERVICE_ROUTE rt)
 	}
 	return true;
 }
-bool CMemDB::GetRouteServiceByIndex(int drebid,int privateid,int index,vector<S_SERVICE_ROUTE *> &rtlist)
+bool CMemDB::GetRouteServiceByIndex(int drebid,int privateid,int index, std::vector<S_SERVICE_ROUTE *> &rtlist)
 {
-//	CBF_PMutex pp(&m_mutexService);
 	return m_serviceTbl.GetRouteServiceByIndex(drebid,privateid,index,rtlist);
 }
 
 bool CMemDB::DeleteServiceByIndex(int index)
 {
-//	CBF_PMutex pp(&m_mutexService);
 	return m_serviceTbl.DeleteByIndex(index);
 }
 
 bool CMemDB::UpdateRouteServiceByIndex(int index)
 {
-//	CBF_PMutex pp(&m_mutexService);
 	return m_serviceTbl.UpdateRouteServiceByIndex(index);
 }
 
 bool CMemDB::DeleteRouteByIndex(int index)
 {
-//	CBF_PMutex pp(&m_mutex);
 	return m_routeTbl.DeleteByIndex(index);
 }
 
@@ -984,32 +788,32 @@ bool CMemDB::SetLocalDrebInfo(S_DREB_ROUTE rt)
 	return m_drebTbl.Insert(rt);
 }
 
-bool CMemDB::GetAllRouteBc(vector<S_DREB_ROUTE *> &rt)
+bool CMemDB::GetAllRouteBc(std::vector<S_DREB_ROUTE *> &rt)
 {
-	S_DREB_ROUTE *dreb=NULL;
 	//取所有直连的总线信息，不包括本节点
 	GetAllDreb(rt,false);
 
+	std::vector<S_DREB_ROUTE*> dreblist;
+	m_routeTbl.SelectById(dreblist);
 	unsigned short nodeid=0;
 	char  privateid=0;
-	dreb = m_routeTbl.FirstById();
-	while (dreb != NULL)
+	
+	for (unsigned int i=0;  i< dreblist.size(); i++) 
 	{
 		//过滤掉相同的
-		if (dreb->nNodeId != nodeid || dreb->cNodePrivateId != privateid)
+		if (dreblist[i]->nNodeId != nodeid || dreblist[i]->cNodePrivateId != privateid)
 		{
-			rt.push_back(dreb);
-			nodeid = dreb->nNodeId;
-			privateid = dreb->cNodePrivateId;
+			rt.push_back(dreblist[i]);
+			nodeid = dreblist[i]->nNodeId;
+			privateid = dreblist[i]->cNodePrivateId;
 		}
-		dreb = m_routeTbl.NextById();
 	}
 	return true;	
 }
 
 bool CMemDB::SelectLocalByFunc(unsigned int func,S_SERVICE_ROUTE &fc)
 {
-	vector<S_SERVICE_ROUTE *> rt;
+	std::vector<S_SERVICE_ROUTE *> rt;
 	if (!m_serviceTbl.SelectByFunc(func,rt))
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"根据总线节点路由 交易码[%d]未在本节点注册",func);
@@ -1058,7 +862,7 @@ bool CMemDB::SelectLocalByFunc(unsigned int func,S_SERVICE_ROUTE &fc)
 
 bool CMemDB::SelectLocalBySvr(unsigned int svr, S_SERVICE_ROUTE &srt)
 {
-	vector<S_SVR_ROUTE *> svrlist;
+	std::vector<S_SVR_ROUTE *> svrlist;
 	if (!m_svrTbl.SelectBySvr(svr,svrlist))
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"本地无[%d]服务或此服务已断开",svr);

@@ -321,6 +321,7 @@ void CMsgProcThread::OnMsgRoute(S_DREB_RSMSG *msg)
 				}
 				rsmsg->msghead.connecttime = m_pSocketMgr->at(data->nIndex)->m_nConntime;
 				rsmsg->msghead.index = data->nIndex;
+				bzero(&(rsmsg->message.head),sizeof(DREB_HEAD));
 				rsmsg->message.head.cRaflag = 0;
 				rsmsg->message.head.cNextFlag = 0;
 				rsmsg->message.head.cZip = 0;
@@ -366,6 +367,7 @@ void CMsgProcThread::OnMsgRoute(S_DREB_RSMSG *msg)
 					m_pMemPool->PoolFree(msg);
 					return;
 				}
+				bzero(&(rsmsg->message.head), sizeof(DREB_HEAD));
 				rsmsg->message.head.cRaflag = 0;
 				rsmsg->message.head.cZip = 0;
 				rsmsg->message.head.cNextFlag = 0;
@@ -1042,6 +1044,7 @@ void CMsgProcThread::SendService(int index,vector<S_SERVICE_ROUTE *> rtlist)
 			m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"内存不足，分配数据总线节点数据空间出错");
 			return;
 		}
+		bzero(&(rsmsg->message.head), sizeof(DREB_HEAD));
 		rsmsg->msghead.connecttime = m_pSocketMgr->at(index)->m_nConntime;
 		rsmsg->msghead.index = index;
 		rsmsg->message.head.cRaflag = 0;
@@ -1077,6 +1080,7 @@ void CMsgProcThread::SendService(int index,vector<S_SERVICE_ROUTE *> rtlist)
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"内存不足，分配数据总线节点数据空间出错");
 		return;
 	}
+	bzero(&(rsmsg->message.head), sizeof(DREB_HEAD));
 	rsmsg->msghead.connecttime = m_pSocketMgr->at(index)->m_nConntime;
 	rsmsg->msghead.index = index;
 	rsmsg->message.head.cRaflag = 0;
@@ -1212,6 +1216,7 @@ void CMsgProcThread::SendService(int index,vector<S_SERVICE_ROUTE *> rtlist)
 				m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"内存不足，分配数据总线节点数据空间出错");
 				return;
 			}
+			bzero(&(rsmsg->message.head), sizeof(DREB_HEAD));
 			rsmsg->msghead.connecttime = m_pSocketMgr->at(index)->m_nConntime;
 			rsmsg->msghead.index = index;
 			rsmsg->message.head.cRaflag = 0;
@@ -1531,7 +1536,7 @@ void CMsgProcThread::TransMsgAns(S_DREB_RSMSG *msg)
 	{
 		if (!m_pMemDb->SelectRoute(msg->message.head.s_Sinfo.s_nNodeId,msg->message.head.s_Sinfo.s_cNodePrivateId,dreb))
 		{
-			m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"应答时数据总线节点路由不存在[%d %s] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
+			m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"应答时数据总线节点路由不存在[%d %d] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
 				msg->message.head.s_Sinfo.s_nNodeId,msg->message.head.s_Sinfo.s_cNodePrivateId,\
 				GetDrebCmdType(msg->message.head.cCmd).c_str(),msg->message.head.cNextFlag,\
 				msg->message.head.cRaflag,msg->message.head.d_Dinfo.d_nServiceNo,msg->message.head.s_Sinfo.s_nNodeId,\
@@ -1544,7 +1549,7 @@ void CMsgProcThread::TransMsgAns(S_DREB_RSMSG *msg)
 	}
 	if (m_log->isWrite(LOG_DEBUG))
 	{
-		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"将数据应答给路由转发[%d %s] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
+		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"将数据应答给路由转发[%d %d] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
 			dreb.nIndex,GetIndexFlag(dreb.nIndex).c_str(),\
 			GetDrebCmdType(msg->message.head.cCmd).c_str(),msg->message.head.cNextFlag,\
 			msg->message.head.cRaflag,msg->message.head.d_Dinfo.d_nServiceNo,msg->message.head.s_Sinfo.s_nNodeId,\
@@ -1617,19 +1622,21 @@ void CMsgProcThread::OnCmdServiceReg(S_DREB_RSMSG *msg)
 		m_pMemPool->PoolFree(msg);
 		return ;
 	}
-	m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"将交易[%d]加入交易表",data.nFuncNo );
-	m_pMemDb->AddServiceRoute(data);
-	m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"将交易[%d]加入交易表完成",data.nFuncNo );
+    //20130304 songfree add 当有交易注册时，删除连接时写入路由表的服务路由 
+    if (prs->nFuncNum > 0)
+    {
+        m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "m_serviceTbl Delete   begin");
+        m_pMemDb->m_serviceTbl.Delete(data.nIndex, m_pRes->g_nDrebId, m_pRes->g_nDrebPrivateId, data.nSvrMainId, data.cSvrPrivateId, 0);
+        m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "m_serviceTbl Delete   end");
+        m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "将交易[%d]加入交易表", data.nFuncNo);
+        m_pMemDb->AddServiceRoute(data);
+        m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "将交易[%d]加入交易表完成", data.nFuncNo);
+    }
+	//add end
+	
 	
 	snum = prs->nFuncNum -1;
-	//20130304 songfree add 当有交易注册时，删除连接时写入路由表的服务路由 
-	if (snum >0)
-	{
-		m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"m_serviceTbl Delete   begin" );
-		m_pMemDb->m_serviceTbl.Delete(data.nIndex,m_pRes->g_nDrebId,m_pRes->g_nDrebPrivateId,data.nSvrMainId,data.cSvrPrivateId,0);
-		m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"m_serviceTbl Delete   end" );
-	}
-	//add end
+	
 	int nFuncNum =  prs->nFuncNum;
 	for (int i=0; i< snum; i++)
 	{

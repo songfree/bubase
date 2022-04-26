@@ -68,7 +68,7 @@ public:
 	// 返回  : bool 
 	// 参数  : vector<S_ROUTE_TBL *> &rt
 	// 描述  : 取要发送广播的总线节点信息(不包括本节点) 已经去重。
-	bool GetAllRouteBc(vector<S_DREB_ROUTE *> &rt);
+	bool GetAllRouteBc(std::vector<S_DREB_ROUTE *> &rt);
 
 
 	// 函数名: SetLocalDrebInfo
@@ -115,7 +115,7 @@ public:
 	// 参数  : int index
 	// 参数  : vector<S_SERVICE_ROUTE *> &rtlist
 	// 描述  : 根据dreb连接序号取要在此连接上发送的服务路由信息
-	bool GetRouteServiceByIndex(int drebid,int privateid,int index,vector<S_SERVICE_ROUTE *> &rtlist );
+	bool GetRouteServiceByIndex(int drebid,int privateid,int index, std::vector<S_SERVICE_ROUTE *> &rtlist );
 
 	// 函数名: UnRegisterService
 	// 编程  : 王明松 2010-7-30 10:26:05
@@ -175,7 +175,7 @@ public:
 	// 返回  : bool 
 	// 参数  : vector<S_SERVICE_ROUTE *> &rtlist
 	// 描述  : 获取所有的功能，按index dreb服务排序
-	bool GetAllServiceOrder(vector<S_SERVICE_ROUTE *> &rtlist);
+	bool GetAllServiceOrder(std::vector<S_SERVICE_ROUTE *> &rtlist);
 
 	
 	// 函数名: RegisterFunc
@@ -192,21 +192,21 @@ public:
 	// 参数  : vector<S_DREB_ROUTE> &dp
 	// 参数  : bool inclocal=false   false不包括本Dreb  true包括
 	// 描述  : 获取所有连接的通讯平台，包不包括本DREB看参数
-	bool GetAllDreb(vector<S_DREB_ROUTE *> &dp,bool inclocal=false);
+	bool GetAllDreb(std::vector<S_DREB_ROUTE *> &dp,bool inclocal=false);
 
 	// 函数名: GetRouteList
 	// 编程  : 王明松 2010-2-25 15:27:57
 	// 返回  : bool 
 	// 参数  : vector<S_ROUTE_TBL> &rt
 	// 描述  : 获取路由过来和总线信息，不包括本地及直连接的总线
-	bool GetRouteList(vector<S_DREB_ROUTE *> &rt);
+	bool GetRouteList(std::vector<S_DREB_ROUTE *> &rt);
 
 	// 函数名: GetAllRoute
 	// 编程  : 王明松 2010-2-25 15:27:57
 	// 返回  : bool 
 	// 参数  : vector<S_ROUTE_TBL> &rt
 	// 描述  : 获取所有的路由，包括连接的通讯平台
-	bool GetAllRoute(vector<S_DREB_ROUTE *> &rt);
+	bool GetAllRoute(std::vector<S_DREB_ROUTE *> &rt);
 	
 
 	// 函数名: GetAllSvr
@@ -214,7 +214,7 @@ public:
 	// 返回  : bool 
 	// 参数  : vector<S_SVR_ROUTE> &svrlist
 	// 描述  : 获取注册的所有服务
-	bool GetAllSvr(vector<S_SVR_ROUTE> &svrlist);
+	bool GetAllSvr(std::vector<S_SVR_ROUTE> &svrlist);
 
 	// 函数名: AddRoute
 	// 编程  : 王明松 2009-10-30 10:46:20
@@ -222,7 +222,7 @@ public:
 	// 参数  : int index
 	// 参数  : vector<S_ROUTE_TBL>rtlist
 	// 描述  : 更新index连接过来的路由，先删除再增加
-	bool AddRoute(int index,vector<S_DREB_ROUTE>rtlist);
+	bool AddRoute(int index, std::vector<S_DREB_ROUTE>rtlist);
 
 	// 函数名: GetRouteByIndex
 	// 编程  : 王明松 2009-10-29 16:56:14
@@ -230,7 +230,7 @@ public:
 	// 参数  : int index
 	// 参数  : vector<S_ROUTE_TBL> &rt
 	// 描述  : 获取通讯平台连接index上要发送的路由(即在路由表中除index外的路由都是要发送的)
-	bool GetRouteByIndex(int index,vector<S_DREB_ROUTE *> &rt);
+	bool GetRouteByIndex(int index, std::vector<S_DREB_ROUTE *> &rt);
 	
 
 	// 函数名: SelectRoute
@@ -344,11 +344,6 @@ protected:
 	int   m_nDeleteTime;        //服务过期时间
 	int   m_nServiceDeleteTime; //服务功能过期时间
 	
-
-//	CBF_Mutex m_mutex;
-
-//	CBF_Mutex m_mutexService;
-
 	// 函数名: AddRoute
 	// 编程  : 王明松 2009-10-29 10:13:32
 	// 返回  : bool 
@@ -362,7 +357,7 @@ protected:
 	// 参数  : vector<S_ROUTE_TBL *> rt   已按步进和带宽升序排序
 	// 参数  : S_DREB_ROUTE &dreb
 	// 描述  : 从路由列表中取出最适合条件的一条路由
-	bool GetARoute(vector<S_DREB_ROUTE *> rt,S_DREB_ROUTE &dreb);
+	bool GetARoute(std::vector<S_DREB_ROUTE *> rt,S_DREB_ROUTE &dreb);
 
 //	bool GetARoute(vector<S_SERVICE_QUERY_RESULT> rt,S_DREB_ROUTE &dreb,S_SVR_ROUTE &svr);
 	// 函数名: GetARoute
@@ -373,8 +368,8 @@ protected:
 	// 描述  : 从路由列表中取出最适合条件的一条路由 
 //	bool GetARoute(vector<S_DREB_ROUTE *> rt,S_DREB_ROUTE &dreb);
 
-	bool GetARoute(vector<S_SERVICE_ROUTE *> rt, S_DREB_ROUTE &dreb);
-	bool GetARoute(vector<S_SERVICE_ROUTE *> rt, S_SERVICE_ROUTE &dreb);
+	bool GetARoute(std::vector<S_SERVICE_ROUTE *> rt, S_DREB_ROUTE &dreb);
+	bool GetARoute(std::vector<S_SERVICE_ROUTE *> rt, S_SERVICE_ROUTE &dreb);
 };
 
 #endif // !defined(AFX_MEMDB_H__8CF47224_C394_4279_858C_0ED49F03E2A5__INCLUDED_)

@@ -278,11 +278,19 @@ int CSocketInfo::GetRecvData(S_GWDREB_RSMSG *msg)
 	{
 		//进行字节序处理并校验CRC
 		memcpy(&(msg->data.head),m_sRcvBuffer,DREBHEADLEN);
-		if (!m_pDrebEndian.Endian2LocalHostChkCrc(&(msg->data.head)) )
-		{
-//			OnClose("CRC错",__FILE__,__LINE__);
-			return -1;
-		}
+        if (m_gRes->g_nCrcFlag == 1)
+        {
+            if (!m_pDrebEndian.Endian2LocalHostChkCrc(&(msg->data.head)))
+            {
+                OnClose("错误 CRC错", __FILE__, __LINE__);
+                return -1;
+            }
+        }
+        else
+        {
+            m_pDrebEndian.Endian2LocalHost(&(msg->data.head));
+
+        }
 		if (m_nRcvBufLen < msg->data.head.nLen + DREBHEADLEN)
 		{
 			//说明数据没有接收完整

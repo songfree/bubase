@@ -32,6 +32,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DrebMsgThread.h" />
+    <ClInclude Include="include\CodeTable.h" />
+    <ClInclude Include="include\Db_BaseInfo.h" />
+    <ClInclude Include="include\Db_Custom.h" />
+    <ClInclude Include="include\Db_Public.h" />
+    <ClInclude Include="include\Db_Set.h" />
+    <ClInclude Include="include\Db_Trader.h" />
+    <ClInclude Include="include\IClientLink.h" />
+    <ClInclude Include="include\IExchLink.h" />
+    <ClInclude Include="include\IInitial.h" />
+    <ClInclude Include="include\IProcBase.h" />
+    <ClInclude Include="include\KernelPub.h" />
+    <ClInclude Include="include\MemDb.h" />
     <ClInclude Include="PoolData.h" />
     <ClInclude Include="PoolModule.h" />
     <ClInclude Include="ProcThread.h" />
