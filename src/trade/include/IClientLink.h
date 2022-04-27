@@ -23,7 +23,13 @@ typedef struct
 	unsigned int rTime;          //接收数据的时间点
 	PBPCCOMMSTRU pData; //数据
 }S_TRADE_DATA;
-
+typedef struct
+{
+    int request_id;//rpc请求id
+    int rpctime;//rpc请求时间
+    std::function<int(S_TRADE_DATA& reqdata, S_TRADE_DATA& ansdata)> func;
+    S_TRADE_DATA data;//请求报文数据
+}S_RPC_DATA;
 
 typedef  int (*CallBackFunc)(S_TRADE_DATA &reqdata, S_TRADE_DATA &ansdata);	  //注意要释放ansdata里面的pdata，和业务模块一样释放 reqdata也可以释放，但要注意reqdata.pdata要置为NULL，否则框架会释放
 
@@ -62,6 +68,12 @@ public:
     // 参数  : char nextflag  0无后续包  1 有后续包  10最后一个数据包
     // 描述  : 应答数据  数据格式为总线头+数据  src=0表示总线  src=1表示socket直连
     virtual int RpcRequest(S_TRADE_DATA& data, int requestid, std::function<int(S_TRADE_DATA& reqdata, S_TRADE_DATA& ansdata)> func) = 0;
+
+	//查找原rpc调用的请求包
+	virtual bool SelectRpcRequest(int requestid, S_RPC_DATA& data) = 0;
+
+	//删除rpc调用的请求记录
+	virtual int DeleteRpcRequest(int requestid) = 0;
 
 	// 函数名: PushRcvQueue
 	// 编程  : 王明松 2017-8-14 9:37:13
