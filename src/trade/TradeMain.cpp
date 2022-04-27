@@ -797,6 +797,7 @@ int CTradeMain::Send2Client(S_TRADE_DATA &data)
 			m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"Send2Client 发送数据 数据指针为NULL");
 			return -1;
 		}
+		msg.sMsgBuf->sDBHead.s_Sinfo.s_nHook = 0;//1是表示rpc调用
 		return m_pDrebApi.SendMsg(msg);
 	}
 	else
@@ -845,44 +846,11 @@ int CTradeMain::PushAnsQueue(S_TRADE_DATA &data)
     {
         return -1;
     }
-	printf("dreb ans rpc_table size[%d] rpc_id[%d]\n", m_pRpcData.Size(), data.pData->sDBHead.s_Sinfo.s_nSerial);
-
-	S_RPC_DATA rpcdata;
-	if (m_pRpcData.Select(data.pData->sDBHead.s_Sinfo.s_nSerial, rpcdata))
+	if (1 == data.pData->sDBHead.s_Sinfo.s_nHook)  //rpc调用
 	{
-		 //是rpc调用
-		if (m_pRpcData.Delete(data.pData->sDBHead.s_Sinfo.s_nSerial)<0)
-		{
-			printf("rpc_table delete error size[%d] \n", m_pRpcData.Size());
-		}
-		else
-		{
-			printf("rpc_table delete sucess size[%d] \n", m_pRpcData.Size());
-		}
-		try
-		{
-			(rpcdata.func)(rpcdata.data, data);
-		}
-		catch (...)
-		{
-			m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "回调出错 requestid[%d]", data.pData->sDBHead.s_Sinfo.s_nSerial);
-		}
-		
-		if (rpcdata.data.pData != NULL) 
-		{
-			printf("PoolFree \n");
-            m_pListenThread.m_pMemPool->PoolFree(rpcdata.data.pData);
-			rpcdata.data.pData = NULL;
-		}
-		return 0;
-
+        PushRcvQueue(data);
+        return 0;
 	}
-	else
-	{
-		printf("rpc_id[%d] not found\n", data.pData->sDBHead.s_Sinfo.s_nSerial);
-		m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "请求的流水[%d]不是rpc", data.pData->sDBHead.s_Sinfo.s_nSerial);
-	}
-	
 	if (data.pData->sDBHead.b_Cinfo.b_cIndex <0 || data.pData->sDBHead.b_Cinfo.b_cIndex > m_pRes.g_nProcTheadNum-1)
 	{
 #ifdef _ENGLISH_
@@ -1010,6 +978,7 @@ int CTradeMain::RpcRequest(S_TRADE_DATA& data, int requestid, std::function<int(
 	data.pData->sDBHead.cCmd = CMD_DPCALL;
 	data.pData->sDBHead.cRaflag = 0;
 	data.pData->sDBHead.s_Sinfo.s_nSerial = requestid;
+	data.pData->sDBHead.s_Sinfo.s_nHook = 1;	   //表示rpc调用
 	data.pData->sBpcHead.nIndex = 100;	//由api选择哪个总线连接发送
 	S_RPC_DATA rpcdata;
 	rpcdata.request_id = requestid;
@@ -1041,14 +1010,37 @@ int CTradeMain::RpcRequest(S_TRADE_DATA& data, int requestid, std::function<int(
     return m_pDrebApi.SendMsg(msg);
 
 }
+bool  CTradeMain::SelectRpcRequest(int requestid, S_RPC_DATA& data)
+{
+    if (m_pRpcData.Select(requestid, data))
+    {
+		printf("dreb ans rpc_table size[%d] rpc_id[%d]\n", m_pRpcData.Size(), requestid);
+		return true;
+	}
+	return false;
+}
 
+int CTradeMain::DeleteRpcRequest(int requestid)
+{
+    if (m_pRpcData.Delete(requestid) < 0)
+    {
+        printf("rpc_table delete error size[%d] \n", m_pRpcData.Size());
+		return -1;
+    }
+    else
+    {
+        printf("rpc_table delete sucess size[%d] \n", m_pRpcData.Size());
+		return 0;
+    }
+    
+}
 //取递增的流水号
-int   CTradeMain::GetSerial()
+int CTradeMain::GetSerial()
 {
 	return m_pRes.GetSerial();
 }
 //取递增的本地号
-UINT64_  CTradeMain::GetLocalNo()
+UINT64_ CTradeMain::GetLocalNo()
 {
 	return g_pPubData.GetLocalSerial();
 }

@@ -40,13 +40,7 @@ typedef struct
 	int txcode;//交易码
 }S_TIMER_CONF;
 
-typedef struct
-{
-    int request_id;//rpc请求id
-    int rpctime;//rpc请求时间
-	std::function<int(S_TRADE_DATA& reqdata, S_TRADE_DATA& ansdata)> func;
-	S_TRADE_DATA data;//请求报文数据
-}S_RPC_DATA;
+
 //合约表
 class CTbl_RpcData
 {
@@ -192,6 +186,10 @@ public:
     // 参数  : char nextflag  0无后续包  1 有后续包  10最后一个数据包
     // 描述  : 应答数据  数据格式为总线头+数据  src=0表示总线  src=1表示socket直连
     virtual int RpcRequest(S_TRADE_DATA& data, int requestid, std::function<int(S_TRADE_DATA& reqdata, S_TRADE_DATA& ansdata)> func);
+
+    virtual bool SelectRpcRequest(int requestid, S_RPC_DATA& data);
+
+    virtual int DeleteRpcRequest(int requestid);
 
 	int proctimer(int id);
 	static int OnTimer(unsigned int event, void *p);

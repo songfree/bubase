@@ -59,7 +59,37 @@ int CProcThread::Run()
 		    //增加rpc应答回调   当为rpc应答时，根据requestid查找调用信息，回调
 			if (1 == m_sData.pData->sDBHead.cRaflag)
 			{
+                S_RPC_DATA rpcdata;
+                if (m_pClientLink->SelectRpcRequest(m_sData.pData->sDBHead.s_Sinfo.s_nSerial, rpcdata))
+                {
+                    //是rpc调用
+                    m_pClientLink->DeleteRpcRequest(m_sData.pData->sDBHead.s_Sinfo.s_nSerial);
+                    try
+                    {
+                        (rpcdata.func)(rpcdata.data, m_sData);
+                    }
+                    catch (...)
+                    {
+                        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "回调出错 requestid[%d]", m_sData.pData->sDBHead.s_Sinfo.s_nSerial);
+                    }
 
+                    if (rpcdata.data.pData != NULL)
+                    {
+                        //printf("PoolFree \n");
+						m_pClientLink->PoolFree(rpcdata.data);
+                        rpcdata.data.pData = NULL;
+                    }
+					continue;
+
+                }
+                else
+                {
+                    //printf("rpc_id[%d] not found\n", m_sData.pData->sDBHead.s_Sinfo.s_nSerial);
+                    m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "请求的流水[%d]不是rpc", m_sData.pData->sDBHead.s_Sinfo.s_nSerial);
+                    m_pClientLink->PoolFree(m_sData);
+					m_sData.pData = NULL;
+                }
+				continue;
 			}
 //			m_sData.pData->sDBHead.s_Sinfo.s_nGateIndex = m_nIndex;
 			// songfree 20180510 modi 改用b_Cinfo保存处理线程序号
