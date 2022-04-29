@@ -679,6 +679,13 @@ void CDrebMsgThread::OnArbQuery(S_BPC_RSMSG &rcvdata)
 {
 	char errmsg[4096];
 	bzero(errmsg,sizeof(errmsg));
+	if (rcvdata.sMsgBuf->sDBHead.nLen<1)
+	{
+		m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__,"OnArbQuery nLen[%d]", rcvdata.sMsgBuf->sDBHead.nLen);
+        m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+        rcvdata.sMsgBuf = NULL;
+        return;
+	}
 	if (!m_pXdp.FromBuffer(rcvdata.sMsgBuf->sBuffer,rcvdata.sMsgBuf->sDBHead.nLen,errmsg))
 	{
 #ifdef _ENGLISH_

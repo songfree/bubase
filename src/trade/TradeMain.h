@@ -67,6 +67,7 @@ public:
     }
     int Insert(S_RPC_DATA info)
     {
+		CBF_PMutex pp(&m_mutex);
         if (m_keyId.Find(info.request_id))
         {
             return -1;

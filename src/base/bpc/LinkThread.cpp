@@ -629,6 +629,7 @@ bool CLinkThread::ResetData(int index,S_BPC_RSMSG *data)
 		m_pSockMgr->at(index)->OnClose("分配消息空间出错",__FILE__,__LINE__);
 		return false;
 	}
+	//bzero(&(data->sMsgBuf->sDBHead),DREBHEADLEN);
 	data->sMsgBuf->sBpcHead.nConnectTime= m_pSockMgr->at(index)->m_nConntime;
 	data->sMsgBuf->sBpcHead.nIndex = index;
 	data->sMsgBuf->sBpcHead.nRtime = time(NULL);

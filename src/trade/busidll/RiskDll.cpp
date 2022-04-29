@@ -41,12 +41,12 @@ RiskDll::RiskDll()
 
 	InitFuncInfo(9805,(FuncPointer )&RiskDll::QueryCustOrder,"查询客户报单",1.0,"作者",1);
 
-	InitFuncInfo(9202,(FuncPointer )&RiskDll::OrderMsg,"报单处理",1.0,"作者",1);
+	InitFuncInfo(9202,(FuncPointer )&RiskDll::OrderMsg,"资金更新",1.0,"作者",1);
 
 
-	InitFuncInfo(9830,(FuncPointer )&RiskDll::Order,"委托报单",1.0,"作者",1);
+	InitFuncInfo(9830,(FuncPointer )&RiskDll::Order,"持仓更新",1.0,"作者",1);
 
-	InitFuncInfo(1021, (FuncPointer)&RiskDll::test1021, "委托报单", 1.0, "作者", 1);
+	InitFuncInfo(1021, (FuncPointer)&RiskDll::test1021, "计算账户盈亏", 1.0, "作者", 1);
 	InitFuncInfo(1023, (FuncPointer)&RiskDll::test1023, "委托报单", 1.0, "作者", 1);
 }
 

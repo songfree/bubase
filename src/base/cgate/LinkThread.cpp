@@ -40,7 +40,7 @@ CLinkThread::CLinkThread()
 	CBF_Tools::MakeDir("data");
 	m_bIsPingTimer = false;
 
-	
+	bzero(&(m_pDataBuf.data->head),DREBHEADLEN);
 	m_pSendData = NULL;
 }
 

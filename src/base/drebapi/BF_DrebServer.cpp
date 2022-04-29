@@ -716,10 +716,36 @@ void CBF_DrebServer::ProcessDreb(S_BPC_RSMSG &rcvdata)
 				rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 				m_pSockMgr.at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
 				break;
+            case CMD_DPBC:
+            case CMD_DPABC:	//广播信息，需要过滤重复的
+				if (NULL != m_bcSerial.Select(rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial))
+				{
+					//重复
+                    m_pLog.LogMp(LOG_DEBUG+1, __FILE__, __LINE__, "收到重复的广播 %d %d %d", rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial);
+                    m_pMemPool.PoolFree(rcvdata.sMsgBuf);
+                    rcvdata.sMsgBuf = NULL;
+					break;
+				}
+				S_BC_SERIAL bcserial;
+				bcserial.node_id = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId;
+				bcserial.node_pid = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId;
+				bcserial.serial = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial;
+				bcserial.timestamp = time(NULL);
+				m_bcSerial.Insert(bcserial);
+                rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
+                rcvdata.sMsgBuf->sBpcHead.cMsgType = MSG_REQ;
+                rcvdata.nRtime = time(NULL);
+                if (m_spi != NULL) //有设定回调
+                {
+                    m_spi->ProcessDrebData(rcvdata);
+                }
+                else //放入队列
+                {
+                    m_qRcvQueue.PushData(rcvdata);
+                }
+				break;
 			case CMD_DPCALL:
 			case CMD_DPACALL:
-			case CMD_DPBC:
-			case CMD_DPABC:
 			case CMD_DPPUSH:
 			case CMD_DPPOST:
 				rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN+rcvdata.sMsgBuf->sDBHead.nLen;
@@ -980,6 +1006,8 @@ void CBF_DrebServer::GetHostInfo()
 	m_vdinfo.clear();
 	m_pHostInfo.GetDisk(m_vdinfo);
 	m_sHostInfo.nDiskNum = m_vdinfo.size();
+	//删除过期的广播信息
+	m_bcSerial.Delete();
 }
 
 bool CBF_DrebServer::Start()

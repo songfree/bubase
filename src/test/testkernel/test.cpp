@@ -1,3 +1,16 @@
+#include "public.h"
+//#include <iostream>
+#include "MdbBase.h"
+#include "BF_Mutex.h"
+#include "DbApi.h"
+#include "BF_LogClient.h"
+#include "BF_Xml.h"
+#include "BF_3Des.h"
+#include "BF_Des.h"
+#include "BF_BufferPool.h"
+#include "BF_HostInfo.h" 
+#include "BF_Tools.h"
+#include "BF_DesEncrypt.h"
 
 #include "TestTimer.h"
 #include "TestDateTime.h"
@@ -5,22 +18,34 @@
 #include "TestSlist.h"
 #include "TestThread.h"
 #include "TestSocket.h"
-//#include "TestIOCP.h"
+#include "TestIOCP.h"
 #include "TestQueue.h"
-
 #include "wgetopt.h"
-#include "BF_Xml.h"
-#include "BF_3Des.h"
-#include "BF_Des.h"
-#include "BF_Tools.h"
-#include "BF_DesEncrypt.h"
+
+
 #include "GateHead.h"
-#include "MdbBase.h"
-#include "BF_BufferPool.h"
-#include "BF_HostInfo.h"
-#include "BF_LogClient.h"
-#include "DbApi.h"
 //#include <net/if.h>
+
+
+#ifdef _WINDOWS
+#ifdef _DEBUG
+#pragma comment(lib, "bf_kerneld.lib") 
+#pragma comment(lib, "bf_xdpd.lib") 
+#pragma comment(lib, "bf_drebapid.lib") 
+#pragma comment(lib, "bf_dbapid.lib") 
+#pragma comment(lib, "bf_dbpubd.lib") 
+#pragma message("Automatically linking with   bf_kerneld.lib bf_xdpd.lib bf_drebapid.lib bf_dbapid.lib bf_dbpubd.lib")
+#else
+#pragma comment(lib, "bf_kernel.lib") 
+#pragma comment(lib, "bf_xdp.lib") 
+#pragma comment(lib, "bf_drebapi.lib") 
+#pragma comment(lib, "bf_dbapi.lib") 
+#pragma comment(lib, "bf_dbpub.lib") 
+#pragma message("Automatically linking with   bf_kernel.lib bf_xdp.lib bf_drebapi.lib bf_dbapi.lib bf_dbpub.lib")
+#endif
+
+#endif
+
 
 #define  DBPWD3DESKEY   "fs27dwms19992017kssh1234" 
 
@@ -51,40 +76,7 @@ public:
 	int aa;
 	string bb;
 	int bbc;
-// 	virtual bool operator()(const CTest_Index f1, const CTest_Index f2) const
-// 	{
-// 		int ret;
-// 		if (f1.aa < f2.aa)
-// 		{
-// 			return true;
-// 		}
-// 		else if (f1.aa == f2.aa)
-// 		{
-// 			ret = f1.bb.compare(f2.bb);
-// 			if (ret <0)
-// 			{
-// 				return true;
-// 			}
-// 			else if (ret>0)
-// 			{
-// 				return false;
-// 			}
-// 			else
-// 			{
-// 				ret = f1.bbc-f2.bbc;
-// 				if (ret < 0)
-// 				{
-// 					return true;
-// 				}
-// 				
-// 				return false;
-// 			}
-// 		}
-// 		else
-// 		{
-// 			return false;
-// 		}
-//	}
+
 	virtual bool operator<(const CTest_Index& dd) const
 	{
 		int ret;
@@ -162,39 +154,7 @@ typedef struct S_TEST_INDEX_
 			return false;
 		}
 	}
-// 	bool operator()(const S_TEST_INDEX_ f1, const S_TEST_INDEX_ f2) const
-// 	{
-// 		int ret;
-// 		if (f1.aa < f2.aa)
-// 		{
-// 			return true;
-// 		}
-// 		else if (f1.aa == f2.aa)
-// 		{
-// 			ret = f1.bb.compare(f2.bb);
-// 			if (ret <0)
-// 			{
-// 				return true;
-// 			}
-// 			else if (ret>0)
-// 			{
-// 				return false;
-// 			}
-// 			else
-// 			{
-// 				ret = f1.bbc-f2.bbc;
-// 				if (ret != 0)
-// 				{
-// 					return false;
-// 				}
-// 				return ret<0;
-// 			}
-// 		}
-// 		else
-// 		{
-// 			return false;
-// 		}
-// 	}
+
 }S_TEST_INDEX;
 
 typedef std::set<CTest_Index> SET_;
@@ -202,196 +162,11 @@ typedef SET_::iterator LP_SET;
 
 
 
-class index_1 : public CIndex_Field_Base
-{
-public:
-	int aa;
-	string bb;
-	int bbc;
-	
-	
-	virtual bool operator<(const index_1& field) const
-	{
-		int ret;
-		if (aa < field.aa)
-		{
-			return true;
-		}
-		else if (aa == field.aa)
-		{
-			ret = bb.compare(field.bb);
-			if (ret <0)
-			{
-				return true;
-			}
-			else if (ret>0)
-			{
-				return false;
-			}
-			else
-			{
-				ret = bbc-field.bbc;
-				if (ret < 0)
-				{
-					return true;
-				}
-				
-				return false;
-			}
-		}
-		else
-		{
-			return false;
-		}
-	}
-};
+
 
 #define  BPUDBDESKEY    "rd402wms"
 #define  BPUDB3DESKEY   "rd402wms20092017Ylink123"
 
-
-//内存表
-// template<typename Record>
-// class CMemTableNew  
-// {
-// public:
-// 	typedef std::deque<Record> VECTOR_;       //定义保存内存表数据的类型，vector的下标相当于rowid
-// 	std::list<int>    m_rowidpool;              //保存删除的内存表数据ID，相当于rowid，下次增加时直接使用         
-// 	VECTOR_      m_table;                  //表数据
-// 	std::vector<bool> m_inuseid;                //rowid对应的数据是否删除
-// 	int  m_current;
-// public:
-// 	
-// 	CMemTableNew()
-// 	{
-// 		m_current = 0;
-// 	}
-// 	~CMemTableNew()
-// 	{
-// 		Clear();
-// 	}
-// 	//当记录删除时，过滤掉
-//     Record *At(int index)
-// 	{
-// 		if (index <0 || index >m_table.size()-1)
-// 		{
-// 			return NULL;
-// 		}
-// 		if (m_inuseid[index]) //没有删除
-// 		{
-// 			return &(m_table.at(index));
-// 		}
-// 		else
-// 		{
-// 			return NULL;
-// 		}
-// 		
-// 	}
-// 	void Clear()
-// 	{
-// 		m_table.clear();
-// 		m_inuseid.clear();
-// 		m_rowidpool.clear();
-// 	}
-// 	int Add(Record& rt)
-// 	{
-// 		int id;
-// 		if (m_rowidpool.size() > 0)
-// 		{
-// 			id=m_rowidpool.front();
-// 			m_rowidpool.pop_front();
-// 			m_table[id]=rt;
-// 			m_inuseid[id]=true;
-// 		}
-// 		else
-// 		{
-// 			id=m_table.size();
-// 			m_table.push_back(rt);
-// 			m_inuseid.push_back(true);
-// 		}
-// 		return id;
-// 	}
-// 	void Update(int id,Record& rt,bool logged=false)
-// 	{
-// 		m_table[id]=rt;
-// 	}
-// 	void GetById(int id,Record& rt)
-// 	{
-// 		rt=m_table[id];
-// 	}
-// 	void Delete(int id)
-// 	{
-// 		m_rowidpool.push_back(id);
-// 		m_inuseid[id]=false;
-// 	}
-// 	bool First(Record& rt)
-// 	{
-// 		m_current = 0;
-// 		for (int i=0;i<m_table.size();i++)
-// 		{
-// 			if (m_inuseid[i])
-// 			{
-// 				rt = m_table[i];
-// 				m_current = i;
-// 				return true;
-// 			}
-// 		}
-// 		return false;
-// 	}
-// 	Record *First()
-// 	{
-// 		m_current = 0;
-// 		for (int i=0;i<m_table.size();i++)
-// 		{
-// 			if (m_inuseid[i])
-// 			{
-// 				m_current = i;
-// 				return &(m_table[i]);
-// 			}
-// 		}
-// 		return NULL;
-// 	}
-// 	bool Next(Record& rt)
-// 	{
-// 		m_current++;
-// 		for (;m_current<m_table.size();m_current++)
-// 		{
-// 			if (m_inuseid[m_current])
-// 			{
-// 				rt = m_table[m_current];
-// 				return true;
-// 			}
-// 		}
-// 		return false;
-// 	}
-// 	Record *Next()
-// 	{
-// 		m_current++;
-// 		for (;m_current<m_table.size();m_current++)
-// 		{
-// 			if (m_inuseid[m_current])
-// 			{
-// 				return &(m_table[m_current]);
-// 			}
-// 		}
-// 		return NULL;
-// 	}
-// 	//包括删除的记录
-// 	int AllSize()
-// 	{
-// 		return m_table.size();
-// 	}
-// 	//不包括删除的记录
-// 	int RealSize()
-// 	{
-// 		return m_table.size()-m_rowidpool.size();
-// 	}
-// 	//不包括删除的记录
-// 	int Size()
-// 	{
-// 		return m_table.size()-m_rowidpool.size();
-// 	}
-// };
 
 
 typedef struct 
@@ -684,6 +459,97 @@ public:
 		return &(m_table.m_table[rowid]);
 	}
 };
+typedef struct _BC_SERIAL
+{
+    int node_id;
+    int node_pid;
+    int serial;
+    int timestamp;
+}S_BC_SERIAL;
+
+class CTbl_BcSerial
+{
+protected:
+
+    CMemTableNew <S_BC_SERIAL>  m_table;
+    CPkeyIntUnordered<3>                 m_keyId;//请求ID
+    CBF_Mutex                   m_mutex;//互斥锁
+public:
+
+    CBF_BufferPool* m_pMemPool;//内存分配池;
+    CTbl_BcSerial()
+    {
+
+    }
+    virtual ~CTbl_BcSerial()
+    {
+
+    }
+    void Clear()
+    {
+        m_keyId.Clear();
+        m_table.Clear();
+    }
+    int Insert(S_BC_SERIAL info)
+    {
+        CBF_PMutex pp(&m_mutex);
+        if (m_keyId.Find(info.node_id, info.node_pid, info.serial))
+        {
+            return -1;
+        }
+        int rid = m_table.Add(info);
+        m_keyId.Add(rid, m_table.m_table[rid].node_id, m_table.m_table[rid].node_pid, m_table.m_table[rid].serial);
+        return rid;
+    }
+    S_BC_SERIAL* Select(int nodeid, int nodepid, int serial)
+    {
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        if (!m_keyId.Select(rid, nodeid, nodepid, serial))
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rid]);
+    }
+
+    S_BC_SERIAL* At(int rowid)
+    {
+        if (rowid<0 || rowid > m_table.AllSize() - 1)
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rowid]);
+    }
+
+    int Delete()
+    {
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        CInt iset;
+        bool bret = m_keyId.First(rid);
+        while (bret)
+        {
+            if (m_table.m_table[rid].timestamp - time(NULL) > 3600) //1小时
+            {
+                iset.Add(rid);
+            }
+            bret = m_keyId.Next(rid);
+        }
+        m_keyId.Delete(iset);
+        bret = iset.First(rid);
+        while (bret)
+        {
+            m_table.Delete(rid);
+            bret = iset.Next(rid);
+        }
+
+        return 0;
+    }
+    int Size()
+    {
+        return m_keyId.Size();
+    }
+};
 
 void GenAcc(const char *oldacc, int syscode, char *txacc)
 {
@@ -770,6 +636,23 @@ public:
             return false;
         }
         return false;
+    }
+    //unordered使用
+    virtual bool operator == (const index_acc_portf_hjcode& field) const
+    {
+        if (account_id !=field.account_id)
+        {
+            return false;
+        }
+        else if (portfolio_id != field.portfolio_id)
+        {
+            return false;
+        }
+        else if (strcmp(hj_code,field.hj_code)!=0)
+        {
+            return false;
+        }
+        return true;
     }
 };
 //策略T0持仓表
@@ -941,9 +824,185 @@ public:
     }
 };
 
-#define  int int32_t 
-#define  UINT64_ uint64_t
 
+
+
+//策略T0持仓表
+class CTbl_PortfolioT0hold_Unordered {
+protected:
+
+    struct _hash
+    {
+        std::size_t operator() (const index_acc_portf_hjcode& f1) const
+        {
+            return hash_val(f1.account_id, f1.portfolio_id, (string)f1.hj_code);
+        }
+    };
+
+    CMemTableNew<S_MDB_PortfolioT0hold> m_table;
+    CIndexUint64<1>   m_index_account_id; //账户索引
+    CIndexUint64<2>   m_index_account_portf_id; //账户+策略索引
+    CKeyFieldUnordered<index_acc_portf_hjcode, _hash>   m_key; //账户+策略+code 主键
+
+    CBF_Mutex m_mutex;//互斥锁
+    CInt  m_rid_update;//存放更新的Rowrid
+public:
+    CTbl_PortfolioT0hold_Unordered() {
+
+    }
+    virtual ~CTbl_PortfolioT0hold_Unordered() {
+
+    }
+    void Clear() {
+        m_index_account_id.Clear();
+        m_index_account_portf_id.Clear();
+        m_key.Clear();
+        m_table.Clear();
+    }
+    //删除资金账号
+    bool Delete(UINT64_ account_id)
+    {
+        CBF_PMutex pp(&m_mutex);
+        CInt iset;
+        bool bret = m_index_account_id.Select(iset, account_id);
+        if (!bret)
+        {
+            return false;
+        }
+        m_index_account_id.Delete(iset);
+        m_index_account_portf_id.Delete(iset);
+        m_key.Delete(iset);
+        int rid;
+        bret = iset.First(rid);
+        while (bret)
+        {
+            m_table.Delete(rid);
+            bret = iset.Next(rid);
+        }
+        return true;
+    }
+    //写入记录
+    int Insert(S_MDB_PortfolioT0hold info) {
+        CBF_PMutex pp(&m_mutex);
+        index_acc_portf_hjcode bb;
+        bb.account_id = info.account_id;
+        bb.portfolio_id = info.portfolio_id;
+        strncpy(bb.hj_code, info.hj_code, sizeof(bb.hj_code) - 1);
+        if (m_key.Find(bb)) {
+            return -1;
+        }
+        int rid = m_table.Add(info);
+        bb.m_nRowId = rid;
+        m_key.Add(bb);
+        m_index_account_id.Add(rid, (UINT64_)m_table.m_table[rid].account_id);
+        m_index_account_portf_id.Add(rid, m_table.m_table[rid].account_id, m_table.m_table[rid].portfolio_id);
+        return rid;
+    }
+    int Update(S_MDB_PortfolioT0hold info, bool isupdate = false) {
+        CBF_PMutex pp(&m_mutex);
+        index_acc_portf_hjcode bb;
+        bb.account_id = info.account_id;
+        bb.portfolio_id = info.portfolio_id;
+        strncpy(bb.hj_code, info.hj_code, sizeof(bb.hj_code) - 1);
+        if (m_key.Select(bb)) {
+            m_table.m_table[bb.m_nRowId] = info;
+            if (isupdate)
+            {
+                m_rid_update.Add(bb.m_nRowId);
+            }
+            return bb.m_nRowId;
+        }
+        int rid = m_table.Add(info);
+        bb.m_nRowId = rid;
+        m_key.Add(bb);
+        m_index_account_id.Add(rid, (UINT64_)m_table.m_table[rid].account_id);
+        m_index_account_portf_id.Add(rid, m_table.m_table[rid].account_id, m_table.m_table[rid].portfolio_id);
+        m_rid_update.Add(rid);
+        return rid;
+    }
+    void GetUpdateList(std::vector<S_MDB_PortfolioT0hold*>& reslist, bool dellist = true)
+    {
+        CBF_PMutex pp(&m_mutex);
+        int rid;
+        bool bret = m_rid_update.First(rid);
+        while (bret)
+        {
+            reslist.push_back(&(m_table.m_table[rid]));
+            bret = m_rid_update.Next(rid);
+        }
+        if (dellist)
+        {
+            m_rid_update.Clear();
+        }
+        return;
+    }
+    //根据账号、策略、代码取出记录
+    S_MDB_PortfolioT0hold* Select(UINT64_ account_id, UINT64_ portfolio_id, char* hj_code) {
+        CBF_PMutex pp(&m_mutex);
+        index_acc_portf_hjcode bb;
+        bb.account_id = account_id;
+        bb.portfolio_id = portfolio_id;
+        strncpy(bb.hj_code, hj_code, sizeof(bb.hj_code) - 1);
+        if (!m_key.Select(bb)) {
+            return NULL;
+        }
+        return &(m_table.m_table[bb.m_nRowId]);
+    }
+    //根据主键获取rowid
+    int GetRowId(UINT64_ account_id, UINT64_ portfolio_id, char* hj_code)
+    {
+        CBF_PMutex pp(&m_mutex);
+        index_acc_portf_hjcode bb;
+        bb.account_id = account_id;
+        bb.portfolio_id = portfolio_id;
+        strncpy(bb.hj_code, hj_code, sizeof(bb.hj_code) - 1);
+        if (!m_key.Select(bb)) {
+            return -1;
+        }
+        return bb.m_nRowId;
+    }
+    //根据资金账号取出所有券单
+    bool Select(UINT64_ account_id, std::vector<S_MDB_PortfolioT0hold*>& reslist)
+    {
+        CBF_PMutex pp(&m_mutex);
+        int rid;
+        bool bret = m_index_account_id.Find(rid, account_id);
+        if (!bret)
+        {
+            return false;
+        }
+        while (bret)
+        {
+            reslist.push_back(&(m_table.m_table[rid]));
+            bret = m_index_account_id.Next(rid);
+        }
+        return true;
+    }
+    //根据资金账号、策略取出所有券单
+    bool Select(UINT64_ account_id, UINT64_ portfolio_id, std::vector<S_MDB_PortfolioT0hold*>& reslist)
+    {
+        CBF_PMutex pp(&m_mutex);
+        int rid;
+        bool bret = m_index_account_portf_id.Find(rid, account_id, portfolio_id);
+        if (!bret)
+        {
+            return false;
+        }
+        while (bret)
+        {
+            reslist.push_back(&(m_table.m_table[rid]));
+            bret = m_index_account_portf_id.Next(rid);
+        }
+        return true;
+    }
+    //根据rowid取出记录
+    S_MDB_PortfolioT0hold* At(int rowid) {
+        if (rowid < 0 || rowid > m_table.AllSize() - 1) {
+            return NULL;
+        }
+        return &(m_table.m_table[rowid]);
+    }
+};
 
 //字节对齐
 #ifdef _WINDOWS
@@ -1134,25 +1193,25 @@ void Reverse(unsigned char* buf, int len)
     }
     memcpy(buf, buf1, len);
 }
-int main(int argc,char *argv[])
+int testbinfile()
 {
-	 printf("sizof=%d  %ld\n", sizeof(f_cancelorder_ans_),time(NULL));
+    printf("sizof=%d  %ld\n", sizeof(f_cancelorder_ans_), time(NULL));
     struct_stat fs;
     FSTAT("10000012_ORDER_STATUS.20211210.bin", &fs);
-    int fsize=fs.st_size;
+    int fsize = fs.st_size;
 
-	FILE *fp = fopen("10000012_ORDER_STATUS.20211210.bin","rb+");
-	if (fp == NULL)
-	{
-		return -1;
-	}
-	//s_f_queryportforder aaa;
-	//fseek(fp,0,1);
-	//int recnum=1;
-	//fwrite(&recnum,4,1,fp);
-	//fseek(fp, fsize, 1);
-	//fwrite(&aaa, sizeof(s_f_queryportforder), 1, fp);
-	//fclose(fp);
+    FILE* fp = fopen("10000012_ORDER_STATUS.20211210.bin", "rb+");
+    if (fp == NULL)
+    {
+        return -1;
+    }
+    //s_f_queryportforder aaa;
+    //fseek(fp,0,1);
+    //int recnum=1;
+    //fwrite(&recnum,4,1,fp);
+    //fseek(fp, fsize, 1);
+    //fwrite(&aaa, sizeof(s_f_queryportforder), 1, fp);
+    //fclose(fp);
 
     //fp = fopen("10000012_ORDER_STATUS.20211203.bin", "rb+");
     //if (fp == NULL)
@@ -1160,944 +1219,1210 @@ int main(int argc,char *argv[])
     //    return -1;
     //}
 
-	printf("s_f_queryportforder size=%d",sizeof(s_f_queryportforder));
-	char databuffer[64*1024];
-	int  databuffersize=sizeof(databuffer);
-	int ret = fread(databuffer, 1, databuffersize,fp);
-	s_f_queryportforder* pp = NULL;
-	if (ret > 0)
-	{
-		char *p= databuffer;
-		int a = fsize/sizeof(s_f_queryportforder);
-		for (int i = 0; i < a; i++)
-		{
-			//memcpy(&a, p, sizeof(int));
-			//Reverse((unsigned char*)&a, sizeof(int));
-			//printf("     size=%d \n", a);
-			//p=p+ sizeof(int);
-			pp = (s_f_queryportforder*)(p);
-			printf("account_id=%llu  sys_order_id=%llu  order_stat=%d \n", pp->account_id,pp->sys_order_id,pp->order_stat);
-			WriteBinFile("test.bin",(const char *)pp,sizeof(s_f_queryportforder));
-			p = p+sizeof(s_f_queryportforder);
-			
-		}
-	}
+    printf("s_f_queryportforder size=%d", sizeof(s_f_queryportforder));
+    char databuffer[64 * 1024];
+    int  databuffersize = sizeof(databuffer);
+    int ret = fread(databuffer, 1, databuffersize, fp);
+    s_f_queryportforder* pp = NULL;
+    if (ret > 0)
+    {
+        char* p = databuffer;
+        int a = fsize / sizeof(s_f_queryportforder);
+        for (int i = 0; i < a; i++)
+        {
+            //memcpy(&a, p, sizeof(int));
+            //Reverse((unsigned char*)&a, sizeof(int));
+            //printf("     size=%d \n", a);
+            //p=p+ sizeof(int);
+            pp = (s_f_queryportforder*)(p);
+            printf("account_id=%llu  sys_order_id=%llu  order_stat=%d \n", pp->account_id, pp->sys_order_id, pp->order_stat);
+            WriteBinFile("test.bin", (const char*)pp, sizeof(s_f_queryportforder));
+            p = p + sizeof(s_f_queryportforder);
+
+        }
+    }
     fp = fopen("test.bin", "rb + ");
     if (fp == NULL)
     {
         return -1;
     }
-	int recnum=0;
-	ret = fread(&recnum, 1, 4, fp);
-	return 0;
-	//printf("intsize=%d\n",sizeof(int));
-	//printf("shortsize=%d\n",sizeof(short));
-	//printf("longsize=%d\n",sizeof(long));
-	//printf("doublesize=%d\n",sizeof(double));
-	//CDbApi dbapi;
-	//if (argc <4)
-	//{
-	//	if (!dbapi.Connect("127.0.0.1:3306@risk","risk","risk",6))
-	//	{
-	//		printf("连接数据库出错 %d%s \n",dbapi.m_dbconn.m_nErrCode,dbapi.m_dbconn.m_sErrInfo.c_str());
-	//		return -1;
-	//	}
-	//}
-	//else
-	//{
-	//	printf("cmd dbname dbuser db pwd\n");
-	//	if (!dbapi.Connect(argv[1],argv[2],argv[3],6))
-	//	{
-	//		printf("连接数据库出错 %d%s \n",dbapi.m_dbconn.m_nErrCode,dbapi.m_dbconn.m_sErrInfo.c_str());
-	//		return -1;
-	//	}
-	//}
-	//DELIMITER $$
-	//	DROP PROCEDURE IF EXISTS `sp_test_wms` $$
-	//	CREATE PROCEDURE `sp_test_wms` (
-	//	in i_operid char(20),
-	//	out o_errcode int )
+    int recnum = 0;
+    ret = fread(&recnum, 1, 4, fp);
+    return 0;
+}
+int testdb(int argc, char* argv[])
+{
+    printf("intsize=%d\n",sizeof(int));
+    printf("shortsize=%d\n",sizeof(short));
+    printf("longsize=%d\n",sizeof(long));
+    printf("doublesize=%d\n",sizeof(double));
+    CDbApi dbapi;
+    if (argc <4)
+    {
+    	    if (!dbapi.Connect("127.0.0.1:3306@risk","risk","risk",6))
+    	    {
+    		    printf("连接数据库出错 %d%s \n",dbapi.m_dbconn.m_nErrCode,dbapi.m_dbconn.m_sErrInfo.c_str());
+    		    return -1;
+    	    }
+    }
+    else
+    {
+        printf("cmd dbname dbuser db pwd\n");
+        if (!dbapi.Connect(argv[1], argv[2], argv[3], 6))
+        {
+            printf("连接数据库出错 %d%s \n", dbapi.m_dbconn.m_nErrCode, dbapi.m_dbconn.m_sErrInfo.c_str());
+            return -1;
+        }
+    }
+    //DELIMITER $$
+    //	DROP PROCEDURE IF EXISTS `sp_test_wms` $$
+    //	CREATE PROCEDURE `sp_test_wms` (
+    //	in i_operid char(20),
+    //	out o_errcode int )
 
-	//	BEGIN
-	//	SET o_errcode = 1999;
-	//insert into contract values('a2001','a','20200115');
+    //	BEGIN
+    //	SET o_errcode = 1999;
+    //insert into contract values('a2001','a','20200115');
 
-	//END$$
-	//	DELIMITER ;
+    //END$$
+    //	DELIMITER ;
 
-	//char sMsg[255];
-	//int ret;
-	//memset(sMsg, 0, sizeof(sMsg));
-	//dbapi.setCommandText("sp_test_wms",1);
-	//dbapi.Param("i_operid").setAsString() = "admin1";		//本操作员id
-	//if (!dbapi.Execute())
-	//{
-	//	printf("执行sp_test_wms出错 %s\n",dbapi.GetCmdErrInfo());
-	//}
-	//else
-	//{
-	//	ret = dbapi.Param("o_errcode").asLong();
-	//	printf("执行sp_test_wms返回 %d\n",ret);
-	//}
-	//dbapi.setCommandText("sp_test_wms2",1);
-	//dbapi.Param("i_operid").setAsString() = "admin1";		//本操作员id
-	//if (!dbapi.Execute())
-	//{
-	//	printf("执行sp_test_wms2出错 %s\n",dbapi.GetCmdErrInfo());
-	//}
-	//else
-	//{
-	//	ret = dbapi.Param("o_errcode").asLong();
-	//	printf("执行sp_test_wms2返回 %d\n",ret);
-	//}
-
-
-	//dbapi.setCommandText("sp_query_oper",1);
-	//dbapi.Param("i_operid").setAsString() = "admin1";
-	//
-	//if (!dbapi.Execute())
-	//{
-	//	printf("执行sp_query_oper出错 %s\n",dbapi.GetCmdErrInfo());
-	//	return -1;
-	//}
-	//ret = dbapi.Param("o_errcode").asLong();
-	//if (ret != 0)
-	//{
-	//	printf("执行sp_query_oper返回 %d\n",ret);
-	//	return ret;
-	//}
-	//printf("执行sp_query_oper返回 %d\n",ret);
-	//while (dbapi.FetchNext())
-	//{
-	//	std::string ss = dbapi.Field("status").asString().GetMultiByteChars();
-	//	//非正常状态的操作员不加载进来
-	//	if(ss.compare("0") != 0)
-	//	{
-	//		printf("操作员状态不符\n");
-	//		continue;
-	//	}
-	//	std::string userid = dbapi.Field("operid").asString().GetMultiByteChars();
-	//	std::string utype = dbapi.Field("type").asString().GetMultiByteChars();
-	//	std::string upwd = dbapi.Field("passwd").asString().GetMultiByteChars();
-	//	std::string uname = dbapi.Field("name").asString().GetMultiByteChars();
-	//	printf("操作员信息 %s %s %s %s \n",userid.c_str(),utype.c_str(),upwd.c_str(),uname.c_str());
-	//}
-
-	//std::string errcode=dbapi.Param("o_errmsg").setAsString().GetMultiByteChars();
-	//printf("执行sp_query_oper返回信息 %s\n",errcode.c_str());
+    char sMsg[255];
+    int ret;
+    memset(sMsg, 0, sizeof(sMsg));
+    dbapi.setCommandText("sp_test_wms",1);
+    dbapi.Param("i_operid").setAsString() = "admin1";		//本操作员id
+    if (!dbapi.Execute())
+    {
+    	printf("执行sp_test_wms出错 %s\n",dbapi.GetCmdErrInfo());
+    }
+    else
+    {
+    	ret = dbapi.Param("o_errcode").asLong();
+    	printf("执行sp_test_wms返回 %d\n",ret);
+    }
+    dbapi.setCommandText("sp_test_wms2",1);
+    dbapi.Param("i_operid").setAsString() = "admin1";		//本操作员id
+    if (!dbapi.Execute())
+    {
+    	printf("执行sp_test_wms2出错 %s\n",dbapi.GetCmdErrInfo());
+    }
+    else
+    {
+    	ret = dbapi.Param("o_errcode").asLong();
+    	printf("执行sp_test_wms2返回 %d\n",ret);
+    }
 
 
-	//return 0;
-	//
+    dbapi.setCommandText("sp_query_oper",1);
+    dbapi.Param("i_operid").setAsString() = "admin1";
+    
+    if (!dbapi.Execute())
+    {
+    	printf("执行sp_query_oper出错 %s\n",dbapi.GetCmdErrInfo());
+    	return -1;
+    }
+    ret = dbapi.Param("o_errcode").asLong();
+    if (ret != 0)
+    {
+    	printf("执行sp_query_oper返回 %d\n",ret);
+    	return ret;
+    }
+    printf("执行sp_query_oper返回 %d\n",ret);
+    while (dbapi.FetchNext())
+    {
+    	std::string ss = dbapi.Field("status").asString().GetMultiByteChars();
+    	//非正常状态的操作员不加载进来
+    	if(ss.compare("0") != 0)
+    	{
+    		printf("操作员状态不符\n");
+    		continue;
+    	}
+    	std::string userid = dbapi.Field("operid").asString().GetMultiByteChars();
+    	std::string utype = dbapi.Field("type").asString().GetMultiByteChars();
+    	std::string upwd = dbapi.Field("passwd").asString().GetMultiByteChars();
+    	std::string uname = dbapi.Field("name").asString().GetMultiByteChars();
+    	printf("操作员信息 %s %s %s %s \n",userid.c_str(),utype.c_str(),upwd.c_str(),uname.c_str());
+    }
 
-	/////通过读取日志获得结算是否成功
-	//int i;
-	//int nfieldcount=0;
-	//string sname;
-	//string svalue;
-	//int rec=0;
-
-	//dbapi.setCommandText("sp_settle_step1",1);
-	//dbapi.Param("i_operid").setAsString() = "admin2";
-	//dbapi.Param("i_pid").setAsLong() = 16826;
-	//dbapi.Param("i_settle_date").setAsString() = "20200821";
-	//dbapi.Param("i_brokerid").setAsString() = "000003";
-
-
-	//if (!dbapi.Execute())
-	//{
-	//	printf("Execute sp_settle_step1 error\n");
-	//	return -1;
-	//}
-	//nfieldcount = dbapi.FieldCount();//取得字段数
-
-
-	//while(dbapi.FetchNext())
-	//{
-	//	for (int i=0;i<nfieldcount;i++)
-	//	{
-	//		sname = dbapi.Field(i).Name();
-	//		svalue = dbapi.Field(i).asString();
-	//		printf("sp_settle_step1  返回记录数[%d]         field [%s:%s] \n",rec,sname.c_str(),svalue.c_str());
-	//	}
-	//	rec++;
-
-	//}
-	//i = dbapi.Param("o_errcode").asLong();
-	//if (i != 0)
-	//{
-	//	printf("sp_settle_step1 返回参数  o_errcode:o_errmsg = %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
-	//	return -1;
-	//}
-	//printf("sp_settle_step1 返回参数  o_errcode:o_errmsg = %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
-
-	//try
-	//{
-	//	dbapi.setCommandText("sp_query_t_settle_result",1);
-	//	dbapi.Param("i_operid").setAsString() = "admin2";
-	//	dbapi.Param("i_pid").setAsLong() = 16826;
-	//}
-	//catch (SAException &err)
-	//{
-	//	printf("sqlapi err %d:%s\n",err.ErrNativeCode(),err.ErrText().GetMultiByteChars());
-	//	return -1;
-	//}
-
-	//if (!dbapi.Execute())
-	//{
-	//	printf("Execute sp_query_t_settle_result error %s \n",dbapi.GetCmdErrInfo());
-	//	return -1;
-	//}
-	//rec=0;
-	//nfieldcount = dbapi.FieldCount();//取得字段数
-	//while(dbapi.FetchNext())
-	//{
-	//	printf("sp_query_t_settle_result FetchNext rec=%d nfieldcount=%d \n",rec,nfieldcount);
-	//	for (int i=0;i<nfieldcount;i++)
-	//	{
-	//		sname = dbapi.Field(i).Name();
-	//		svalue = dbapi.Field(i).asString();
-	//		printf("sp_query_t_settle_result 返回记录数[%d]          field [%s:%s] \n",rec,sname.c_str(),svalue.c_str());
-	//	}
-	//	rec++;
-
-	//}
-	//i = dbapi.Param("o_errcode").asLong();
-	//if (i != 0)
-	//{
-	//	printf("sp_query_t_settle_result 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
-	//	return -1;
-	//}
-	//printf("sp_query_t_settle_result 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
+    std::string errcode=dbapi.Param("o_errmsg").setAsString().GetMultiByteChars();
+    printf("执行sp_query_oper返回信息 %s\n",errcode.c_str());
 
 
-	//
-	//dbapi.setCommandText("sp_settle_liq",1);
-	//try
-	//{
-	//	dbapi.Param("i_operid").setAsString() = "admin2";
-	//}
-	//catch (SAException &err)
-	//{
-	//	printf("sqlapi err %d:%s\n",err.ErrNativeCode(),err.ErrText().GetMultiByteChars());
-	//	return -1;
-	//}
-	//dbapi.Param("i_pid").setAsLong() = 16826;
-	//
-	//dbapi.Param("i_settle_date").setAsString() = "20200821";
-	//dbapi.Param("i_brokerid").setAsString() = "000003";
+    return 0;
+    
+}
+int testsettle(int argc, char* argv[])
+{
+    printf("intsize=%d\n", sizeof(int));
+    printf("shortsize=%d\n", sizeof(short));
+    printf("longsize=%d\n", sizeof(long));
+    printf("doublesize=%d\n", sizeof(double));
+    CDbApi dbapi;
+    if (argc < 4)
+    {
+        if (!dbapi.Connect("127.0.0.1:3306@risk", "risk", "risk", 6))
+        {
+            printf("连接数据库出错 %d%s \n", dbapi.m_dbconn.m_nErrCode, dbapi.m_dbconn.m_sErrInfo.c_str());
+            return -1;
+        }
+    }
+    else
+    {
+        printf("cmd dbname dbuser db pwd\n");
+        if (!dbapi.Connect(argv[1], argv[2], argv[3], 6))
+        {
+            printf("连接数据库出错 %d%s \n", dbapi.m_dbconn.m_nErrCode, dbapi.m_dbconn.m_sErrInfo.c_str());
+            return -1;
+        }
+    }
+    ///通过读取日志获得结算是否成功
+    int i;
+    int nfieldcount=0;
+    string sname;
+    string svalue;
+    int rec=0;
 
-	//if (dbapi.Execute())
-	//{
-	//	nfieldcount = dbapi.FieldCount();//取得字段数
-
-
-	//	while(dbapi.FetchNext())
-	//	{
-	//		for (int i=0;i<nfieldcount;i++)
-	//		{
-	//			sname = dbapi.Field(i).Name();
-	//			svalue = dbapi.Field(i).asString();
-	//			printf("sp_settle_liq  返回记录数[%d]         field [%s:%s] \n",rec,sname.c_str(),svalue.c_str());
-	//		}
-	//		rec++;
-
-	//	}
-	//	i = dbapi.Param("o_errcode").asLong();
-	//	if (i != 0)
-	//	{
-	//		printf("sp_settle_liq 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
-	//		return -1;
-	//	}
-	//	printf("sp_settle_liq 返回参数  o_errcode:o_errmsg = %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
-	//}
-	//else
-	//{
-	//	printf("Execute sp_settle_liq error\n");
-	//}
-
-	//
-	//printf("开始sp_query_t_settle_result\n");
-	//try
-	//{
-	//	dbapi.setCommandText("sp_query_t_settle_result",1);
-	//	dbapi.Param("i_operid").setAsString() = "admin2";
-	//	dbapi.Param("i_pid").setAsLong() = 16826;
-	//}
-	//catch (SAException &err)
-	//{
-	//	printf("sqlapi err %d:%s\n",err.ErrNativeCode(),err.ErrText().GetMultiByteChars());
-	//	return -1;
-	//}
-	//
-	//if (!dbapi.Execute())
-	//{
-	//	printf("Execute sp_query_t_settle_result error %s \n",dbapi.GetCmdErrInfo());
-	//	return -1;
-	//}
-	//rec=0;
-	//nfieldcount = dbapi.FieldCount();//取得字段数
-	//while(dbapi.FetchNext())
-	//{
-	//	for (int i=0;i<nfieldcount;i++)
-	//	{
-	//		sname = dbapi.Field(i).Name();
-	//		svalue = dbapi.Field(i).asString();
-	//		printf("sp_query_t_settle_result 返回记录数[%d]          field [%s:%s] \n",rec,sname.c_str(),svalue.c_str());
-	//	}
-	//	rec++;
-
-	//}
-	//i = dbapi.Param("o_errcode").asLong();
-	//if (i != 0)
-	//{
-	//	printf("sp_query_t_settle_result 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
-	//	return -1;
-	//}
-	//printf("sp_query_t_settle_result 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
+    dbapi.setCommandText("sp_settle_step1",1);
+    dbapi.Param("i_operid").setAsString() = "admin2";
+    dbapi.Param("i_pid").setAsLong() = 16826;
+    dbapi.Param("i_settle_date").setAsString() = "20200821";
+    dbapi.Param("i_brokerid").setAsString() = "000003";
 
 
+    if (!dbapi.Execute())
+    {
+    	printf("Execute sp_settle_step1 error\n");
+    	return -1;
+    }
+    nfieldcount = dbapi.FieldCount();//取得字段数
 
 
-	//
-	//return 0;
+    while(dbapi.FetchNext())
+    {
+        for (int i = 0; i < nfieldcount; i++)
+        {
+            sname = dbapi.Field(i).Name();
+            svalue = dbapi.Field(i).asString();
+            printf("sp_settle_step1  返回记录数[%d]         field [%s:%s] \n", rec, sname.c_str(), svalue.c_str());
+        }
+        rec++;
 
-	//pLog.SetLogPara(LOG_DEBUG,"","test.log");
-	//pLog.StartLog();
-	//
+    }
+    i = dbapi.Param("o_errcode").asLong();
+    if (i != 0)
+    {
+        	printf("sp_settle_step1 返回参数  o_errcode:o_errmsg = %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
+        	return -1;
+    }
+    printf("sp_settle_step1 返回参数  o_errcode:o_errmsg = %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
 
-	
+    try
+    {
+    	    dbapi.setCommandText("sp_query_t_settle_result",1);
+        	dbapi.Param("i_operid").setAsString() = "admin2";
+        	dbapi.Param("i_pid").setAsLong() = 16826;
+    }
+    catch (SAException &err)
+    {
+    	    printf("sqlapi err %d:%s\n",err.ErrNativeCode(),err.ErrText().GetMultiByteChars());
+        	return -1;
+    }
+
+    if (!dbapi.Execute())
+    {
+        	printf("Execute sp_query_t_settle_result error %s \n",dbapi.GetCmdErrInfo());
+        	return -1;
+    }
+    rec=0;
+    nfieldcount = dbapi.FieldCount();//取得字段数
+    while(dbapi.FetchNext())
+    {
+        printf("sp_query_t_settle_result FetchNext rec=%d nfieldcount=%d \n", rec, nfieldcount);
+        for (int i = 0; i < nfieldcount; i++)
+        {
+            sname = dbapi.Field(i).Name();
+            svalue = dbapi.Field(i).asString();
+            printf("sp_query_t_settle_result 返回记录数[%d]          field [%s:%s] \n", rec, sname.c_str(), svalue.c_str());
+        }
+        rec++;
+
+    }
+    i = dbapi.Param("o_errcode").asLong();
+    if (i != 0)
+    {
+        	printf("sp_query_t_settle_result 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
+        	return -1;
+    }
+    printf("sp_query_t_settle_result 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
 
 
+    
+    dbapi.setCommandText("sp_settle_liq",1);
+    try
+    {
+        	dbapi.Param("i_operid").setAsString() = "admin2";
+    }
+    catch (SAException &err)
+    {
+        	printf("sqlapi err %d:%s\n",err.ErrNativeCode(),err.ErrText().GetMultiByteChars());
+        	return -1;
+    }
+    dbapi.Param("i_pid").setAsLong() = 16826;
+    
+    dbapi.Param("i_settle_date").setAsString() = "20200821";
+    dbapi.Param("i_brokerid").setAsString() = "000003";
+
+    if (dbapi.Execute())
+    {
+        	nfieldcount = dbapi.FieldCount();//取得字段数
+
+
+    	    while(dbapi.FetchNext())
+    	    {
+    		    for (int i=0;i<nfieldcount;i++)
+    		    {
+    			    sname = dbapi.Field(i).Name();
+    			    svalue = dbapi.Field(i).asString();
+    			    printf("sp_settle_liq  返回记录数[%d]         field [%s:%s] \n",rec,sname.c_str(),svalue.c_str());
+    		    }
+    		    rec++;
+
+    	    }
+    	    i = dbapi.Param("o_errcode").asLong();
+    	    if (i != 0)
+    	    {
+    		    printf("sp_settle_liq 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
+    		    return -1;
+    	    }
+    	    printf("sp_settle_liq 返回参数  o_errcode:o_errmsg = %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
+    }
+    else
+    {
+        	printf("Execute sp_settle_liq error\n");
+    }
+
+    
+    printf("开始sp_query_t_settle_result\n");
+    try
+    {
+    	    dbapi.setCommandText("sp_query_t_settle_result",1);
+    	    dbapi.Param("i_operid").setAsString() = "admin2";
+        	dbapi.Param("i_pid").setAsLong() = 16826;
+    }
+    catch (SAException &err)
+    {
+        	printf("sqlapi err %d:%s\n",err.ErrNativeCode(),err.ErrText().GetMultiByteChars());
+        	return -1;
+    }
+    
+    if (!dbapi.Execute())
+    {
+        	printf("Execute sp_query_t_settle_result error %s \n",dbapi.GetCmdErrInfo());
+        	return -1;
+    }
+    rec=0;
+    nfieldcount = dbapi.FieldCount();//取得字段数
+    while(dbapi.FetchNext())
+    {
+        for (int i = 0; i < nfieldcount; i++)
+        {
+            sname = dbapi.Field(i).Name();
+            svalue = dbapi.Field(i).asString();
+            printf("sp_query_t_settle_result 返回记录数[%d]          field [%s:%s] \n", rec, sname.c_str(), svalue.c_str());
+        }
+        rec++;
+
+    }
+    i = dbapi.Param("o_errcode").asLong();
+    if (i != 0)
+    {
+        	printf("sp_query_t_settle_result 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
+        	return -1;
+    }
+    printf("sp_query_t_settle_result 返回 %d:%s \n",i, dbapi.Param("o_errmsg").asString().GetMultiByteChars());
+    return 0;
+}
+int testmdb()
+{
     CTbl_PortfolioT0hold   tbl;
-	S_MDB_PortfolioT0hold hold;
-	strcpy(hold.hj_code,"000001.sz");
-	hold.account_id = 10000;
-	hold.portfolio_id = 0;
-	tbl.Insert(hold);
-	hold.portfolio_id = 1;
-	tbl.Insert(hold);
+    S_MDB_PortfolioT0hold hold;
+    strcpy(hold.hj_code, "000001.sz");
+    hold.account_id = 10000;
+    hold.portfolio_id = 0;
+    tbl.Insert(hold);
+    hold.portfolio_id = 1;
+    tbl.Insert(hold);
 
     strcpy(hold.hj_code, "000002.sz");
     hold.account_id = 10001;
     hold.portfolio_id = 0;
-	tbl.Insert(hold);
+    tbl.Insert(hold);
     hold.portfolio_id = 1;
     tbl.Insert(hold);
 
 
-	tbl.Delete(10000);
+    tbl.Delete(10000);
 
-	return 0;
+    return 0;
+}
+int testdes()
+{
     typedef struct aa_
     {
-	   char bb[100] ={};
-	   int aa = 0;
-	};
-	char buffer[300];
-	strcpy(buffer,"b414895697b45a26");
-	char errmsg[200];
-	int len = strlen(buffer);
-	CBF_3Des des;
-	des.UnDes3Buffer(buffer,len,DBPWD3DESKEY, errmsg);
-	aa_ a;
-	pLog.LogMp(LOG_WARNNING, __FILE__, __LINE__, "初始值  %s %d", a.bb,a.aa);
+        char bb[100] = {};
+        int aa = 0;
+    };
+    char buffer[300];
+    strcpy(buffer, "b414895697b45a26");
+    char errmsg[200];
+    int len = strlen(buffer);
+    CBF_3Des des;
+    des.UnDes3Buffer(buffer, len, DBPWD3DESKEY, errmsg);
+    aa_ a;
+    pLog.LogMp(LOG_WARNNING, __FILE__, __LINE__, "初始值  %s %d", a.bb, a.aa);
 
-	char tmpchar1[20] = { '0' };
-	char tmpchar2[22];
-	
-	memcpy(tmpchar1,"222",3);
-	memcpy(tmpchar1+10,"1234567890",10);
+    char tmpchar1[20] = { '0' };
+    char tmpchar2[22];
 
-	strcpy(tmpchar2,"1234567890123456789");
-	strncpy(tmpchar1,tmpchar2,10);
-	pLog.LogMp(LOG_WARNNING, __FILE__, __LINE__, "初始值  %s", tmpchar1);
-	pTime.Init(100);
-	pLog.LogMp(LOG_WARNNING,__FILE__,__LINE__,"%lld",CBF_Date_Time::GetTickUS());
-	//pTime.SetTimer(1,1800000000,OnTimer,NULL,2);
-	pTime.Init(1000, false);
-	pTime.SetTimer(1, 3000,OnTimer,NULL,0);
-	//pTime.SetTimer(2,2000000,OnTimer,NULL,2);
-	pTime.SetTimer(2, 1000, OnTimer, NULL);
-	//pTime.KillTimer(2);
-	pTime.Start();
-	SLEEP_SECONDS(20);
-	pTime.SetTimer(4, 0, OnTimer, NULL, 0);
-	SLEEP_SECONDS(1);
-	pTime.SetTimer(4, 0, OnTimer, NULL, 0);
-	SLEEP_SECONDS(1);
-	pTime.SetTimer(4, 0, OnTimer, NULL, 0);
-	SLEEP_SECONDS(1);
-	pTime.SetTimer(4, 0, OnTimer, NULL, 0);
-	pTime.Stop();
-	pTime.Join();
-	SLEEP_SECONDS(5);
+    memcpy(tmpchar1, "222", 3);
+    memcpy(tmpchar1 + 10, "1234567890", 10);
 
+    strcpy(tmpchar2, "1234567890123456789");
+    strncpy(tmpchar1, tmpchar2, 10);
+    pLog.LogMp(LOG_WARNNING, __FILE__, __LINE__, "初始值  %s", tmpchar1);
 
-//	CBF_3Des      m_p3Des;
-//	char sDbPwd[65];
-//	char m_sErrMsg[256];
-// 	strcpy(sDbPwd,"3456789012");
-// 	GenAcc(sDbPwd,5,m_sErrMsg);
+    	CBF_3Des      m_p3Des;
+	char sDbPwd[65];
+	char m_sErrMsg[256];
+ 	strcpy(sDbPwd,"3456789012");
+ 	GenAcc(sDbPwd,5,m_sErrMsg);
 
-	//strcpy(sDbPwd,"fs");
-	//int len = sizeof(sDbPwd);
-	//m_p3Des.Des3Buffer(sDbPwd,len,BPUDB3DESKEY,m_sErrMsg);
+    strcpy(sDbPwd,"fs");
+    len = sizeof(sDbPwd);
+    m_p3Des.Des3Buffer(sDbPwd,len,BPUDB3DESKEY,m_sErrMsg);
 
-	//strcpy(sDbPwd,"5c19659d70aa1bcc");
-	//len = strlen(sDbPwd);
-	//m_p3Des.UnDes3Buffer(sDbPwd,len,BPUDB3DESKEY,m_sErrMsg);
+    strcpy(sDbPwd,"5c19659d70aa1bcc");
+    len = strlen(sDbPwd);
+    m_p3Des.UnDes3Buffer(sDbPwd,len,BPUDB3DESKEY,m_sErrMsg);
 
-	//printf("sDbPwd=[%s]\n",sDbPwd);
+    printf("sDbPwd=[%s]\n",sDbPwd);
+    return 0;
+}
+int testdes2()
+{
+	char deskey[25];
+	sprintf(deskey,"ylink012345 789,wms12345");
+	CBF_3Des pdes;
 
-	//CTbl_Org org;
-	//S_MDB_ORG_INFO info;
-	//bzero(&info,sizeof(S_MDB_ORG_INFO));
-	//int i;
-	//int rid;
-	//for (i=0;i<1000;i++)
-	//{
-	//	sprintf(info.sOrgCode,"org%d",i);
-	//	sprintf(info.sOrgName,"data%d",i);
-	//	rid = org.Insert(info);
-	//	if (rid <0)
-	//	{
-	//		printf("Insert error\n");
-	//	}
-	//}
-	//S_MDB_ORG_INFO *po = NULL;
-	//char tmpchar[100];
-	//sprintf(tmpchar,"org%d",110);
-	//po = org.Select(tmpchar);
-	//printf("org[%s] sOrgName[%s]\n",po->sOrgCode,po->sOrgName);
-	//sprintf(po->sOrgName,"111111111111111111111111");
-
-	//for (i= 100; i<120; i++)
-	//{
-	//	sprintf(tmpchar,"org%d",i);
-	//	po = org.Select(tmpchar);
-	//	if (po != NULL)
-	//	{
-	//		printf("org[%s] sOrgName[%s]\n",po->sOrgCode,po->sOrgName);
-	//	}
-	//	else
-	//	{
-	//		printf("%s not found\n",tmpchar);
-	//	}
-	//}
-
-	
-	return 0;
-
-// 	char uporg[200];
-// 	char uporg2[200];
-// 	strcpy(uporg,"1|2|3|4|1");
-// 	strcpy(uporg2,"1|2|3|4");
-// 	if (strncmp(uporg,uporg2,strlen(uporg)) ==0)
-// 	{
-// 		printf("true \n");
-// 		return 0;
-// 	}
-// 	CBF_Xml xml;
-// 	if (!xml.FromFile("cgateapi.xml"))
-// 	{
-// 		return -1;
-// 	}
-// 	CXmlNode *gatenode = xml.GetNodeByPath("/网关API/网关");
-// 	if (gatenode == NULL)
-// 	{
-// 		return -1;
-// 	}
-// 	std::string ip;
-// 	CXmlNode *node = (CXmlNode *)gatenode->GetFirstChild();
-// 	while (node != NULL)
-// 	{
-// 		if (node->GetAttribute("ip",false,ip)==NULL)
-// 		{
-// 			return -1;
-// 		}
-// 		printf("IP=%s",ip.c_str());
-// 		node = (CXmlNode *)node->getNextSibling();
-// 	}
-// 	return 0;
-
-	CKeyField<index_1> key_3;
-	CIndexField<index_1> index_3;
-	
-
-	SET_ m_index;
-	
-// 	pair<LP_SET,bool> r = m_index.insert(10);
-// 	r = m_index.insert(3);
-// 	r = m_index.insert(21);
-	index_1 tit;
-	tit.m_nRowId =0;
-	tit.aa = 1;
-	tit.bb = "aa";
-	tit.bbc = 99;
-
-	key_3.Add(tit);
-	index_3.Add(tit);
-
-	tit.m_nRowId =1;
-	tit.aa = 1;
-	tit.bb = "bb";
-	tit.bbc = 88;
-
-	key_3.Add(tit);
-	index_3.Add(tit);
-
-	tit.m_nRowId =2;
-	tit.aa = 0;
-	tit.bb = "bb";
-	tit.bbc = 88;
-	
-	key_3.Add(tit);
-	index_3.Add(tit);
-	
-	tit.m_nRowId =3;
-	tit.aa = 1;
-	tit.bb = "aa";
-	tit.bbc = 88;
-	
-	key_3.Add(tit);
-	index_3.Add(tit);
-	tit.m_nRowId =4;
-	index_3.Add(tit);
-
-
-	if (key_3.Find(tit))
+	char buffer[8192];
+	sprintf(buffer,"ylink123 ;.yww");
+	int bufsize=8192;
+	char errmsg[256];
+	printf("数据[%s]\n",buffer);
+	if (!pdes.Des3Buffer(buffer,bufsize,deskey,errmsg))
 	{
-		printf("主键[%d %s %d]重复\n",tit.aa,tit.bb.c_str(),tit.bbc);
+		printf("加密出错 %s\n",errmsg);
+		return -1;
 	}
+	printf("密文[%s]\n",buffer);
+	bufsize = strlen(buffer);
+	if (!pdes.UnDes3Buffer(buffer,bufsize,deskey,errmsg))
+	{
+		printf("解密出错 %s\n",errmsg);
+		return -1;
+	}
+	printf("明文[%s]\n",buffer);
+    return 0;
 
-	bool bret = key_3.m_key.First(tit);
+}
+int testtimer()
+{
+    pTime.Init(100);
+    pLog.LogMp(LOG_WARNNING, __FILE__, __LINE__, "%lld", CBF_Date_Time::GetTickUS());
+    //pTime.SetTimer(1,1800000000,OnTimer,NULL,2);
+    pTime.Init(1000, false);
+    pTime.SetTimer(1, 3000, OnTimer, NULL, 0);
+    //pTime.SetTimer(2,2000000,OnTimer,NULL,2);
+    pTime.SetTimer(2, 1000, OnTimer, NULL);
+    //pTime.KillTimer(2);
+    pTime.Start();
+    SLEEP_SECONDS(20);
+    pTime.SetTimer(4, 0, OnTimer, NULL, 0);
+    SLEEP_SECONDS(1);
+    pTime.SetTimer(4, 0, OnTimer, NULL, 0);
+    SLEEP_SECONDS(1);
+    pTime.SetTimer(4, 0, OnTimer, NULL, 0);
+    SLEEP_SECONDS(1);
+    pTime.SetTimer(4, 0, OnTimer, NULL, 0);
+    pTime.Stop();
+    pTime.Join();
+    SLEEP_SECONDS(5);
+    return 0;
+}
+int testmdb2()
+{
+    CTbl_Org org;
+    S_MDB_ORG_INFO info;
+    bzero(&info,sizeof(S_MDB_ORG_INFO));
+    int i;
+    int rid;
+    for (i=0;i<1000;i++)
+    {
+        sprintf(info.sOrgCode, "org%d", i);
+        sprintf(info.sOrgName, "data%d", i);
+        rid = org.Insert(info);
+        if (rid < 0)
+        {
+            printf("Insert error\n");
+        }
+    }
+    S_MDB_ORG_INFO *po = NULL;
+    char tmpchar[100];
+    sprintf(tmpchar,"org%d",110);
+    po = org.Select(tmpchar);
+    printf("org[%s] sOrgName[%s]\n",po->sOrgCode,po->sOrgName);
+    sprintf(po->sOrgName,"111111111111111111111111");
+
+    for (i= 100; i<120; i++)
+    {
+        sprintf(tmpchar, "org%d", i);
+        po = org.Select(tmpchar);
+        if (po != NULL)
+        {
+            printf("org[%s] sOrgName[%s]\n", po->sOrgCode, po->sOrgName);
+        }
+        else
+        {
+            printf("%s not found\n", tmpchar);
+        }
+    }
+
+
+    return 0;
+}
+int testgate()
+{
+    char uporg[200];
+ 	char uporg2[200];
+ 	strcpy(uporg,"1|2|3|4|1");
+ 	strcpy(uporg2,"1|2|3|4");
+ 	if (strncmp(uporg,uporg2,strlen(uporg)) ==0)
+ 	{
+ 		printf("true \n");
+ 		return 0;
+ 	}
+ 	CBF_Xml xml;
+ 	if (!xml.FromFile("cgateapi.xml"))
+ 	{
+ 		return -1;
+ 	}
+ 	CXmlNode *gatenode = xml.GetNodeByPath("/网关API/网关");
+ 	if (gatenode == NULL)
+ 	{
+ 		return -1;
+ 	}
+ 	std::string ip;
+ 	CXmlNode *node = (CXmlNode *)gatenode->GetFirstChild();
+ 	while (node != NULL)
+ 	{
+ 		if (node->GetAttribute("ip",false,ip)==NULL)
+ 		{
+ 			return -1;
+ 		}
+ 		printf("IP=%s",ip.c_str());
+ 		node = (CXmlNode *)node->getNextSibling();
+ 	}
+ 	return 0;
+}
+int testmdb3()
+{
+    class index_1 : public CIndex_Field_Base
+    {
+    public:
+        int aa;
+        string bb;
+        int bbc;
+
+
+        virtual bool operator<(const index_1& field) const
+        {
+            int ret;
+            if (aa < field.aa)
+            {
+                return true;
+            }
+            else if (aa == field.aa)
+            {
+                ret = bb.compare(field.bb);
+                if (ret < 0)
+                {
+                    return true;
+                }
+                else if (ret > 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    ret = bbc - field.bbc;
+                    if (ret < 0)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+    };
+
+    CKeyField<index_1> key_3;
+    CIndexField<index_1> index_3;
+
+
+    SET_ m_index;
+
+    // 	pair<LP_SET,bool> r = m_index.insert(10);
+    // 	r = m_index.insert(3);
+    // 	r = m_index.insert(21);
+    index_1 tit;
+    tit.m_nRowId = 0;
+    tit.aa = 1;
+    tit.bb = "aa";
+    tit.bbc = 99;
+
+    key_3.Add(tit);
+    index_3.Add(tit);
+
+    tit.m_nRowId = 1;
+    tit.aa = 1;
+    tit.bb = "bb";
+    tit.bbc = 88;
+
+    key_3.Add(tit);
+    index_3.Add(tit);
+
+    tit.m_nRowId = 2;
+    tit.aa = 0;
+    tit.bb = "bb";
+    tit.bbc = 88;
+
+    key_3.Add(tit);
+    index_3.Add(tit);
+
+    tit.m_nRowId = 3;
+    tit.aa = 1;
+    tit.bb = "aa";
+    tit.bbc = 88;
+
+    key_3.Add(tit);
+    index_3.Add(tit);
+    tit.m_nRowId = 4;
+    index_3.Add(tit);
+
+
+    if (key_3.Find(tit))
+    {
+        printf("主键[%d %s %d]重复\n", tit.aa, tit.bb.c_str(), tit.bbc);
+    }
+
+    bool bret = key_3.m_key.First(tit);
+    while (bret)
+    {
+        printf("rid=%d %d %s %d \n", tit.m_nRowId, tit.aa, tit.bb.c_str(), tit.bbc);
+        bret = key_3.m_key.Next(tit);
+
+    }
+    printf("\n");
+    bret = index_3.m_index.First(tit);
+    while (bret)
+    {
+        printf("rid=%d %d %s %d \n", tit.m_nRowId, tit.aa, tit.bb.c_str(), tit.bbc);
+        bret = index_3.m_index.Next(tit);
+
+    }
+    //	int getnum=100000000;
+    //	int nbegin = time(NULL);
+    //	for (int k=0; k<getnum;k++)
+    //	{
+    //		CBF_Date_Time::GetTickUS();
+    //	}
+    //	nbegin = time(NULL)-nbegin;
+    //	printf("GetTickUS %d次耗时[%d]秒 平均[%lf]微秒\n",getnum,nbegin,1.00*nbegin*1000000/getnum);
+    //
+    return 0;
+}
+int testmdb4()
+{
+    
+	CIndexInt<1> iindex;
+	iindex.Add(1,1);
+	iindex.Add(2,1);
+	iindex.Add(3,1);
+	iindex.Add(4,2);
+	iindex.Add(5,2);
+	iindex.Add(6,2);
+	iindex.Add(7,2);
+
+	CInt iset;
+	iindex.Select(iset,2);
+	int id;
+	bool bret = iset.First(id);
 	while (bret)
 	{
-		printf("rid=%d %d %s %d \n",tit.m_nRowId,tit.aa,tit.bb.c_str(),tit.bbc);
-		bret = key_3.m_key.Next(tit);
-		
+		printf("rowid:%d \n",id);
+		bret = iset.Next(id);
 	}
-	printf("\n");
-	bret = index_3.m_index.First(tit);
-	while (bret)
+    return 0;
+
+}
+int testhost()
+{
+    CBF_HostInfo hostinfo;
+    S_MemoryInf meminfo;
+    bzero(&meminfo, sizeof(S_MemoryInf));
+    int nRet = hostinfo.GetEms(meminfo);
+    printf("总内存[%d]MB 使用[%d]MB 使用率[%d]\n", meminfo.EmsTotal, meminfo.EmsUse, meminfo.EmsUseRadio);
+
+    nRet = hostinfo.GetCpu();
+    printf("CPU使用率[%d]\n", nRet);
+    return 0;
+}
+int testsocket()
+{
+    struct sockaddr_in broadcast_addr;//广播地址
+ 	//将使用的网络接口名字复制到ifr.ifr_name中，由于不同的网卡接口的广播地址是不一样的，因此指定网卡接口
+ //	struct ifreq ifr;
+ //	strcpy(ifr.ifr_name,IFNAME);
+ //	//发送命令，获得网络接口的广播地址
+ //	SOCKET_HANDLE sock;
+ //	CBF_SocketUdp udp;
+ //	udp.Create();
+ //	sock = udp.GetSocket();
+ //	if(ioctl(sock,SIOCGIFBRDADDR,&ifr) == -1)
+ //	{
+ //		printf("ioctl error\n");
+ //		return -1;
+ //	}
+ //	//将获得的广播地址复制到broadcast_addr
+ //	memcpy(&broadcast_addr,&ifr.ifr_broadaddr,sizeof(struct sockaddr_in));
+ //	//设置广播端口号
+ //	printf("broadcast IP is:%s\n",inet_ntoa(broadcast_addr.sin_addr));
+ //	broadcast_addr.sin_family=AF_INET;
+	//broadcast_addr.sin_port=htons(MCAST_PORT);
+ //   //默认的套接字描述符sock是不支持广播，必须设置套接字描述符以支持广播
+	//ret=setsockopt(sock,SOL_SOCKET,SO_BROADCAST,&so_broadcast,sizeof(so_broadcast));
+    return 0;
+}
+int testbuffer()
+{
+    	CBF_BufferPool pool;
+
+	pool.Init(100,8192,2000);
+	void *aa = NULL;
+	std::stack<void *>savepoint;
+	int j;
+	for (j=0; j<10000; j++)
 	{
-		printf("rid=%d %d %s %d \n",tit.m_nRowId,tit.aa,tit.bb.c_str(),tit.bbc);
-		bret = index_3.m_index.Next(tit);
-		
+		aa = pool.PoolMalloc();
+		savepoint.push(aa);
+
 	}
-//
-//	int getnum=100000000;
-//	int nbegin = time(NULL);
-//	for (int k=0; k<getnum;k++)
-//	{
-//		CBF_Date_Time::GetTickUS();
-//	}
-//	nbegin = time(NULL)-nbegin;
-//	printf("GetTickUS %d次耗时[%d]秒 平均[%lf]微秒\n",getnum,nbegin,1.00*nbegin*1000000/getnum);
-//
+	
+	for (j=0; j<7000; j++)
+	{
+		void *aa = savepoint.top();
+		savepoint.pop();
+		pool.PoolFree(aa);
+	}
+
+	aa = pool.PoolMalloc();
+
+	int total;
+	int unused;
+	pool.PoolInfo(total,unused);
+	printf("poolbuffer total[%d] unused[%d] \n",total,unused);
+
+	CBF_Date_Time pp1;
+	CBF_Date_Time pp2;
+	printf("当前日期[%s]\n",pp1.ToStringD8().c_str());
+	pp2.Set("20280606");
+	int tnums = pp2-pp1;
+	printf("离20280606还有[%d]天\n",tnums);
+
+
 	return 0;
-//
-//	char deskey[25];
-//	sprintf(deskey,"ylink012345 789,wms12345");
-//	CBF_3Des pdes;
-//
-//	char buffer[8192];
-//	sprintf(buffer,"ylink123 ;.yww");
-//	int bufsize=8192;
-//	char errmsg[256];
-//	printf("数据[%s]\n",buffer);
-//	if (!pdes.Des3Buffer(buffer,bufsize,deskey,errmsg))
-//	{
-//		printf("加密出错 %s\n",errmsg);
-//		return -1;
-//	}
-//	printf("密文[%s]\n",buffer);
-//	bufsize = strlen(buffer);
-//	if (!pdes.UnDes3Buffer(buffer,bufsize,deskey,errmsg))
-//	{
-//		printf("解密出错 %s\n",errmsg);
-//		return -1;
-//	}
-//	printf("明文[%s]\n",buffer);
-//
-//
-//	CBF_HostInfo hostinfo;
-//	S_MemoryInf meminfo;
-//	bzero(&meminfo,sizeof(S_MemoryInf));
-//	int nRet = hostinfo.GetEms(meminfo);
-//	printf("总内存[%d]MB 使用[%d]MB 使用率[%d]\n",meminfo.EmsTotal,meminfo.EmsUse,meminfo.EmsUseRadio);
-//
-//	nRet = hostinfo.GetCpu();
-//	printf("CPU使用率[%d]\n",nRet);
-//	return 0;
-//
-//	CIndexInt<1> iindex;
-//	iindex.Add(1,1);
-//	iindex.Add(2,1);
-//	iindex.Add(3,1);
-//	iindex.Add(4,2);
-//	iindex.Add(5,2);
-//	iindex.Add(6,2);
-//	iindex.Add(7,2);
-//
-//	CInt iset;
-//	iindex.Select(iset,2);
-//	int id;
-//	bret = iset.First(id);
-//	while (bret)
-//	{
-//		printf("rowid:%d \n",id);
-//		bret = iset.Next(id);
-//	}
-//
-//
+}
+int testmdb5()
+{
+    
+	CIndexInt<2>              m_pkey;         //id+私有id索引，唯一索引
+	CPkeyUInt<2>              key;
+	key.Add(1,100,1);
+	key.Add(2,100,2);
 
-// 	struct sockaddr_in broadcast_addr;//广播地址
-// 	//将使用的网络接口名字复制到ifr.ifr_name中，由于不同的网卡接口的广播地址是不一样的，因此指定网卡接口
-// 	struct ifreq ifr;
-// 	strcpy(ifr.ifr_name,IFNAME);
-// 	//发送命令，获得网络接口的广播地址
-// 	SOCKET_HANDLE sock;
-// 	CBF_SocketUdp udp;
-// 	udp.Create();
-// 	sock = udp.GetSocket();
-// 	if(ioctl(sock,SIOCGIFBRDADDR,&ifr) == -1)
-// 	{
-// 		printf("ioctl error\n");
-// 		return -1;
-// 	}
-// 	//将获得的广播地址复制到broadcast_addr
-// 	memcpy(&broadcast_addr,&ifr.ifr_broadaddr,sizeof(struct sockaddr_in));
-// 	//设置广播端口号
-// 	printf("broadcast IP is:%s\n",inet_ntoa(broadcast_addr.sin_addr));
-// 	broadcast_addr.sin_family=AF_INET;
-//	broadcast_addr.sin_port=htons(MCAST_PORT);
-	//默认的套接字描述符sock是不支持广播，必须设置套接字描述符以支持广播
-//	ret=setsockopt(sock,SOL_SOCKET,SO_BROADCAST,&so_broadcast,sizeof(so_broadcast));
+	CInt iset;
+	if (!key.Select(iset,100,3))
+	{
+		printf("not fund");
+	}
+	else
+	{
+		printf("fund");
+	}
+    return 0;
+}
+int teststring()
+{
+    
 
-//	CBF_BufferPool pool;
-//
-//	pool.Init(100,8192,2000);
-//	void *aa = NULL;
-//	std::stack<void *>savepoint;
-//	int j;
-//	for (j=0; j<10000; j++)
-//	{
-//		aa = pool.PoolMalloc();
-//		savepoint.push(aa);
-//
-//	}
-//	
-//	for (j=0; j<7000; j++)
-//	{
-//		void *aa = savepoint.top();
-//		savepoint.pop();
-//		pool.PoolFree(aa);
-//	}
-//
-//	aa = pool.PoolMalloc();
-//
-//	int total;
-//	int unused;
-//	pool.PoolInfo(total,unused);
-//	printf("poolbuffer total[%d] unused[%d] \n",total,unused);
-//
-//	CBF_Date_Time pp1;
-//	CBF_Date_Time pp2;
-//	printf("当前日期[%s]\n",pp1.ToStringD8().c_str());
-//	pp2.Set("20280606");
-//	int tnums = pp2-pp1;
-//	printf("离20280606还有[%d]天\n",tnums);
-//
-//
-//	return 0;
-//
-//	CIndexInt<2>              m_pkey;         //id+私有id索引，唯一索引
-//	CPkeyUInt<2>              key;
-//	key.Add(1,100,1);
-//	key.Add(2,100,2);
-//
-////	CInt iset;
-//	if (!key.Select(iset,100,3))
-//	{
-//		printf("not fund");
-//	}
-//	else
-//	{
-//		printf("fund");
-//	}
-//
-//
-//
-//	std::string str = " 123456789 ";
-//	int pos;
-//	int offset=str.length()-1;
-//	pos=str.rfind(' ', offset);
-//	vector<int>deleteList;
-//	while (pos != -1 ) 	
-//	{
-//		if (pos == offset)
-//		{
-//			deleteList.push_back(pos);//记录要删除的空格位置
-//			offset--;
-//		}
-//		else
-//		{
-//			break;
-//		}
-//		pos=str.rfind(' ', offset);
-//	}
-//	//删除字符
-//	if (deleteList.size()>0)
-//	{
-//		str = str.substr(0,deleteList[deleteList.size()-1]);
-//	}
-//
-//
-//	CBF_Xml xml;
-//	xml.FromFile("arbmain.xml");
-//
-//	xml.ToFile("aa.xml");
+	std::string str = " 123456789 ";
+	int pos;
+	int offset=str.length()-1;
+	pos=str.rfind(' ', offset);
+	vector<int>deleteList;
+	while (pos != -1 ) 	
+	{
+		if (pos == offset)
+		{
+			deleteList.push_back(pos);//记录要删除的空格位置
+			offset--;
+		}
+		else
+		{
+			break;
+		}
+		pos=str.rfind(' ', offset);
+	}
+	//删除字符
+	if (deleteList.size()>0)
+	{
+		str = str.substr(0,deleteList[deleteList.size()-1]);
+	}
+    return 0;
+
+}
+int testxmlandsep()
+{
+    	CBF_Xml xml;
+	xml.FromFile("arbmain.xml");
+
+	xml.ToFile("aa.xml");
 
 
-// 	int ret,len;
-// 	char databuf[65535];
-// 	bzero(databuf,sizeof(databuf));
-// 	FILE *fp = fopen("c:/log/sep3.txt","r");
-// 	if (fp == NULL)
-// 	{
-// 		return -1;
-// 	}
-// 	ret = fread(databuf,1,65534,fp);
-// 	databuf[ret]=0;
-// 	CBF_Slist ss;
-// 	ss.Clear();
-// 	ss.SetSeparateString("∧");
-// 	ret = ss.FillChnSepString(databuf);
-// 	for (int i=0;i<ret;i++)
-// 	{
-// 		printf("%d   %s \n",i,ss.GetAt(i).c_str());
-// 	}
-// 	ss.Clear();
-// 	ret = ss.FillSepString(databuf);
-// 	for (i=0;i<ret;i++)
-// 	{
-// 		printf("%d   %s \n",i,ss.GetAt(i).c_str());
-// 	}
-// 	return 0;
-// 	CBF_Des  pDes;
-// 	CBF_DesEnctypt  encrypt;
-// 
-// 	unsigned int dlen;
-// 	char buffer[65534];
-// 	bzero(buffer,sizeof(buffer));
-// 	
-// 	char outbuffer[65534];
-// 	bzero(outbuffer,sizeof(outbuffer));
-// 
-// 	char data[65534];
-// 	bzero(data,sizeof(data));
-// 	char key[49];
-// 	strcpy(key,"wms13711songfree");
-// //	strcpy(key,"12594490316530061259449031653006");
-// 	
-// 	
-// 	int   tdata;
-// 	S_DATA *dtp = (S_DATA *)&tdata;
-// 	dtp->index = 65534;
-// 	dtp->serial = 65534;
-// 
-// 	printf("int value:%d \n",tdata);
-// 
-// 	dtp = (S_DATA *)&tdata;
-// 	printf("index:%d serial:%d\n",dtp->index,dtp->serial);
-// 
-// 
-// 	strcpy(data,"11111111111111111111111111111111111111");
-// 	dlen = sizeof(outbuffer);
-// 	CBF_Tools::Compress((unsigned char *)outbuffer,dlen,(unsigned char *)data,strlen(data));
-// 	int buflen = dlen;
-// 	pDes.Encryptchar(outbuffer,buflen,key);
-// 	
-// 	pDes.Uncryptchar(outbuffer,buflen,key);
-// 	dlen = sizeof(data);
-// 	CBF_Tools::Uncompress((unsigned char *)data,dlen,(unsigned char *)outbuffer,buflen);
-// 
-// 
-// 	dlen = sizeof(buffer);
-// 
-// 	if (!CBF_Tools::Compress((unsigned char *)buffer,dlen,(unsigned char *)data,strlen(data)))
-// 	{
-// 		printf("压缩失败\n");
-// 		return -1;
-// 	}
-// 
-// 	printf("压缩后【%s】%d\n",buffer,dlen);
-// 	len = dlen;
-// 
-// 	bzero(outbuffer,sizeof(outbuffer));
-// 	memcpy(outbuffer,buffer,dlen);
-// 	
-// 	ret = encrypt.encrypt64(buffer,len,key);
-// 
-// 	printf("加密后【%s】%d\n",buffer,len);
-// 
-// 	ret = encrypt.unencrypt64(buffer,len,key);
-// 
-// 	printf("解密后【%s】%d\n",buffer,len);
-// 
-// 	if (memcmp(buffer,outbuffer,len)!= 0)
-// 	{
-// 		printf("加解密结果不一致\n");
-// 	}
-// 	
-// 	bzero(outbuffer,sizeof(outbuffer));
-// 	if (!CBF_Tools::Uncompress((unsigned char *)outbuffer,dlen,(unsigned char *)buffer,len))
-// 	{
-// 		printf("解压缩失败\n");
-// 		return -1;
-// 	}
-// 	
+ 	int ret,len;
+ 	char databuf[65535];
+ 	bzero(databuf,sizeof(databuf));
+ 	FILE *fp = fopen("c:/log/sep3.txt","r");
+ 	if (fp == NULL)
+ 	{
+ 		return -1;
+ 	}
+ 	ret = fread(databuf,1,65534,fp);
+ 	databuf[ret]=0;
+ 	CBF_Slist ss;
+ 	ss.Clear();
+ 	ss.SetSeparateString("∧");
+ 	ret = ss.FillChnSepString(databuf);
+ 	for (int i=0;i<ret;i++)
+ 	{
+ 		printf("%d   %s \n",i,ss.GetAt(i).c_str());
+ 	}
+ 	ss.Clear();
+ 	ret = ss.FillSepString(databuf);
+ 	for (int i=0;i<ret;i++)
+ 	{
+ 		printf("%d   %s \n",i,ss.GetAt(i).c_str());
+ 	}
+ 	return 0;
+}
+int testxml(int argc, char* argv[])
+{
+    char curpath[200];
+ 	char prgname[200];
+ 	char prgpath[200];
+ 	bzero(curpath,sizeof(curpath));
+ 	bzero(prgname,sizeof(prgname));
+ 	bzero(prgpath,sizeof(prgpath));
+ 	
+ 	CBF_Tools::GetModuleNamePath(argv,curpath,prgpath,prgname);
+ 	printf("测试GetModuleNamePath \n     curpath=[%s] \n     prgpath=[%s] \n     prgname=[%s] \n",curpath,prgpath,prgname);
+ 
+ 	
+    
+ 	int opt = CBF_Tools::Getopt(argc,argv,(char *)"b?:i:h?");
+    while( opt != -1 ) 
+ 	{
+ 		printf("opt=%c optarg=%s optind=%d\n",(char)opt,optarg,optind);
+        opt = CBF_Tools::Getopt(argc,argv,(char*)"");
+    }
+    
+ 	CBF_Xml xml;
+ 	xml.AddNodeByPath("/",false,"package",false,"",false);
+ 	xml.AddNodeByPath("/package",false,"head",false,"",false);
+ 	xml.AddNodeByPath("/package",false,"pack",false,"",false);
+ 	xml.AddNodeByPath("/package/head",false,"交易码",false,"9906",false);
+ 	xml.AddNodeByPath("/package/pack",false,"流水号",false,"2012042500000001",false);
+ 	xml.AddNodeByPath("/package",false,"head2",false,"",false);
+ 	xml.AddNodeByPath("/package/head",false,"交易码2",false,"",false);
+ 	xml.AddNodeByPath("/package/head",false,"交易码",false,"",false);
+ 
+ 	xml.ToFile("test.xml");
+    return 0;
+}
+int testcompress()
+{
+    int ret;
+    int len;
+    
+    unsigned int dlen;
+    char buffer[65534];
+    int   tdata;
 
-
+ 	char outbuffer[65534];
+    char data[65534];
+    char key[49];
+ 	bzero(outbuffer,sizeof(outbuffer));
+ 
+ 	
+ 	bzero(data,sizeof(data));
+ 	
+ 	strcpy(key,"wms13711songfree");
+ //	strcpy(key,"12594490316530061259449031653006");
+ 	
+    bzero(buffer, sizeof(buffer));
+    CBF_Des  pDes;
+    CBF_DesEnctypt  encrypt;
+ 	
+ 	S_DATA *dtp = (S_DATA *)&tdata;
+ 	dtp->index = 65534;
+ 	dtp->serial = 65534;
+ 
+ 	printf("int value:%d \n",tdata);
+ 
+ 	dtp = (S_DATA *)&tdata;
+ 	printf("index:%d serial:%d\n",dtp->index,dtp->serial);
+ 
+ 
+ 	strcpy(data,"11111111111111111111111111111111111111");
+ 	dlen = sizeof(outbuffer);
+ 	CBF_Tools::Compress((unsigned char *)outbuffer,dlen,(unsigned char *)data,strlen(data));
+ 	int buflen = dlen;
+ 	pDes.Encryptchar(outbuffer,buflen,key);
+ 	
+ 	pDes.Uncryptchar(outbuffer,buflen,key);
+ 	dlen = sizeof(data);
+ 	CBF_Tools::Uncompress((unsigned char *)data,dlen,(unsigned char *)outbuffer,buflen);
+ 
+ 
+ 	dlen = sizeof(buffer);
+ 
+ 	if (!CBF_Tools::Compress((unsigned char *)buffer,dlen,(unsigned char *)data,strlen(data)))
+ 	{
+ 		printf("压缩失败\n");
+ 		return -1;
+ 	}
+ 
+ 	printf("压缩后【%s】%d\n",buffer,dlen);
+ 	len = dlen;
+ 
+ 	bzero(outbuffer,sizeof(outbuffer));
+ 	memcpy(outbuffer,buffer,dlen);
+ 	
+ 	ret = encrypt.encrypt64(buffer,len,key);
+ 
+ 	printf("加密后【%s】%d\n",buffer,len);
+ 
+ 	ret = encrypt.unencrypt64(buffer,len,key);
+ 
+ 	printf("解密后【%s】%d\n",buffer,len);
+ 
+ 	if (memcmp(buffer,outbuffer,len)!= 0)
+ 	{
+ 		printf("加解密结果不一致\n");
+ 	}
+ 	
+ 	bzero(outbuffer,sizeof(outbuffer));
+ 	if (!CBF_Tools::Uncompress((unsigned char *)outbuffer,dlen,(unsigned char *)buffer,len))
+ 	{
+ 		printf("解压缩失败\n");
+ 		return -1;
+ 	}
+    
+ 	return 0;
+}
+int testthread()
+{
+    int i;
+    int maxthread=1;
+    int threadnum[100];
+    int pthread[5];
+    pthread[0]=1;
+    pthread[1]=2;
+    pthread[2]=3;
+    pthread[3]=4;
+    pthread[4]=5;
+    printf("thread%d \n",pthread[0]);
+    for (i=1;i<100;i++)
+    {
+    	if ( i== pthread[0] || (i>maxthread && (i%maxthread==pthread[0] || (i%maxthread==0 && maxthread ==  pthread[0]) )))
+    	{
+    		printf(" %3d ",i);
+    	}
+    }
+    printf("\nthread%d \n",pthread[1]);
+    for (i=1;i<100;i++)
+    {
+    	if ( i== pthread[1] || (i>maxthread && (i%maxthread==pthread[1] || (i%maxthread==0 && maxthread ==  pthread[1]) )))
+    	{
+    		printf(" %3d ",i);
+    	}
+    }
+    printf("\nthread%d \n",pthread[2]);
+    for (i=1;i<100;i++)
+    {
+    	if ( i== pthread[2] || (i>maxthread && (i%maxthread==pthread[2] || (i%maxthread==0 && maxthread ==  pthread[2]) )))
+    	{
+    		printf(" %3d ",i);
+    	}
+    }
+    printf("\nthread%d \n",pthread[3]);
+    for (i=1;i<100;i++)
+    {
+    	if ( i== pthread[3] || (i>maxthread && (i%maxthread==pthread[3] || (i%maxthread==0 && maxthread ==  pthread[3]) )))
+    	{
+    		printf(" %3d ",i);
+    	}
+    }
+    printf("\n");
+    return 0;
+}
+int testmenu()
+{
 #ifndef _WINDOWS
-	signal(SIGTTOU,SIG_IGN); 
-	signal(SIGTTIN,SIG_IGN); 
-	signal(SIGTSTP,SIG_IGN); 
+    signal(SIGTTOU, SIG_IGN);
+    signal(SIGTTIN, SIG_IGN);
+    signal(SIGTSTP, SIG_IGN);
 #endif
-// 	char curpath[200];
-// 	char prgname[200];
-// 	char prgpath[200];
-// 	bzero(curpath,sizeof(curpath));
-// 	bzero(prgname,sizeof(prgname));
-// 	bzero(prgpath,sizeof(prgpath));
-// 	
-// 	CBF_Tools::GetModuleNamePath(argv,curpath,prgpath,prgname);
-// 	printf("测试GetModuleNamePath \n     curpath=[%s] \n     prgpath=[%s] \n     prgname=[%s] \n",curpath,prgpath,prgname);
-// 
-// 	
-// 	int opt = CBF_Tools::Getopt(argc,argv,"b?:i:h?");
-//     while( opt != -1 ) 
-// 	{
-// 		printf("opt=%c optarg=%s optind=%d\n",(char)opt,optarg,optind);
-//         opt = CBF_Tools::Getopt(argc,argv,"");
-//     }
 
-// 	CBF_Xml xml;
-// 	xml.AddNodeByPath("/",false,"package",false,"",false);
-// 	xml.AddNodeByPath("/package",false,"head",false,"",false);
-// 	xml.AddNodeByPath("/package",false,"pack",false,"",false);
-// 	xml.AddNodeByPath("/package/head",false,"交易码",false,"9906",false);
-// 	xml.AddNodeByPath("/package/pack",false,"流水号",false,"2012042500000001",false);
-// 	xml.AddNodeByPath("/package",false,"head2",false,"",false);
-// 	xml.AddNodeByPath("/package/head",false,"交易码2",false,"",false);
-// 	xml.AddNodeByPath("/package/head",false,"交易码",false,"",false);
-// 
-// 	xml.ToFile("test.xml");
 
-	//int i;
-	//int maxthread=1;
-	//int threadnum[100];
-	//int pthread[5];
-	//pthread[0]=1;
-	//pthread[1]=2;
-	//pthread[2]=3;
-	//pthread[3]=4;
-	//pthread[4]=5;
-	//printf("thread%d \n",pthread[0]);
-	//for (i=1;i<100;i++)
-	//{
-	//	if ( i== pthread[0] || (i>maxthread && (i%maxthread==pthread[0] || (i%maxthread==0 && maxthread ==  pthread[0]) )))
-	//	{
-	//		printf(" %3d ",i);
-	//	}
-	//}
-	//printf("\nthread%d \n",pthread[1]);
-	//for (i=1;i<100;i++)
-	//{
-	//	if ( i== pthread[1] || (i>maxthread && (i%maxthread==pthread[1] || (i%maxthread==0 && maxthread ==  pthread[1]) )))
-	//	{
-	//		printf(" %3d ",i);
-	//	}
-	//}
-	//printf("\nthread%d \n",pthread[2]);
-	//for (i=1;i<100;i++)
-	//{
-	//	if ( i== pthread[2] || (i>maxthread && (i%maxthread==pthread[2] || (i%maxthread==0 && maxthread ==  pthread[2]) )))
-	//	{
-	//		printf(" %3d ",i);
-	//	}
-	//}
-	//printf("\nthread%d \n",pthread[3]);
-	//for (i=1;i<100;i++)
-	//{
-	//	if ( i== pthread[3] || (i>maxthread && (i%maxthread==pthread[3] || (i%maxthread==0 && maxthread ==  pthread[3]) )))
-	//	{
-	//		printf(" %3d ",i);
-	//	}
-	//}
-	//printf("\n");
 
-//	CTestDateTime dt;
-//	CTestTimer    ttimer;
-//	CTestSlist tslist;
-//	CTestTools  ttools;
-//	CTestThread tt;
-//	CTestSocket tsocket;
-//	CTestQueue tqueue;
-////	tqueue.Test();
-//
-//	
-//
-//	while (1)
-//	{
-//		char tmpchar[20];
-//		bzero(tmpchar,sizeof(tmpchar));
-//		printf("\n");
-//		printf("1   --   测试日期时间\n");
-//		printf("2   --   测试定时器\n");
-//		printf("3   --   测试分隔符\n");
-//		printf("4   --   测试工具小函数\n");
-//		printf("5   --   测试线程及互斥\n");
-//		printf("6   --   测试SOCKET通讯\n");
-//		CBF_Tools::GetConsoleEnter("请选择测试项目",2,tmpchar);
-//		printf("\n");
-//		switch (atoi(tmpchar))
-//		{
-//			case 1:
-//				//测试日期时间
-//				dt.Test();
-//				break;
-//			case 2:
-//				//测试定时器
-//				ttimer.Test();
-//				break;
-//			case 3:
-//				//测试分隔符
-//				tslist.Test();
-//				break;
-//			case 4:
-//				//测试工具小函数
-//				ttools.Test();
-//				break;
-//			case 5:
-//				//测试线程
-//				tt.Test();
-//				break;
-//			case 6:
-//				//测试SOCKET通讯
-//				tsocket.Test();
-//				break;
-//			default:
-//				break;
-//		}
-//		CBF_Tools::GetConsoleEnter("是否退出整个测试(y/n)",1,tmpchar);
-//		
-//		if (tmpchar[0] == 'y' || tmpchar[0] == 'Y')
-//		{
-//			break;
-//		} 
-//	}
+
+    	CTestDateTime dt;
+    	CTestTimer    ttimer;
+    	CTestSlist tslist;
+    	CTestTools  ttools;
+    	CTestThread tt;
+    	CTestSocket tsocket;
+    	CTestQueue tqueue;
+    //	tqueue.Test();
+    
+    	
+    
+    	while (1)
+    	{
+    		char tmpchar[20];
+    		bzero(tmpchar,sizeof(tmpchar));
+    		printf("\n");
+    		printf("1   --   测试日期时间\n");
+    		printf("2   --   测试定时器\n");
+    		printf("3   --   测试分隔符\n");
+    		printf("4   --   测试工具小函数\n");
+    		printf("5   --   测试线程及互斥\n");
+    		printf("6   --   测试SOCKET通讯\n");
+    		CBF_Tools::GetConsoleEnter("请选择测试项目",2,tmpchar);
+    		printf("\n");
+    		switch (atoi(tmpchar))
+    		{
+    			case 1:
+    				//测试日期时间
+    				dt.Test();
+    				break;
+    			case 2:
+    				//测试定时器
+    				ttimer.Test();
+    				break;
+    			case 3:
+    				//测试分隔符
+    				tslist.Test();
+    				break;
+    			case 4:
+    				//测试工具小函数
+    				ttools.Test();
+    				break;
+    			case 5:
+    				//测试线程
+    				tt.Test();
+    				break;
+    			case 6:
+    				//测试SOCKET通讯
+    				tsocket.Test();
+    				break;
+    			default:
+    				break;
+    		}
+    		CBF_Tools::GetConsoleEnter("是否退出整个测试(y/n)",1,tmpchar);
+    		
+    		if (tmpchar[0] == 'y' || tmpchar[0] == 'Y')
+    		{
+    			break;
+    		} 
+    	}
+    return 0;
+}
+
+int testmdb6()
+{
+
+    class index_unordered : public CIndex_Field_Base
+    {
+    public:
+        int aa;
+        string bb;
+        int bbc;
+
+
+        virtual bool operator == (const index_unordered& field) const
+        {
+            int ret;
+            if (aa != field.aa)
+            {
+                return false;
+            }
+            else if (bb.compare(field.bb) != 0)
+            {
+                return false;
+            }
+            else if (bbc != field.bbc)
+            {
+                return false;
+            }
+            return true;
+        }
+    };
+    struct _hash
+    {
+        std::size_t operator() (const index_unordered& f1) const
+        {
+            return hash_val(f1.aa,f1.bb,f1.bbc);
+        }
+    };
+
+    
+
+    CKeyFieldUnordered<index_unordered, _hash> key_3;
+    
+
+    // 	pair<LP_SET,bool> r = m_index.insert(10);
+    // 	r = m_index.insert(3);
+    // 	r = m_index.insert(21);
+    index_unordered tit;
+    tit.m_nRowId = 0;
+    tit.aa = 1;
+    tit.bb = "aa";
+    tit.bbc = 99;
+
+    key_3.Add(tit);
+    
+
+    tit.m_nRowId = 1;
+    tit.aa = 1;
+    tit.bb = "bb";
+    tit.bbc = 88;
+
+    key_3.Add(tit);
+
+
+    tit.m_nRowId = 2;
+    tit.aa = 0;
+    tit.bb = "bb";
+    tit.bbc = 88;
+
+    key_3.Add(tit);
+
+
+    tit.m_nRowId = 3;
+    tit.aa = 1;
+    tit.bb = "aa";
+    tit.bbc = 88;
+
+    key_3.Add(tit);
+    tit.m_nRowId = 4;
+
+    if (key_3.Find(tit))
+    {
+        printf("主键[%d %s %d]重复\n", tit.aa, tit.bb.c_str(), tit.bbc);
+    }
+
+    bool bret = key_3.First(tit);
+    while (bret)
+    {
+        printf("rid=%d %d %s %d \n", tit.m_nRowId, tit.aa, tit.bb.c_str(), tit.bbc);
+        bret = key_3.Next(tit);
+
+    }
+    printf("\n");
+
+    return 0;
+}
+int testmdbUnordered()
+{
+    CPkeyIntUnordered<1> key;
+    key.Add(1,3);
+    key.Add(2,40000000);
+    bool bret = key.Find(3);
+    
+    // 100万次测试
+    int testNum = 1000000;
+    std::vector<S_BC_SERIAL> vecPlayer;
+    S_BC_SERIAL info;
+    info.node_id = 100;
+    info.node_pid = 1;
+    info.timestamp = time(NULL);
+    // 初始化
+    for (int i = 0; i < testNum; i++)
+    {
+        info.serial = i;
+        vecPlayer.push_back(info);
+    }
+    // 随机打乱
+    std::random_shuffle(vecPlayer.begin(), vecPlayer.end());
+   
+    CTbl_BcSerial tbl_serial;
+    UINT64_ tms= CBF_Date_Time::GetTickCount(); 
+    for (std::vector<S_BC_SERIAL>::iterator it = vecPlayer.begin(); it != vecPlayer.end(); it++)
+    {
+        tbl_serial.Insert(*it);
+    }
+    UINT64_ tms_end = CBF_Date_Time::GetTickCount();
+    
+    printf("bubase mdbbase insert %d 次耗时 %d 平均 %f \n", testNum, tms_end - tms, 1.00*(tms_end - tms) / testNum);
+    std::vector<const S_BC_SERIAL*>reslist;
+    tms = CBF_Date_Time::GetTickCount();
+    for (std::vector<S_BC_SERIAL>::iterator it = vecPlayer.begin(); it != vecPlayer.end(); it++)
+    {
+        S_BC_SERIAL* pbc =tbl_serial.Select(it->node_id,it->node_pid,it->serial);
+        if (pbc == NULL)
+        {
+            printf("select is NULL\n");
+        }
+    }
+    tms_end = CBF_Date_Time::GetTickCount();
+    
+    printf("bubase mdbbase select %d 次耗时 %d 平均 %f \n", testNum, tms_end - tms, 1.00 * (tms_end - tms) / testNum);
+    return 0;
+}
+
+int main(int argc,char *argv[])
+{
+	pLog.SetLogPara(LOG_DEBUG,"","test.log");
+	pLog.StartLog();
+    //testmdbUnordered();
+    testmdb6();
 	return 0;
 }

@@ -1013,7 +1013,6 @@ public:
 	bool Select(char *txacc,std::vector<S_MDB_CUST_RISK_TICK *> &fundlist)
 	{
 		CBF_PMutex pp(&m_mutex);
-		int rid;
 		std::vector<int> iset;
 		if (!m_indexAcc.Select(iset,txacc))
 		{

@@ -118,7 +118,7 @@ class  CProcFuncTbl
 protected:
 	
 	CMemTableNew <S_TBL_PROCFUNC> m_table;
-	CPkeyInt<1>            m_pkey;               //功能号的key
+	CPkeyIntUnordered<1>            m_pkey;               //功能号的key
 public:
 	CProcFuncTbl()
 	{
@@ -158,13 +158,11 @@ public:
 	}
 	S_TBL_PROCFUNC *Find(int funcno)
 	{
-		CInt iset;
-		if (!m_pkey.Select(iset,funcno))
+		int rid;
+		if (!m_pkey.Select(rid,funcno))
 		{
 			return NULL;
 		}
-		int rid;
-		iset.First(rid);
 		return &(m_table.m_table[rid]);
 	}
 	S_TBL_PROCFUNC *First()
