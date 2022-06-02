@@ -96,7 +96,7 @@ public:
 	int g_nBeatHeart;          //是否有心跳1有0无
 	int g_nHeartCount;         //心跳个数，在发出beatheart个心跳未收到响应后，将主动关闭连接，取值1到20
 	int g_nBufferLimit;        //连接上的发送缓存包数0为不限制，最小的限制是100
-	int g_bMsgProcThread;      //是否单独处理线程 true，处理线程通过消息队列进行
+	int g_nMsgProcThread;      //是否单独处理线程 处理线程通过消息队列进行  >0为处理线程数
 
 	int g_nSvrDeleteTime;      //服务断开后删除服务队列时间
 	int g_nServiceDeleteTime;  //服务功能路由过期时间

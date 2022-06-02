@@ -749,7 +749,7 @@ void CPoolModule::OnRoute()
 
 void CPoolModule::OnMsgProc(S_DREB_RSMSG *msg)
 {
-	if (m_pRes->g_bMsgProcThread)
+	if (m_pRes->g_nMsgProcThread>0)
 	{
 		m_pMsgQueue->PushData(msg);
 	}

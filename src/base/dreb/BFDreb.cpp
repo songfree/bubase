@@ -84,7 +84,7 @@ bool CBFDreb::Init(const char *confile)
 	g_pPoolModule.m_nEnd = g_Vars.g_nMaxConnCount;
 
 	g_Vars.g_bIsExit = false;
-	g_pPoolModule.m_pMsgProc = &g_pProcThread;
+	g_pPoolModule.m_pMsgProc = &g_pProcThread[0];
 
 	g_pPoolModule.CreateThread();
 	if (g_pPoolModule.IsStoped())
@@ -97,17 +97,20 @@ bool CBFDreb::Init(const char *confile)
 	g_pPoolModule.StartTimer();
 
 	//启动消息处理线程
-	g_pProcThread.SetGlobalVar(&g_Vars,&g_connInfoList,&g_pMemDb,&g_pMemPool,&g_pMsgQueue);
-	
-    if (g_Vars.g_bMsgProcThread)
+    if (g_Vars.g_nMsgProcThread>0)
 	{
-		g_pProcThread.CreateThread();
-		if (g_pProcThread.IsStoped())
+		for (int i = 0; i < g_Vars.g_nMsgProcThread; i++)
 		{
-			m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"%s %s 启动消息处理线程失败!",g_Vars.g_curentpath,g_Vars.g_modulename);
-			g_Vars.g_bIsExit = true;
-			return false;
+            g_pProcThread[i].SetGlobalVar(&g_Vars, &g_connInfoList, &g_pMemDb, &g_pMemPool, &g_pMsgQueue);
+            g_pProcThread[i].CreateThread();
+            if (g_pProcThread[i].IsStoped())
+            {
+                m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "%s %s 启动消息处理线程失败!", g_Vars.g_curentpath, g_Vars.g_modulename);
+                g_Vars.g_bIsExit = true;
+                return false;
+            }
 		}
+		
 	}
 	if (g_Vars.g_nUseMonitor == 1)
 	{
@@ -133,6 +136,10 @@ void CBFDreb::OnStop()
 	g_pPoolModule.Join();
 	g_Vars.g_pLog.StopLog();
 	g_Vars.g_pDataLog.StopLog();
+    for (int i = 0; i < g_Vars.g_nMsgProcThread; i++)
+    {
+		g_pProcThread[i].Join();
+	}
 	SLEEP_SECONDS(2);
 	g_connInfoList.at(0)->OnClose("DREB正常退出",__FILE__,__LINE__);
 	
@@ -147,13 +154,17 @@ void CBFDreb::Monitor()
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"错误 重启接收线程CPoolModule  %d",g_Vars.g_bIsExit);
 		g_pPoolModule.CreateThread();
 	}
-	if (g_Vars.g_bMsgProcThread == 1)
+	if (g_Vars.g_nMsgProcThread >0)
 	{
-		if (g_pProcThread.IsStoped())
-		{
-			m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"错误 重启消息处理线程 %d",g_Vars.g_bIsExit);
-			g_pProcThread.CreateThread();
-		}
+        for (int i = 0; i < g_Vars.g_nMsgProcThread; i++)
+        {
+            if (g_pProcThread[i].IsStoped())
+            {
+                m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "错误 重启消息处理线程 %d", i);
+                g_pProcThread[i].CreateThread();
+            }
+        }
+		
 	}
 	if (g_Vars.g_pLog.IsStopedThread())
 	{

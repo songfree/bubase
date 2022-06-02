@@ -52,7 +52,7 @@ protected:
 	CBF_LogClient       *m_log;
 	
 	CPoolModule         g_pPoolModule;//接收线程
-	CMsgProcThread      g_pProcThread;//消息处理线程
+	CMsgProcThread      g_pProcThread[5];//消息处理线程
 	CPoolData           g_pMsgQueue;  //消息队列
 
 	CSocketMgr          g_connInfoList;//连接管理类

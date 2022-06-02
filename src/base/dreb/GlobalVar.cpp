@@ -33,6 +33,7 @@ CGlobalVar::CGlobalVar()
 	m_bIsRecTime = 1;
 	
 	g_nMaxRouteStep = 16;
+	g_nMsgProcThread = 0;
 }
 
 CGlobalVar::~CGlobalVar()
@@ -196,23 +197,23 @@ bool CGlobalVar::Init(const char *confile)
 		g_nBeatHeart = 0;
 		g_pLog.LogMp(LOG_PROMPT,__FILE__,__LINE__,m_errMsg);
 	}
-	int tmpint;
-	if (xmlconf.GetNodeValueByPath("package/head/muthread",false,tmpint) == NULL)
+	if (xmlconf.GetNodeValueByPath("package/head/muthread",false, g_nMsgProcThread) == NULL)
 	{
 		sprintf(m_errMsg,"节点[package/head/muthread]没有配置");
-		tmpint = 0;
 		g_pLog.LogMp(LOG_PROMPT,__FILE__,__LINE__,m_errMsg);
 	}
-	if (tmpint == 1)
+	if (g_nMsgProcThread > 5)
 	{
-		g_bMsgProcThread = true;
-		sprintf(m_errMsg,"启用处理线程，接收和处理两个线程");
+		g_nMsgProcThread=5;
+	}
+	if (g_nMsgProcThread > 0)
+	{
+		sprintf(m_errMsg,"启用处理线程，处理线程数%d", g_nMsgProcThread);
 //		printf("%s\n",m_errMsg);
 		g_pLog.LogMp(LOG_PROMPT,__FILE__,__LINE__,m_errMsg);
 	}
 	else
 	{
-		g_bMsgProcThread = false;
 		sprintf(m_errMsg,"不启用处理线程，一个接收处理线程即可");
 //		printf("%s\n",m_errMsg);
 		g_pLog.LogMp(LOG_PROMPT,__FILE__,__LINE__,m_errMsg);
