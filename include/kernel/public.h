@@ -111,6 +111,7 @@ using namespace std;
 #include <sys/timeb.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <sys/syscall.h>
 #ifdef LINUX
 #include <semaphore.h>
 #include <signal.h>
@@ -407,7 +408,8 @@ typedef void * DLLHANDLE;
 #define GetThreadID() ::GetCurrentThreadId()
 #define GetPid()      ::GetCurrentProcessId()
 #else
-#define GetThreadID() ::pthread_self()
+//#define GetThreadID() ::pthread_self()
+#define GetThreadID() ::syscall(SYS_gettid)
 #define GetPid()      ::getpid()
 #endif
 
