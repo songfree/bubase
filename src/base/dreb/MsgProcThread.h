@@ -363,6 +363,19 @@ protected:
 	/// 描述  : 处理接收到的数据，并根据数据类型进行处理
 	void OnMsgRead(S_DREB_RSMSG *msg);
 	
+    /// 函数名: OnMsgRead
+    /// 编程  : 王明松 2022-6-14 11:30:10
+    /// 返回  : void 
+    /// 参数  : S_DREB_RSMSG *msg
+    /// 描述  : 处理服务订阅广播
+	void OnCmdSubscribe(S_DREB_RSMSG* msg);
+
+    /// 函数名: OnMsgRead
+    /// 编程  : 王明松 2022-6-14 11:30:10
+    /// 返回  : void 
+    /// 参数  : S_DREB_RSMSG *msg
+    /// 描述  : 处理服务取消订阅广播
+	void OnCmdUnSubscribe(S_DREB_RSMSG* msg);
 
 	virtual int Run();
 	virtual bool InitThreadInstance();

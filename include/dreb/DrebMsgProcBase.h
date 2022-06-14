@@ -726,12 +726,12 @@ protected:
 		std::string bpugroupname;
 		int i;
 		int bpuindex=-1;
-		char tmpchar[200];
-		char tmpcharconf[200];
+		
 		bool isfind=false;
 		std::string namevalue;
 		if (savemode == 1)
 		{
+//			char tmpchar[200];
 // 			CBF_Date_Time dt;
 // 			sprintf(tmpchar,"%s.%s%s",m_pRes->m_sBpcParaFileName.c_str(),dt.ToStringD8().c_str(),dt.ToStringT6().c_str());
 // 			m_pRes->m_xmlconf.ToFile(tmpchar);

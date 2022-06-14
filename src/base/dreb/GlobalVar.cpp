@@ -29,6 +29,7 @@ CGlobalVar::CGlobalVar()
 	g_nMaxDataLogSize =0;
 	g_nRegOtherDreb = 1;
 	g_nPrintRoute =0;
+	g_nSupportSubscribe =1;
 
 	m_bIsRecTime = 1;
 	
@@ -96,7 +97,12 @@ bool CGlobalVar::Init(const char *confile)
 		g_pLog.LogMp(LOG_ERROR,__FILE__,__LINE__,m_errMsg);
 		g_nPrintRoute =0;
 	}
-	
+    if (xmlconf.GetNodeValueByPath("package/head/subscribe", false, g_nSupportSubscribe) == NULL)
+    {
+        sprintf(m_errMsg, "节点[package/head/subscribe]没有配置,默认支持广播订阅");
+        g_pLog.LogMp(LOG_ERROR, __FILE__, __LINE__, m_errMsg);
+		g_nSupportSubscribe = 1;
+    }
 
 	if (xmlconf.GetNodeValueByPath("package/head/ListenPort",false,g_nPort)==NULL)
 	{

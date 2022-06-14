@@ -112,6 +112,10 @@ bool CBFDreb::Init(const char *confile)
 		}
 		
 	}
+	else
+	{
+		g_pProcThread[0].SetGlobalVar(&g_Vars, &g_connInfoList, &g_pMemDb, &g_pMemPool, &g_pMsgQueue);
+	}
 	if (g_Vars.g_nUseMonitor == 1)
 	{
 		if (g_Vars.g_nMonitorHost == 1)

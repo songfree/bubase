@@ -27,6 +27,36 @@ typedef struct
 	unsigned int   nbandwidth;     //带宽
 }S_SERVICE_ROUTE;
 
+
+typedef struct
+{
+    unsigned int   nIndex;         //连接索引  通过此连接索引可得到数据总线节点的连接
+	unsigned int   nFuncNo;        //服务功能号
+    unsigned int   nSvrMainId;     //注册在DREB的主服务功能号   只有服务调用时才用填写
+    char           cSvrPrivateId;  //注册在DREB的私有序号 0表示公共 >0为每个服务的序号，s_nSvrMainId+s_cSvrPrivateId 即为私有功能号   只有服务调用时才用填写
+    unsigned int   nUpdateTime;    //功能的更新时间
+}S_SUBSCRIBE;
+
+class CSubscribeTbl
+{
+public:
+	CSubscribeTbl();
+    virtual ~CSubscribeTbl();
+	//订阅广播，当funclist size为0时取消订阅
+	void Subscribe(unsigned int   nIndex,std::vector<unsigned int> &funclist, unsigned int   nSvrMainId, char           cSvrPrivateId);
+	//取消订阅
+	void UnSubscribe(unsigned int   nIndex);
+	//根据广播功能号，找出已订阅的服务连接index
+	bool GetIndex(unsigned int nFunc, std::vector<S_SUBSCRIBE>& indexlist)	;
+private:
+
+	CBF_Mutex m_mutex;
+
+	CMemTableNew<S_SUBSCRIBE>  m_table;
+	CPkeyUInt<2>    m_key;  //index+nFuncNo的主键
+	CIndexUInt<1>   m_indexindex;//index的索引
+	CIndexUInt<1>   m_indexFunc;//功能号的索引
+};
 class CServiceTbl  
 {
 public:
@@ -184,7 +214,7 @@ protected:
 
 	CMemTableNew <S_SERVICE_ROUTE> m_table;        //SERVICE 内存表
 
-	CIndexInt<6>             m_pkey;         //index+dreb+dreb私有号+服务号+服务私有号+功能号，唯一索引
+	CPkeyInt<6>             m_pkey;         //index+dreb+dreb私有号+服务号+服务私有号+功能号，唯一索引
 
 	CIndexInt<1>             m_index_func;   //服务功能号索引
 

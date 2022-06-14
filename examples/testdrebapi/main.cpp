@@ -2,47 +2,47 @@
 #include "DrebApi.h"
 #include "BF_DrebServerApi.h"
 #include "Bfdefine.h"
-#include "DrebClient_Java.h"
+//#include "DrebClient_Java.h"
 
 #ifdef _WINDOWS
 #ifdef _DEBUG
 #pragma comment(lib, "bf_dbpubd.lib")
 #pragma comment(lib, "bf_drebapid.lib")
 #pragma comment(lib, "bf_kerneld.lib") 
-#pragma comment(lib, "bf_drebapi_javad.lib") 
+//#pragma comment(lib, "bf_drebapi_javad.lib") 
 #pragma message("Automatically linking with  bf_kerneld.lib bf_drebapid.lib")
 #else
 #pragma comment(lib, "bf_dbpub.lib")
 #pragma comment(lib, "bf_kernel.lib")
 #pragma comment(lib, "bf_drebapi.lib") 
-#pragma comment(lib, "bf_drebapi_java.lib") 
+//#pragma comment(lib, "bf_drebapi_java.lib") 
 #pragma message("Automatically linking with  bf_kernel.lib bf_drebapi.lib")
 #endif
 #endif
 
-UINT64_ ntohll(UINT64_ val)
-{
-	if (htonl(1) == 1) //本机为网络序 AIX HP_UX
-	{
-		return val;
-	}
-	else
-	{
-		return (((UINT64_)htonl((int)((val << 32) >> 32))) << 32) | (unsigned int)htonl((int)(val >> 32));
-	}
- }
-
-UINT64_ htonll(UINT64_ val)
-{
-	if (htonl(1) == 1)
-	{
-		return val;//本机为网络序 AIX HP_UX
-	}
-    else
-	{
-        return (((UINT64_)htonl((int)((val << 32) >> 32))) << 32) | (unsigned int)htonl((int)(val >> 32));
-    }
-}
+//UINT64_ ntohll(UINT64_ val)
+//{
+//	if (htonl(1) == 1) //本机为网络序 AIX HP_UX
+//	{
+//		return val;
+//	}
+//	else
+//	{
+//		return (((UINT64_)htonl((int)((val << 32) >> 32))) << 32) | (unsigned int)htonl((int)(val >> 32));
+//	}
+// }
+//
+//UINT64_ htonll(UINT64_ val)
+//{
+//	if (htonl(1) == 1)
+//	{
+//		return val;//本机为网络序 AIX HP_UX
+//	}
+//    else
+//	{
+//        return (((UINT64_)htonl((int)((val << 32) >> 32))) << 32) | (unsigned int)htonl((int)(val >> 32));
+//    }
+//}
 
 
 
@@ -79,22 +79,22 @@ int main(int argc,char *argv[])
 // 
 
 
-	int port=9021;
-	int timeout = 6000;
-	int aa = BFDREB_CLIENT_NewInstance("172.168.65.107",(char *)&port,(char *)&timeout);
-	if (aa >120)
-	{
-		printf("BFDREB_CLIENT_NewInstance失败\n");
-		return -1;
-	}
-	char index= aa;
-	BFDREB_CLIENT_FreeInstance(aa);
+	//int port=9021;
+	//int timeout = 6000;
+	//int aa = BFDREB_CLIENT_NewInstance("172.168.65.107",(char *)&port,(char *)&timeout);
+	//if (aa >120)
+	//{
+	//	printf("BFDREB_CLIENT_NewInstance失败\n");
+	//	return -1;
+	//}
+	//char index= aa;
+	//BFDREB_CLIENT_FreeInstance(aa);
 
-	return -1;
+	//return -1;
 
 	char errmsg[256];
 	void *api=NULL;
-	if (BFDREBAPI_InitApi("bfbpc.xml",&api)<0)
+	if (BFDREBAPI_InitApi("bfsap.xml",&api)<0)
 	{
 		BFDREBAPI_GetErrMsg(api,errmsg);
 		printf("初始化失败 %s\n",errmsg);
@@ -129,7 +129,7 @@ int main(int argc,char *argv[])
 			switch (gdata.cMsgType)
 			{
 				case MSG_REQ: //总线过来的请求  包含外调、推送、广播
-					printf("收到待处理请求\n");
+					printf("收到待处理请求 %d\n",gdata.sDBHead.d_Dinfo.d_nServiceNo);
 					break;
 				case MSG_DREBANS:  //总线过来的应答数据  即从本API发出去的请求的应答
 					printf("收到应答\n");
@@ -144,6 +144,7 @@ int main(int argc,char *argv[])
 					printf("本次连接上的总线索引 %d \n",gdata.index);
 					//注意调用一次仅在一个总线上注册，多个总线要调用多次
 					BFDREBAPI_RegisterDreb(api,gdata.index,"1|2|3|4|");//在连接的总线上注册1、2、3、4四个交易码
+					BFDREBAPI_Subscribe(api, gdata.index, "20001|");//在连接的总线订阅20001的广播
 					break;
 				case MSG_BPCMONITOR:  //api发过来的消息，通知调用方本该向总线主动上报监控信息了,buffer里为api组好的xml报文，可根据需要增加后调用发送回去即可
 					gdata.sDBHead.cRaflag = 0;

@@ -28,6 +28,44 @@
 #include <queue>
 #include <stdarg.h>
 
+#include <unordered_set>
+#include <functional>
+
+ // from boost (functional/hash):
+ // see http://www.boost.org/doc/libs/1_35_0/doc/html/hash/combine.html
+template <typename T>
+inline void hash_combine(std::size_t& seed, const T& val)
+{
+    seed ^= std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+// auxiliary generic functions to create a hash value using a seed
+template <typename T>
+inline void hash_val(std::size_t& seed, const T& val)
+{
+    hash_combine(seed, val);
+}
+template <typename T, typename... Types>
+inline void hash_val(std::size_t& seed,
+    const T& val, const Types&... args)
+{
+    hash_combine(seed, val);
+    hash_val(seed, args...);
+}
+
+// auxiliary generic function to create a hash value out of a heterogeneous list of arguments
+template <typename... Types>
+inline std::size_t hash_val(const Types&... args)
+{
+    std::size_t seed = 0;
+    hash_val(seed, args...);
+    return seed;
+}
+
+
+
+
+
 #if defined(WIN32)
 #include <io.h>
 #else
@@ -193,7 +231,106 @@ public:
 		return m_index.size();
 	}
 };
-
+//不重复的索引基类
+template<typename Record,typename HashSet>
+class CUniqueIndexBaseUnordered
+{
+public:
+    typedef std::unordered_set<Record, HashSet> SET_;
+    typedef typename SET_::iterator LP_SET;
+    SET_      m_index;//索引数据，Record不可能重复
+    LP_SET    m_current;//当前索引
+    bool         m_bDroped;	 //是否删除操作
+public:
+	CUniqueIndexBaseUnordered()
+    {
+        m_bDroped = false;
+    }
+    ~CUniqueIndexBaseUnordered()
+    {
+        Clear();
+    }
+    void Clear()
+    {
+        m_index.clear();
+    }
+    //第一个元素
+    bool First(Record& rt)
+    {
+        m_bDroped = false;
+        m_current = m_index.begin();
+        if (m_current == m_index.end())
+        {
+            return false;
+        }
+        else
+        {
+            rt = *m_current;
+            return true;
+        }
+    }
+    //向下一个元素和First配合使用
+    bool Next(Record& rt)
+    {
+        if (!m_bDroped)
+        {
+            m_current++;
+        }
+        else
+        {
+            m_bDroped = false;
+        }
+        if (m_current == m_index.end())
+        {
+            return false;
+        }
+        else
+        {
+            rt = *m_current;
+            return true;
+        }
+    }
+    
+    bool Find(Record& rt)
+    {
+        m_bDroped = false;
+        m_current = m_index.find(rt);
+        if (m_current == m_index.end())
+        {
+            return false;
+        }
+        else
+        {
+            rt = *m_current;
+            return true;
+        }
+    }
+    bool Add(Record& rt)
+    {
+        // #ifdef _GCC
+        // 		Erase(rt);
+        // #endif
+        pair<LP_SET, bool> r = m_index.insert(rt);
+        return r.second;
+        // #ifndef _GCC
+        // 		if(!r.second) *r.first = rt;
+        // #endif
+    }
+    //反向迭代暂不能删除
+    void EraseOne()
+    {
+        m_index.erase(m_current++);
+        m_bDroped = true;
+    }
+    void Erase(Record& rt)
+    {
+        m_index.erase(rt);
+    }
+    int Size()
+    {
+        return m_index.size();
+    }
+};
 
 //重复的索引基类
 template<typename Record,typename Compare>
@@ -1024,6 +1161,231 @@ public:
 };
 
 
+//多个整型字段的key，不可重复
+template<int count>
+class CPkeyIntUnordered
+{
+public:
+    struct Int_
+    {
+        int	k[count];    //多个整型索引
+        int id;          //对应表的ID，相当于rowid
+        bool operator == (const Int_& t) const
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (t.k[i] != k[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+    struct Int_hash 
+    {
+        std::size_t operator() (const Int_ &f1) const
+        {
+			switch (count)
+			{
+			    case 1:
+					return hash_val(f1.k[0]);
+                case 2:
+                    return hash_val(f1.k[0], f1.k[1]);
+                case 3:
+                    return hash_val(f1.k[0], f1.k[1], f1.k[2]);
+                case 4:
+                    return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3]);
+                case 5:
+					return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4]);
+                case 6:
+					return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5]);
+                case 7:
+					return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6]);
+                case 8:
+					return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7]);
+                case 9:
+					return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7], f1.k[8]);
+                case 10:
+					return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7], f1.k[8], f1.k[9]);
+				default:
+					return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7], f1.k[8], f1.k[9]);
+			}
+        }
+    };
+
+    CUniqueIndexBaseUnordered<Int_, Int_hash> m_key;//key数据，不可重复
+
+public:
+	CPkeyIntUnordered()
+    {
+		
+    }
+    ~CPkeyIntUnordered()
+    {
+    }
+    //增加一条索引:rowid,索引...
+    void Add(int id, ...)
+    {
+        Int_ a_;
+        va_list	intp;
+        int i;
+
+        a_.id = id;
+        va_start(intp, id);
+        for (i = 0; i < count; i++)
+        {
+            a_.k[i] = va_arg(intp, int);
+        }
+        va_end(intp);
+        m_key.Add(a_);
+        return;
+    }
+    //查找指定key的rowid  删除时使用
+    bool Select(CInt& iset, int k, ...)
+    {
+        Int_ a_;
+        bool bret_;
+        int i;
+        va_list	intp;
+
+        iset.Clear();
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, int);
+        }
+        va_end(intp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            iset.Add(a_.id);
+        }
+        return bret_;
+    }
+    bool Select(int& rid, int k, ...)
+    {
+        Int_ a_;
+        bool bret_;
+        int i;
+        va_list	intp;
+
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, int);
+        }
+        va_end(intp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            rid = a_.id;
+        }
+        return bret_;
+    }
+    //查找指定key的数据是否存在
+    bool Find(int k, ...)
+    {
+        Int_ a_;
+        bool bret_;
+        int i;
+        va_list	intp;
+
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, int);
+        }
+        va_end(intp);
+        bret_ = m_key.Find(a_);
+        return bret_;
+    }
+    //删除指定key
+    void Delete(int k, ...)
+    {
+        Int_ a_;
+        va_list	intp;
+        int i;
+
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, int);
+        }
+        va_end(intp);
+        m_key.Erase(a_);
+        return;
+    }
+    //扫描全表，删除rowid
+    void Delete(CInt iset)
+    {
+        Int_ a_;
+        bool bret_;
+        bret_ = m_key.First(a_);
+        while (bret_)
+        {
+            if (iset.Find(a_.id))
+            {
+                m_key.EraseOne();
+            }
+            bret_ = m_key.Next(a_);
+        }
+    }
+    bool First(int& id)
+    {
+        Int_ aa;
+        if (!m_key.First(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool Next(int& id)
+    {
+        Int_ aa;
+        if (!m_key.Next(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool End(int& id)
+    {
+        Int_ aa;
+        if (!m_key.End(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool Last(int& id)
+    {
+        Int_ aa;
+        if (!m_key.Last(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    void Clear()
+    {
+        m_key.Clear();
+    }
+    int Size()
+    {
+        return m_key.Size();
+    }
+};
+
+
 //多个整型字段的索引，可重复
 template<int count>
 class CIndexUInt
@@ -1470,7 +1832,227 @@ public:
 		return m_key.Size();
 	}
 };
+//多个整型字段的key，不可重复
+template<int count>
+class CPkeyUIntUnordered
+{
+public:
+    struct Int_
+    {
+        unsigned int k[count];    //多个整型索引
+        int id;          //对应表的ID，相当于rowid
+        bool operator == (const Int_& t) const
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (t.k[i] != k[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+    struct Int_hash
+    {
+        std::size_t operator() (const Int_& f1) const
+        {
+            switch (count)
+            {
+            case 1:
+                return hash_val(f1.k[0]);
+            case 2:
+                return hash_val(f1.k[0], f1.k[1]);
+            case 3:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2]);
+            case 4:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3]);
+            case 5:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4]);
+            case 6:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5]);
+            case 7:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6]);
+            case 8:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7]);
+            case 9:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7], f1.k[8]);
+            case 10:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7], f1.k[8], f1.k[9]);
+            default:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7], f1.k[8], f1.k[9]);
+            }
+        }
+    };
+    CUniqueIndexBaseUnordered<Int_, Int_hash> m_key;//key数据，不可重复
 
+public:
+	CPkeyUIntUnordered()
+    {
+    }
+    ~CPkeyUIntUnordered()
+    {
+    }
+    //增加一条索引:rowid,索引...
+    void Add(int id, ...)
+    {
+        Int_ a_;
+        va_list	intp;
+        int i;
+
+        a_.id = id;
+        va_start(intp, id);
+        for (i = 0; i < count; i++)
+        {
+            a_.k[i] = va_arg(intp, unsigned int);
+        }
+        va_end(intp);
+        m_key.Add(a_);
+        return;
+    }
+    //查找指定key的rowid 删除时使用
+    bool Select(CInt& iset, unsigned int k, ...)
+    {
+        Int_ a_;
+        bool bret_;
+        int i;
+        va_list	intp;
+
+        iset.Clear();
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, unsigned int);
+        }
+        va_end(intp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            iset.Add(a_.id);
+        }
+        return bret_;
+    }
+    bool Select(int& rid, unsigned int k, ...)
+    {
+        Int_ a_;
+        bool bret_;
+        int i;
+        va_list	intp;
+
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, unsigned int);
+        }
+        va_end(intp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            rid = a_.id;
+        }
+        return bret_;
+    }
+    //查找指定key的数据是否存在
+    bool Find(unsigned int k, ...)
+    {
+        Int_ a_;
+        bool bret_;
+        int i;
+        va_list	intp;
+
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, unsigned int);
+        }
+        va_end(intp);
+        bret_ = m_key.Find(a_);
+        return bret_;
+    }
+    //删除指定key
+    void Delete(unsigned int k, ...)
+    {
+        Int_ a_;
+        va_list	intp;
+        int i;
+
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, unsigned int);
+        }
+        va_end(intp);
+        m_key.Erase(a_);
+        return;
+    }
+    //扫描全表，删除rowid
+    void Delete(CInt iset)
+    {
+        Int_ a_;
+        bool bret_;
+        bret_ = m_key.First(a_);
+        while (bret_)
+        {
+            if (iset.Find(a_.id))
+            {
+                m_key.EraseOne();
+            }
+            bret_ = m_key.Next(a_);
+        }
+    }
+    bool First(int& id)
+    {
+        Int_ aa;
+        if (!m_key.First(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool Next(int& id)
+    {
+        Int_ aa;
+        if (!m_key.Next(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool End(int& id)
+    {
+        Int_ aa;
+        if (!m_key.End(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool Last(int& id)
+    {
+        Int_ aa;
+        if (!m_key.Last(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    void Clear()
+    {
+        m_key.Clear();
+    }
+    int Size()
+    {
+        return m_key.Size();
+    }
+};
 
 //多个字符字段的索引,可重复
 template<int length,int count>
@@ -1946,7 +2528,253 @@ public:
 		return m_key.Size();
 	}
 };
+//// 多个字符字段的key,不可重复
+template<int length, int count>
+class CPkeyCharFUnordered
+{
+public:
+    struct Char_
+    {
+        char p[count][length];//多个字符索引
+        int  id;              //内存表的rowid
+        bool operator == (const Char_& t) const
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (strncmp(t.p[i],p[i],length)!=0)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+    struct Char_hash
+    {
+        std::size_t operator() (const Char_& f1) const
+        {
+            switch (count)
+            {
+            case 1:
+                return hash_val(f1.p[0]);
+            case 2:
+                return hash_val(f1.p[0], f1.p[1]);
+            case 3:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2]);
+            case 4:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3]);
+            case 5:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4]);
+            case 6:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5]);
+            case 7:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6]);
+            case 8:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7]);
+            case 9:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8]);
+            case 10:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8], f1.p[9]);
+            default:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8], f1.p[9]);
+            }
+        }
+    };
+    CUniqueIndexBaseUnordered<Char_, Char_hash> m_key;  //key数据，不可重复
 
+public:
+	CPkeyCharFUnordered()
+    {
+    }
+    ~CPkeyCharFUnordered()
+    {
+    }
+    //增加一条索引:id=rowid,索引...
+    void Add(int id, char* p, ...)
+    {
+        Char_ a_;
+        va_list	charp;
+        int i;
+
+        a_.id = id;
+        CBF_Tools::StringCopy(a_.p[0], length - 1, p);
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            CBF_Tools::StringCopy(a_.p[i + 1], length - 1, va_arg(charp, char*));
+        }
+        va_end(charp);
+        m_key.Add(a_);
+        return;
+    }
+
+    //查找指定key的rowid 删除时使用
+    bool Select(CInt& iset, char* p, ...)
+    {
+        Char_ a_;
+        bool bret_;
+        va_list charp;
+        int i;
+
+        iset.Clear();
+        CBF_Tools::StringCopy(a_.p[0], length - 1, p);
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            CBF_Tools::StringCopy(a_.p[i + 1], length - 1, va_arg(charp, char*));
+        }
+        va_end(charp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            iset.Add(a_.id);
+        }
+        return bret_;
+    }
+    //查找指定key的rowid
+    bool Select(int& rowid, char* p, ...)
+    {
+        Char_ a_;
+        bool bret_;
+        va_list charp;
+        int i;
+
+        CBF_Tools::StringCopy(a_.p[0], length - 1, p);
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            CBF_Tools::StringCopy(a_.p[i + 1], length - 1, va_arg(charp, char*));
+        }
+        va_end(charp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            rowid = a_.id;
+        }
+        return bret_;
+    }
+    //查找指定key的rowid
+    bool GetRowId(int& rid, char* p, ...)
+    {
+        Char_ a_;
+        bool bret_;
+        va_list charp;
+        int i;
+
+        CBF_Tools::StringCopy(a_.p[0], length - 1, p);
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            CBF_Tools::StringCopy(a_.p[i + 1], length - 1, va_arg(charp, char*));
+        }
+        va_end(charp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            rid = a_.id;
+        }
+        return bret_;
+    }
+    //查找指定key是否存在
+    bool Find(char* p, ...)
+    {
+        Char_ a_;
+        bool bret_;
+        va_list charp;
+        int i;
+
+        CBF_Tools::StringCopy(a_.p[0], length - 1, p);
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            CBF_Tools::StringCopy(a_.p[i + 1], length - 1, va_arg(charp, char*));
+        }
+        va_end(charp);
+        bret_ = m_key.Find(a_);
+        return bret_;
+    }
+    //删除指定key
+    void Delete(char* p, ...)
+    {
+        Char_ a_;
+        va_list charp;
+        int i;
+
+        CBF_Tools::StringCopy(a_.p[0], length - 1, p);
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            CBF_Tools::StringCopy(a_.p[i + 1], length - 1, va_arg(charp, char*));
+        }
+        va_end(charp);
+        m_key.Erase(a_);
+        return;
+    }
+    //扫描全表，删除rowid
+    void Delete(CInt iset)
+    {
+        Char_ a_;
+        bool bret_;
+
+        bret_ = m_key.First(a_);
+        while (bret_)
+        {
+            if (iset.Find(a_.id))
+            {
+                m_key.EraseOne();
+            }
+            bret_ = m_key.Next(a_);
+        }
+    }
+    bool First(int& id)
+    {
+        Char_ aa;
+        if (!m_key.First(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool Next(int& id)
+    {
+        Char_ aa;
+        if (!m_key.Next(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool End(int& id)
+    {
+        Char_ aa;
+        if (!m_key.End(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool Last(int& id)
+    {
+        Char_ aa;
+        if (!m_key.Last(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    void Clear()
+    {
+        m_key.Clear();
+    }
+    int Size()
+    {
+        return m_key.Size();
+    }
+};
 //多个字符字段的主键，注意主键里的键值指向表里的对应字段，同时表必须用deque，因为vector地址会变
 
 template<int count>
@@ -2191,7 +3019,274 @@ public:
 		return m_key.Size();
 	}
 };
+//多个字符字段的主键，注意主键里的键值指向表里的对应字段，同时表必须用deque，因为vector地址会变
 
+template<int count>
+class CPkeyCharVUnordered
+{
+public:
+    struct Char_
+    {
+        char* p[count];//多个字符索引
+        int  id;              //内存表的rowid
+        bool operator == (const Char_& t) const
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (strcmp(t.p[i],p[i])!=0)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+    struct Char_hash
+    {
+        std::size_t operator() (const Char_& f1) const
+        {
+            switch (count)
+            {
+            case 1:
+                return hash_val(f1.p[0]);
+            case 2:
+                return hash_val(f1.p[0], f1.p[1]);
+            case 3:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2]);
+            case 4:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3]);
+            case 5:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4]);
+            case 6:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5]);
+            case 7:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6]);
+            case 8:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7]);
+            case 9:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8]);
+            case 10:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8], f1.p[9]);
+            default:
+                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8], f1.p[9]);
+            }
+        }
+    };
+
+    CUniqueIndexBaseUnordered<Char_, Char_hash> m_key;  //key数据，不可重复
+
+public:
+	CPkeyCharVUnordered()
+    {
+    }
+    ~CPkeyCharVUnordered()
+    {
+    }
+    //增加一条索引:id=rowid,索引...
+    void Add(int id, char* p, ...)
+    {
+        Char_ a_;
+        va_list	charp;
+        int i;
+
+        a_.id = id;
+        a_.p[0] = p;
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.p[i + 1] = va_arg(charp, char*);
+        }
+        va_end(charp);
+        m_key.Add(a_);
+        return;
+    }
+    //查找指定key的rowid  删除时使用
+    bool Select(CInt& iset, char* p, ...)
+    {
+        Char_ a_;
+        bool bret_;
+        va_list charp;
+        int i;
+
+        iset.Clear();
+        a_.p[0] = p;
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.p[i + 1] = va_arg(charp, char*);
+        }
+        va_end(charp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            iset.Add(a_.id);
+        }
+        return bret_;
+    }
+    //查找指定key的rowid
+    bool Select(int& rid, char* p, ...)
+    {
+        Char_ a_;
+        bool bret_;
+        va_list charp;
+        int i;
+
+        a_.p[0] = p;
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.p[i + 1] = va_arg(charp, char*);
+        }
+        va_end(charp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            rid = a_.id;
+        }
+        return bret_;
+    }
+    //查找指定key的rowid
+    bool GetRowId(int& rid, char* p, ...)
+    {
+        Char_ a_;
+        bool bret_;
+        va_list charp;
+        int i;
+
+        a_.p[0] = p;
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.p[i + 1] = va_arg(charp, char*);
+        }
+        va_end(charp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            rid = a_.id;
+        }
+        return bret_;
+    }
+    //查找指定key是否存在
+    bool Find(char* p, ...)
+    {
+        Char_ a_;
+        bool bret_;
+        va_list charp;
+        int i;
+
+        a_.p[0] = p;
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.p[i + 1] = va_arg(charp, char*);
+        }
+        va_end(charp);
+        bret_ = m_key.Find(a_);
+        return bret_;
+    }
+    //删除指定key
+    void Delete(char* p, ...)
+    {
+        Char_ a_;
+        va_list charp;
+        int i;
+
+        a_.p[0] = p;
+        va_start(charp, p);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.p[i + 1] = va_arg(charp, char*);
+        }
+        va_end(charp);
+        m_key.Erase(a_);
+        return;
+    }
+    //扫描全表，删除rowid
+    void Delete(CInt iset)
+    {
+        Char_ a_;
+        bool bret_;
+
+        bret_ = m_key.First(a_);
+        while (bret_)
+        {
+            if (iset.Find(a_.id))
+            {
+                m_key.EraseOne();
+            }
+            bret_ = m_key.Next(a_);
+        }
+    }
+    bool First(int& id)
+    {
+        Char_ aa;
+        if (!m_key.First(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool Next(int& id)
+    {
+        Char_ aa;
+        if (!m_key.Next(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    char* FirstKey(int& id)
+    {
+        Char_ aa;
+        if (!m_key.First(aa))
+        {
+            return NULL;
+        }
+        id = aa.id;
+        return aa.p[0];
+    }
+    char* NextKey(int& id)
+    {
+        Char_ aa;
+        if (!m_key.Next(aa))
+        {
+            return NULL;
+        }
+        id = aa.id;
+        return aa.p[0];
+    }
+    bool End(int& id)
+    {
+        Char_ aa;
+        if (!m_key.End(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool Last(int& id)
+    {
+        Char_ aa;
+        if (!m_key.Last(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    void Clear()
+    {
+        m_key.Clear();
+    }
+    int Size()
+    {
+        return m_key.Size();
+    }
+};
 //多个字符字段的索引，注意索引里的值指向表里的对应字段
 template<int count>
 class CIndexVarChar
@@ -3039,7 +4134,210 @@ public:
 		return m_key.Size();
 	}
 };
+//多个64位无符号整型字段的key，不可重复
+template<int count>
+class CPkeyUint64Unordered
+{
+public:
+    struct Int64_
+    {
+        UINT64_	k[count];    //多个整型索引
+        int id;          //对应表的ID，相当于rowid
+        bool operator == (const Int64_& t) const
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (t.k[i] != k[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+    struct Int_hash
+    {
+        std::size_t operator() (const Int64_& f1) const
+        {
+            switch (count)
+            {
+            case 1:
+                return hash_val(f1.k[0]);
+            case 2:
+                return hash_val(f1.k[0], f1.k[1]);
+            case 3:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2]);
+            case 4:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3]);
+            case 5:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4]);
+            case 6:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5]);
+            case 7:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6]);
+            case 8:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7]);
+            case 9:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7], f1.k[8]);
+            case 10:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7], f1.k[8], f1.k[9]);
+            default:
+                return hash_val(f1.k[0], f1.k[1], f1.k[2], f1.k[3], f1.k[4], f1.k[5], f1.k[6], f1.k[7], f1.k[8], f1.k[9]);
+            }
+        }
+    };
 
+    CUniqueIndexBaseUnordered<Int64_, Int_hash> m_key;//key数据，不可重复
+
+public:
+	CPkeyUint64Unordered()
+    {
+    }
+    ~CPkeyUint64Unordered()
+    {
+    }
+    //增加一条索引:rowid,索引...
+    void Add(int id, UINT64_ ind, ...)
+    {
+        Int64_ a_;
+        va_list	intp;
+        int i;
+
+        a_.id = id;
+        a_.k[0] = ind;
+        va_start(intp, ind);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, UINT64_);
+        }
+        va_end(intp);
+        m_key.Add(a_);
+        return;
+    }
+    //查找指定key的rowid  删除时使用
+    bool Select(CInt& iset, UINT64_ k, ...)
+    {
+        Int64_ a_;
+        bool bret_;
+        int i;
+        va_list	intp;
+
+        iset.Clear();
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, UINT64_);
+        }
+        va_end(intp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            iset.Add(a_.id);
+        }
+        return bret_;
+    }
+    //查找指定key的rowid
+    bool Select(int& rid, UINT64_ k, ...)
+    {
+        Int64_ a_;
+        bool bret_;
+        int i;
+        va_list	intp;
+
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, UINT64_);
+        }
+        va_end(intp);
+        bret_ = m_key.Find(a_);
+        if (bret_)
+        {
+            rid = a_.id;
+        }
+        return bret_;
+    }
+    //查找指定key的数据是否存在
+    bool Find(UINT64_ k, ...)
+    {
+        Int64_ a_;
+        bool bret_;
+        int i;
+        va_list	intp;
+
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, UINT64_);
+        }
+        va_end(intp);
+        bret_ = m_key.Find(a_);
+        return bret_;
+    }
+    //删除指定key
+    void Delete(UINT64_ k, ...)
+    {
+        Int64_ a_;
+        va_list	intp;
+        int i;
+
+        a_.k[0] = k;
+        va_start(intp, k);
+        for (i = 0; i < count - 1; i++)
+        {
+            a_.k[i + 1] = va_arg(intp, UINT64_);
+        }
+        va_end(intp);
+        m_key.Erase(a_);
+        return;
+    }
+    //扫描全表，删除rowid
+    void Delete(CInt iset)
+    {
+        Int64_ a_;
+        bool bret_;
+        bret_ = m_key.First(a_);
+        while (bret_)
+        {
+            if (iset.Find(a_.id))
+            {
+                m_key.Erase(a_);
+            }
+            bret_ = m_key.Next(a_);
+        }
+    }
+    bool First(int& id)
+    {
+        Int64_ aa;
+        if (!m_key.First(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    bool Next(int& id)
+    {
+        Int64_ aa;
+        if (!m_key.Next(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
+    void Clear()
+    {
+        m_key.Clear();
+    }
+    int Size()
+    {
+        return m_key.Size();
+    }
+};
 
 //内存表
 template<typename Record>
@@ -3120,7 +4418,7 @@ public:
 	bool First(Record& rt)
 	{
 		m_current = 0;
-		for (int i=0;i<m_table.size();i++)
+		for (unsigned int i=0;i<m_table.size();i++)
 		{
 			if (m_inuseid[i])
 			{
@@ -3134,7 +4432,7 @@ public:
 	Record *First()
 	{
 		m_current = 0;
-		for (int i=0;i<m_table.size();i++)
+		for (unsigned int i=0;i<m_table.size();i++)
 		{
 			if (m_inuseid[i])
 			{
@@ -3353,6 +4651,8 @@ public:
         return data<field.data;
     }
 };
+
+
 //Index_tuple使用例子
 //CKeyField<Index_tuple<tuple<UINT64_,std::string>>> m_key; 
 //Index_tuple<tuple<UINT64_,std::string>> aa ;
@@ -3496,6 +4796,140 @@ public:
 	}
 };
 
+//不重复的索引基类
+template<typename Record, typename HashSet>
+class CUniqueFieldIndexBaseUnordered
+{
+public:
+    typedef std::unordered_set<Record, HashSet> SET_;
+    typedef typename SET_::iterator LP_SET;
+    SET_    m_index;//索引数据，Record不可能重复
+    LP_SET  m_current;//当前索引
+    LP_SET  m_end;
+    LP_SET  m_begin;
+    bool         m_bDroped;
+public:
+	CUniqueFieldIndexBaseUnordered()
+    {
+        m_bDroped = false;
+    }
+    ~CUniqueFieldIndexBaseUnordered()
+    {
+        Clear();
+    }
+    void Clear()
+    {
+        m_index.clear();
+    }
+    bool End(Record& rt)
+    {
+        m_begin = m_index.begin();
+        m_current = m_index.end();
+        if (m_current == m_end)
+        {
+            return false;
+        }
+        else
+        {
+            m_current--;
+            rt = *m_current;
+            return true;
+        }
+    }
+    bool Last(Record& rt)
+    {
+        if (!m_bDroped)
+        {
+            m_current--;
+        }
+        else
+        {
+            m_bDroped = false;
+        }
+        if (m_current == m_begin)
+        {
+            return false;
+        }
+        else
+        {
+            rt = *m_current;
+            return true;
+        }
+    }
+    bool First(Record& rt)
+    {
+        m_current = m_index.begin();
+        m_end = m_index.end();
+        if (m_current == m_end)
+        {
+            return false;
+        }
+        else
+        {
+            rt = *m_current;
+            return true;
+        }
+    }
+    bool Next(Record& rt)
+    {
+        if (!m_bDroped)
+        {
+            m_current++;
+        }
+        else
+        {
+            m_bDroped = false;
+        }
+        if (m_current == m_end)
+        {
+            return false;
+        }
+        else
+        {
+            rt = *m_current;
+            return true;
+        }
+    }
+    bool Find(Record& rt)
+    {
+        m_current = m_index.find(rt);
+        if (m_current == m_index.end())
+        {
+            return false;
+        }
+        else
+        {
+            rt = *m_current;
+            return true;
+        }
+    }
+    void Add(Record& rt)
+    {
+        // #ifdef _GCC
+        // 		Erase(rt);
+        // #endif
+                //pair<LP_SET,bool> r = m_index.insert(rt);
+        m_index.insert(rt);
+        // #ifndef _GCC
+        // 		if(!r.second) *r.first = rt;
+        // #endif
+    }
+    void Erase(Record& rt)
+    {
+        m_index.erase(rt);
+    }
+    void EraseOne()
+    {
+        LP_SET tmp = m_current;
+        m_current++;
+        m_index.erase(tmp);
+        m_bDroped = true;
+    }
+    int Size()
+    {
+        return m_index.size();
+    }
+};
 
 //重复的索引基类
 template<typename Record>
@@ -3757,6 +5191,88 @@ public:
 	{
 		return m_key.Size();
 	}
+};
+
+template<typename Record,typename HashSet>
+class CKeyFieldUnordered
+{
+public:
+    CUniqueFieldIndexBaseUnordered<Record, HashSet> m_key;  //key数据，不可重复
+
+public:
+	CKeyFieldUnordered()
+    {
+    }
+    ~CKeyFieldUnordered()
+    {
+    }
+    //增加一条索引:id=rowid,索引...
+    void Add(Record& rf)
+    {
+        m_key.Add(rf);
+        return;
+    }
+    bool Select(Record& rf)
+    {
+        return m_key.Find(rf);
+    }
+
+    //查找指定key是否存在
+    bool Find(Record& rf)
+    {
+        return m_key.Find(rf);
+    }
+    //扫描全表，删除rowid
+    void Delete(CInt iset)
+    {
+        Record a_;
+        bool bret_;
+        bret_ = m_key.First(a_);
+        while (bret_)
+        {
+            if (iset.Find(a_.m_nRowId))
+            {
+                m_key.EraseOne();
+            }
+            bret_ = m_key.Next(a_);
+        }
+    }
+    //删除指定key
+    void Delete(Record& rf)
+    {
+        m_key.Erase(rf);
+        return;
+    }
+    void EraseOne()
+    {
+        m_key.EraseOne();
+        return;
+    }
+    bool First(Record& rf)
+    {
+        if (!m_key.First(rf))
+        {
+            return false;
+        }
+        return true;
+    }
+    bool Next(Record& rf)
+    {
+        if (!m_key.Next(rf))
+        {
+            return false;
+        }
+        return true;
+    }
+    
+    void Clear()
+    {
+        m_key.Clear();
+    }
+    int Size()
+    {
+        return m_key.Size();
+    }
 };
 
 template<typename Record>

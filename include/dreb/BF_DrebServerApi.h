@@ -70,6 +70,20 @@ extern "C" {
 class DREBAPI_EXPORT CBF_DrebServerApi  
 {
 public:
+    // 函数名: Subscribe
+    // 编程  : 王明松 2022-06-14 14:16:47
+    // 返回  : void 
+    // 参数  : int index
+    // 参数  : std::vector<int> &funclist
+    // 描述  : 在总线上订阅广播消息
+    void Subscribe(int index, std::vector<int>& funclist);
+
+    // 函数名: UnSubscribe
+    // 编程  : 王明松 2022-06-14 14:16:49
+    // 返回  : void 
+    // 描述  : 取消在总线上的广播订阅
+    void UnSubscribe();
+
 	bool OnMsgMonitor(S_BPC_RSMSG &rcvdata);
 
 	// 函数名: RegisterDreb
@@ -240,6 +254,23 @@ extern "C"
 	// 参数  : char *txlist    以|分隔的交易码，形如  1|2|3|4|  
 	// 描述  : 在总线上注册交易
 	DREBAPI_EXPORT  void BFDREBAPI_RegisterDreb(void *pClass,int index,char *txlist);
+
+    // 函数名: BFDREBAPI_UnSubscribe
+	// 编程  : 王明松 2022-06-14 14:38:30
+    // 返回  : void 
+    // 参数  : void *pClass
+    // 描述  : 取消在总线上的广播订阅
+    DREBAPI_EXPORT  void BFDREBAPI_UnSubscribe(void* pClass);
+
+
+    // 函数名: BFDREBAPI_Subscribe
+    // 编程  : 王明松 2022-06-14 14:38:30
+    // 返回  : 
+    // 参数  : void *pClass    初始化时返回的指针
+    // 参数  : int index       在注册的总线连接索引
+    // 参数  : char *txlist    以|分隔的交易码，形如  1|2|3|4|  
+    // 描述  : 在总线上订阅广播
+    DREBAPI_EXPORT  void BFDREBAPI_Subscribe(void* pClass, int index, char* txlist);
 
 }
 

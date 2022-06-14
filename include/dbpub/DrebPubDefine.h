@@ -53,8 +53,8 @@
 #define  CMD_MONITOR_DREB     15 //数据总线节点监控
 #define  CMD_MONITOR_BPC      16 //业务处理中心内部交易
 #define  CMD_DPBC_UNREGTX     17 //发送取消注册交易广播  针对某一个服务，DREB_D_NODEINFO
-
-
+#define  CMD_SUBSCRIBE         18     //服务向总线订阅广播
+#define  CMD_UNSUBSCRIBE         19     //服务向总线取消订阅广播
 
 #define  BEATHEARTTICK        5  //心跳间隔 5秒
 
@@ -233,7 +233,7 @@ typedef struct //长度11
 	char           cSvrPrivateId;  //私有服务号 
 	unsigned short nFuncNum;       //功能号个数
 	unsigned int   nFuncNo;        //功能号
-}__PACKED__ S_SERVICEREG_MSG;         //数据总线节点服务功能注册结构
+}__PACKED__ S_SERVICEREG_MSG;         //数据总线节点服务功能注册结构	    广播订阅结构
 
 
 //以下为监控使用结构

@@ -539,6 +539,10 @@ void CMsgProcThread::OnMsgRead(S_DREB_RSMSG *msg)
 		case CMD_DPBC_UNREGTX://广播取消服务的交易注册
 			OnCmdUnReqTx(msg);
 			break;
+		case CMD_SUBSCRIBE:		//服务订阅广播
+			OnCmdSubscribe(msg);
+        case CMD_UNSUBSCRIBE:		//服务取消订阅广播
+            OnCmdUnSubscribe(msg);
 		default:
 			m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"数据总线节点命令字不符 %d index[%d] 来自DREB[%d %d]",\
 				msg->message.head.cCmd,msg->msghead.index,msg->message.head.s_Sinfo.s_nNodeId,\
@@ -2644,60 +2648,99 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 			//发给私有节点相同或不指定私有节点
 			if (msg->message.head.d_Dinfo.d_nSvrMainId<1) //没有指定服务
 			{
-				//发送给所有的服务
-				vector<S_SVR_ROUTE>svrlist;
-				if (!m_pMemDb->GetAllSvr(svrlist))
+				if (0 != m_pRes->g_nSupportSubscribe)
 				{
-					m_pMemPool->PoolFree(msg);
-					m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"TransBroadCast GetAllSvr失败");
-					return;
+					 std::vector<S_SUBSCRIBE> subcribelist;
+					 if (m_pMemDb->m_subscribe.GetIndex(msg->message.head.d_Dinfo.d_nServiceNo, subcribelist))
+					 {
+                         S_DREB_RSMSG* data = NULL;
+                         for (unsigned int i = 0; i < subcribelist.size(); i++)
+                         {
+                             data = (S_DREB_RSMSG*)m_pMemPool->PoolMalloc();
+                             if (data == NULL)
+                             {
+                                 m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "内存不足，分配数据总线节点数据空间出错");
+                                 m_pMemPool->PoolFree(msg);
+                                 return;
+                             }
+                             memcpy(data, msg, sizeof(S_DREB_RSMSG));
+                          
+							 if (m_log->isWrite(LOG_DEBUG + 1))
+							 {
+								 m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "发给服务 [%d %d ]订阅的广播信息 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]", \
+									 subcribelist[i].nSvrMainId, subcribelist[i].cSvrPrivateId, \
+									GetDrebCmdType(data->message.head.cCmd).c_str(), data->message.head.cNextFlag, \
+									data->message.head.cRaflag, data->message.head.d_Dinfo.d_nServiceNo, data->message.head.s_Sinfo.s_nNodeId, \
+									data->message.head.s_Sinfo.s_cNodePrivateId, data->message.head.s_Sinfo.s_nDrebSerial, \
+									msg->message.head.d_Dinfo.d_nNodeId, msg->message.head.d_Dinfo.d_cNodePrivateId, \
+									msg->message.head.d_Dinfo.d_nSvrMainId, msg->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
+							 }
+
+							 m_pSocketMgr->at(subcribelist[i].nIndex)->SendMsg(data);
+                            
+                         }
+						 //发给订阅了广播的服务
+					 }
 				}
-				S_DREB_RSMSG *data= NULL;
-				for (unsigned int i=0;i<svrlist.size();i++)
+				else
 				{
-					data  = (S_DREB_RSMSG *) m_pMemPool->PoolMalloc();
-					if (data == NULL)
-					{
-						m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"内存不足，分配数据总线节点数据空间出错");
-						m_pMemPool->PoolFree(msg);
-						return;
-					}
-					memcpy(data,msg,sizeof(S_DREB_RSMSG));
-					if (!svrlist[i].bIsClose)
-					{
-						if (m_log->isWrite(LOG_DEBUG+1))
-						{
-							m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"发给服务 [%d %d ] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
-								svrlist[i].nSvrMainId,svrlist[i].cSvrPrivateId,\
-								GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
-								data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
-								data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
-								msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-								msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
-						}
-						
-						m_pSocketMgr->at(svrlist[i].nIndex)->SendMsg(data);
-					}
-					else
-					{
-						m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"服务连接已断开，暂缓发送[%d %d %d %d] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 服务[%d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
-							data->message.head.d_Dinfo.d_nNodeId,data->message.head.d_Dinfo.d_cNodePrivateId,\
-							data->message.head.d_Dinfo.d_nSvrMainId,data->message.head.d_Dinfo.d_cSvrPrivateId,\
-							GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
-							data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
-							data->message.head.s_Sinfo.s_cNodePrivateId,msg->message.head.s_Sinfo.s_nDrebSerial,\
-							svrlist[i].nSvrMainId,svrlist[i].cSvrPrivateId,\
-							msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-							msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
-						if (svrlist[i].pSendQueue->PutSendMsg(data)!=0)
-						{
-							m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"入发送队列失败");
-							m_pMemPool->PoolFree(msg);
-							return;
-						}
-						
-					}
+                    //发送给所有的服务
+                    vector<S_SVR_ROUTE>svrlist;
+                    if (!m_pMemDb->GetAllSvr(svrlist))
+                    {
+                        m_pMemPool->PoolFree(msg);
+                        m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "TransBroadCast GetAllSvr失败");
+                        return;
+                    }
+                    S_DREB_RSMSG* data = NULL;
+                    for (unsigned int i = 0; i < svrlist.size(); i++)
+                    {
+                        data = (S_DREB_RSMSG*)m_pMemPool->PoolMalloc();
+                        if (data == NULL)
+                        {
+                            m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "内存不足，分配数据总线节点数据空间出错");
+                            m_pMemPool->PoolFree(msg);
+                            return;
+                        }
+                        memcpy(data, msg, sizeof(S_DREB_RSMSG));
+                        if (!svrlist[i].bIsClose)
+                        {
+                            if (m_log->isWrite(LOG_DEBUG + 1))
+                            {
+                                m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "发给服务 [%d %d ] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]", \
+                                    svrlist[i].nSvrMainId, svrlist[i].cSvrPrivateId, \
+                                    GetDrebCmdType(data->message.head.cCmd).c_str(), data->message.head.cNextFlag, \
+                                    data->message.head.cRaflag, data->message.head.d_Dinfo.d_nServiceNo, data->message.head.s_Sinfo.s_nNodeId, \
+                                    data->message.head.s_Sinfo.s_cNodePrivateId, data->message.head.s_Sinfo.s_nDrebSerial, \
+                                    msg->message.head.d_Dinfo.d_nNodeId, msg->message.head.d_Dinfo.d_cNodePrivateId, \
+                                    msg->message.head.d_Dinfo.d_nSvrMainId, msg->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
+                            }
+
+                            m_pSocketMgr->at(svrlist[i].nIndex)->SendMsg(data);
+                        }
+                        else
+                        {
+                            m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "服务连接已断开，暂缓发送[%d %d %d %d] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 服务[%d %d] 目标[%d %d %d %d] 业务数据长度[%d]", \
+                                data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId, \
+                                data->message.head.d_Dinfo.d_nSvrMainId, data->message.head.d_Dinfo.d_cSvrPrivateId, \
+                                GetDrebCmdType(data->message.head.cCmd).c_str(), data->message.head.cNextFlag, \
+                                data->message.head.cRaflag, data->message.head.d_Dinfo.d_nServiceNo, data->message.head.s_Sinfo.s_nNodeId, \
+                                data->message.head.s_Sinfo.s_cNodePrivateId, msg->message.head.s_Sinfo.s_nDrebSerial, \
+                                svrlist[i].nSvrMainId, svrlist[i].cSvrPrivateId, \
+                                msg->message.head.d_Dinfo.d_nNodeId, msg->message.head.d_Dinfo.d_cNodePrivateId, \
+                                msg->message.head.d_Dinfo.d_nSvrMainId, msg->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
+                            if (svrlist[i].pSendQueue->PutSendMsg(data) != 0)
+                            {
+                                m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "入发送队列失败");
+                                m_pMemPool->PoolFree(msg);
+                                return;
+                            }
+
+                        }
+                    }
+					//发送给所有服务返回
 				}
+				
 				if (baffrim && !issendaffirm)
 				{
 					AnsMsg(msg,SUCCESS,"SUCCESS");
@@ -2707,7 +2750,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 				{
 					m_pMemPool->PoolFree(msg);
 				}
-				//发送给所有服务返回
+				//发送给所有服务或订阅了此广播的返回
 				return;
 			}
 			S_SVR_ROUTE svr;
@@ -2815,59 +2858,97 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 			//发给私有节点相同或不指定私有节点
 			if (msg->message.head.d_Dinfo.d_nSvrMainId<1) //没有指定服务
 			{
-				//发送给所有的服务
-				vector<S_SVR_ROUTE>svrlist;
-				if (!m_pMemDb->GetAllSvr(svrlist))
-				{
-					m_pMemPool->PoolFree(msg);
-					m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"TransBroadCast GetAllSvr失败");
-					return;
-				}
-				S_DREB_RSMSG *data= NULL;
-				for (unsigned int i=0;i<svrlist.size();i++)
-				{
-					data  = (S_DREB_RSMSG *) m_pMemPool->PoolMalloc();
-					if (data == NULL)
+                if (0 != m_pRes->g_nSupportSubscribe)
+                {
+                    std::vector<S_SUBSCRIBE> subcribelist;
+                    if (m_pMemDb->m_subscribe.GetIndex(msg->message.head.d_Dinfo.d_nServiceNo, subcribelist))
+                    {
+                        S_DREB_RSMSG* data = NULL;
+                        for (unsigned int i = 0; i < subcribelist.size(); i++)
+                        {
+                            data = (S_DREB_RSMSG*)m_pMemPool->PoolMalloc();
+                            if (data == NULL)
+                            {
+                                m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "内存不足，分配数据总线节点数据空间出错");
+                                m_pMemPool->PoolFree(msg);
+                                return;
+                            }
+                            memcpy(data, msg, sizeof(S_DREB_RSMSG));
+
+                            if (m_log->isWrite(LOG_DEBUG + 1))
+                            {
+                                m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "发给服务 [%d %d ]订阅的广播信息 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]", \
+                                    subcribelist[i].nSvrMainId, subcribelist[i].cSvrPrivateId, \
+                                    GetDrebCmdType(data->message.head.cCmd).c_str(), data->message.head.cNextFlag, \
+                                    data->message.head.cRaflag, data->message.head.d_Dinfo.d_nServiceNo, data->message.head.s_Sinfo.s_nNodeId, \
+                                    data->message.head.s_Sinfo.s_cNodePrivateId, data->message.head.s_Sinfo.s_nDrebSerial, \
+                                    msg->message.head.d_Dinfo.d_nNodeId, msg->message.head.d_Dinfo.d_cNodePrivateId, \
+                                    msg->message.head.d_Dinfo.d_nSvrMainId, msg->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
+                            }
+
+                            m_pSocketMgr->at(subcribelist[i].nIndex)->SendMsg(data);
+
+                        }
+                        //发给订阅了广播的服务
+                    }
+                }
+                else
+                {
+					//发送给所有的服务
+					vector<S_SVR_ROUTE>svrlist;
+					if (!m_pMemDb->GetAllSvr(svrlist))
 					{
-						m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"内存不足，分配数据总线节点数据空间出错");
 						m_pMemPool->PoolFree(msg);
+						m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"TransBroadCast GetAllSvr失败");
 						return;
 					}
-					memcpy(data,msg,sizeof(S_DREB_RSMSG));
-					if (!svrlist[i].bIsClose)
+					S_DREB_RSMSG *data= NULL;
+					for (unsigned int i=0;i<svrlist.size();i++)
 					{
-						if (m_log->isWrite(LOG_DEBUG+1))
+						data  = (S_DREB_RSMSG *) m_pMemPool->PoolMalloc();
+						if (data == NULL)
 						{
-							m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"发给服务 [%d %d ] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
-								svrlist[i].nSvrMainId,svrlist[i].cSvrPrivateId,\
-								GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
-								data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
-								data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
-								msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-								msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
-						}
-						
-						m_pSocketMgr->at(svrlist[i].nIndex)->SendMsg(data);
-					}
-					else
-					{
-						m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"服务连接已断开，暂缓发送[%d %d %d %d] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 服务[%d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
-							data->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-							data->message.head.d_Dinfo.d_nSvrMainId,data->message.head.d_Dinfo.d_cSvrPrivateId,\
-							GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
-							data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
-							data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
-							svrlist[i].nSvrMainId,svrlist[i].cSvrPrivateId,\
-							msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-							msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
-						if (svrlist[i].pSendQueue->PutSendMsg(data)!=0)
-						{
-							m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"入发送队列失败");
+							m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"内存不足，分配数据总线节点数据空间出错");
 							m_pMemPool->PoolFree(msg);
 							return;
 						}
+						memcpy(data,msg,sizeof(S_DREB_RSMSG));
+						if (!svrlist[i].bIsClose)
+						{
+							if (m_log->isWrite(LOG_DEBUG+1))
+							{
+								m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"发给服务 [%d %d ] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
+									svrlist[i].nSvrMainId,svrlist[i].cSvrPrivateId,\
+									GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
+									data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
+									data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
+									msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
+									msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
+							}
 						
+							m_pSocketMgr->at(svrlist[i].nIndex)->SendMsg(data);
+						}
+						else
+						{
+							m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"服务连接已断开，暂缓发送[%d %d %d %d] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 服务[%d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
+								data->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
+								data->message.head.d_Dinfo.d_nSvrMainId,data->message.head.d_Dinfo.d_cSvrPrivateId,\
+								GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
+								data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
+								data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
+								svrlist[i].nSvrMainId,svrlist[i].cSvrPrivateId,\
+								msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
+								msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
+							if (svrlist[i].pSendQueue->PutSendMsg(data)!=0)
+							{
+								m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"入发送队列失败");
+								m_pMemPool->PoolFree(msg);
+								return;
+							}
+						
+						}
 					}
+					//发送给所有服务返回
 				}
 				if (baffrim && !issendaffirm)
 				{
@@ -2878,7 +2959,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 				{
 					m_pMemPool->PoolFree(msg);
 				}
-				//发送给所有服务返回
+				//发送给所有服务或订阅了此广播的返回
 				return;
 			}
 			S_SVR_ROUTE svr;
@@ -3867,4 +3948,64 @@ void CMsgProcThread::PrintServiceRoute()
 	}
 	routemsg= routemsg+"\n";
 	m_pRes->g_pRouteLog.LogBin(LOG_INFO,__FILE__,__LINE__,"交易路由信息",(char *)routemsg.c_str(),routemsg.length());
+}
+
+
+void CMsgProcThread::OnCmdSubscribe(S_DREB_RSMSG* msg)
+{
+    int snum = 0;
+    PCOMMSTRU databuf = &(msg->message);
+    S_SERVICEREG_MSG* prs = NULL;
+	S_SUBSCRIBE data;
+
+    prs = (S_SERVICEREG_MSG*)(databuf->buffer);
+    m_pDrebEndian.Endian2LocalHost((unsigned char*)&(prs->nSvrMainId), sizeof(prs->nSvrMainId));
+    m_pDrebEndian.Endian2LocalHost((unsigned char*)&(prs->nFuncNo), sizeof(prs->nFuncNo));
+    m_pDrebEndian.Endian2LocalHost((unsigned char*)&(prs->nFuncNum), sizeof(prs->nFuncNum));
+
+    m_log->LogMp(LOG_DEBUG, __FILE__, __LINE__, "服务[%d %d]广播订阅   广播个数[%d] len=[%d]", \
+        prs->nSvrMainId, prs->cSvrPrivateId, prs->nFuncNum, msg->message.head.nLen);
+    if (prs->nFuncNum < 1)
+    {
+        m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "服务[%d %d]广播订阅 广播个数[%d]为0，取消订阅", prs->nSvrMainId, prs->cSvrPrivateId, prs->nFuncNum);
+        m_pMemPool->PoolFree(msg);
+
+        return;
+    }
+    if (msg->message.head.nLen < sizeof(S_SERVICEREG_MSG) + (prs->nFuncNum - 1) * sizeof(unsigned int))
+    {
+        m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "服务[%d %d]广播订阅 报文长度[%d]不符 应为[%d]", \
+            prs->nSvrMainId, prs->cSvrPrivateId, prs->nFuncNum, msg->message.head.nLen, \
+            sizeof(S_SERVICEREG_MSG) + (prs->nFuncNum - 1) * sizeof(unsigned int));
+		m_pMemPool->PoolFree(msg);
+        return;
+    }
+    data.nSvrMainId = prs->nSvrMainId;
+    data.nFuncNo = prs->nFuncNo;
+    data.cSvrPrivateId = prs->cSvrPrivateId;
+    data.nIndex = msg->msghead.index;
+
+	std::vector<unsigned int> subscribelist;
+	subscribelist.push_back(data.nFuncNo);
+    snum = prs->nFuncNum - 1;
+
+    int nFuncNum = prs->nFuncNum;
+    for (int i = 0; i < snum; i++)
+    {
+        memcpy(&(data.nFuncNo), databuf->buffer + sizeof(S_SERVICEREG_MSG) + i * sizeof(unsigned int), sizeof(unsigned int));
+        m_pDrebEndian.Endian2LocalHost((unsigned char*)&(data.nFuncNo), sizeof(unsigned int));
+		subscribelist.push_back(data.nFuncNo);
+    }
+
+    m_log->LogMp(LOG_DEBUG + 2, __FILE__, __LINE__, "服务%d-%d有%d个广播订阅", data.nSvrMainId, data.cSvrPrivateId, nFuncNum);
+	m_pMemDb->m_subscribe.Subscribe(data.nIndex,subscribelist, data.nSvrMainId, data.cSvrPrivateId);
+	m_pMemPool->PoolFree(msg);
+    return;
+}
+void CMsgProcThread::OnCmdUnSubscribe(S_DREB_RSMSG* msg)
+{
+    m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "index[%d] 取消广播订阅", msg->msghead.index);
+    m_pMemDb->m_subscribe.UnSubscribe(msg->msghead.index);
+    m_pMemPool->PoolFree(msg);
+    return;
 }

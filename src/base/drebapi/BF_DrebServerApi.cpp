@@ -223,6 +223,15 @@ void CBF_DrebServerApi::RegisterDreb(int index, std::vector<int> &funclist)
 	m_pDrebApi.RegisterDreb(index,&funclist);
 }
 
+void CBF_DrebServerApi::UnSubscribe()
+{
+    m_pDrebApi.UnSubscribe();
+}
+
+void CBF_DrebServerApi::Subscribe(int index, std::vector<int>& funclist)
+{
+    m_pDrebApi.Subscribe(index, &funclist);
+}
 
 int BFDREBAPI_InitApi(const char *apixml,void **pClass)
 {
@@ -305,7 +314,26 @@ void BFDREBAPI_RegisterDreb(void *pClass,int index,char *txlist)
 	CBF_DrebServerApi *tmp = (CBF_DrebServerApi *)pClass;
 	tmp->RegisterDreb(index,funclist);
 }
+void BFDREBAPI_UnSubscribe(void* pClass)
+{
+    CBF_DrebServerApi* tmp = (CBF_DrebServerApi*)pClass;
+    tmp->UnSubscribe();
+}
 
+void BFDREBAPI_Subscribe(void* pClass, int index, char* txlist)
+{
+    std::vector<int>funclist;
+    CBF_Slist slist;
+    slist.SetSeparateString("|");
+    slist.FillSepString(txlist);
+    int nRec = slist.GetCount();
+    for (int i = 0; i < nRec; i++)
+    {
+        funclist.push_back(atoi(slist.GetAt(i, false).c_str()));
+    }
+    CBF_DrebServerApi* tmp = (CBF_DrebServerApi*)pClass;
+    tmp->Subscribe(index, funclist);
+}
 bool  CBF_DrebServerApi::OnMsgMonitor(S_BPC_RSMSG &rcvdata)
 {
 	//DREB过来的调用

@@ -338,6 +338,7 @@ public:
 
 	CServiceTbl  m_serviceTbl;//交易列表  所有的交易列表，包括本地注册的交易
 
+	CSubscribeTbl m_subscribe;//广播订阅表
 	CIErrlog    *m_pLog;
 protected:
 	

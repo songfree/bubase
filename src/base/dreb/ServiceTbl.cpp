@@ -21,11 +21,10 @@ CServiceTbl::~CServiceTbl()
 bool CServiceTbl::Insert(S_SERVICE_ROUTE rt)
 {
 	int id;
-	CInt iset;
 	bool bRet;
 	//通过主键查找，不存在则增加
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Find(id,rt.nIndex,rt.nNodeId,rt.cNodePrivateId,rt.nSvrMainId,rt.cSvrPrivateId,rt.nFuncNo))
+	if (!m_pkey.Find(rt.nIndex,rt.nNodeId,rt.cNodePrivateId,rt.nSvrMainId,rt.cSvrPrivateId,rt.nFuncNo))
 	{
 		rt.nUpdateTime = time(NULL);
 		id = m_table.Add(rt);//增加到表
@@ -166,7 +165,7 @@ bool CServiceTbl::Delete(int index,int nodeid,int nodeprivated,int svrid, int pr
 	}
 	int id;
 	iset.First(id);
-	m_pkey.Delete(iset,index,nodeid,nodeprivated,svrid,privateid,func);
+	m_pkey.Delete(index,nodeid,nodeprivated,svrid,privateid,func);
 	m_index_func.Delete(iset,func);
 	m_index_drebindex.Delete(iset,m_table.m_table[id].nIndex);
 	m_index_svr.Delete(iset,svrid);
@@ -742,7 +741,7 @@ bool CServiceTbl::DeleteById(int rowid)
 {
 	CInt iset;
 	iset.Add(rowid);
-	m_pkey.Delete(iset,m_table.m_table[rowid].nIndex,m_table.m_table[rowid].nNodeId,m_table.m_table[rowid].cNodePrivateId,m_table.m_table[rowid].nSvrMainId,m_table.m_table[rowid].cSvrPrivateId,m_table.m_table[rowid].nFuncNo);
+	m_pkey.Delete(m_table.m_table[rowid].nIndex,m_table.m_table[rowid].nNodeId,m_table.m_table[rowid].cNodePrivateId,m_table.m_table[rowid].nSvrMainId,m_table.m_table[rowid].cSvrPrivateId,m_table.m_table[rowid].nFuncNo);
 	m_index_func.Delete(iset,m_table.m_table[rowid].nFuncNo);
 	m_index_drebindex.Delete(iset,m_table.m_table[rowid].nIndex);
 	m_index_svr.Delete(iset,m_table.m_table[rowid].nSvrMainId);
@@ -752,5 +751,86 @@ bool CServiceTbl::DeleteById(int rowid)
 	m_index_funcsvr.Delete(iset,m_table.m_table[rowid].nFuncNo,m_table.m_table[rowid].nSvrMainId);
 	m_index_drebfuncsvr.Delete(iset,m_table.m_table[rowid].nNodeId,m_table.m_table[rowid].nFuncNo,m_table.m_table[rowid].nSvrMainId);
 	m_table.Delete(rowid);
+	return true;
+}
+
+
+
+CSubscribeTbl::CSubscribeTbl()
+{
+
+}
+CSubscribeTbl::~CSubscribeTbl()
+{
+
+}
+void CSubscribeTbl::Subscribe(unsigned int   nIndex, std::vector<unsigned int>& funclist, unsigned int   nSvrMainId, char  cSvrPrivateId)
+{
+	if (funclist.size() == 0)
+	{
+		return UnSubscribe(nIndex);
+	}
+	int rid;
+	S_SUBSCRIBE info;
+	CBF_PMutex pp(&m_mutex);
+	for (int i = 0; i < funclist.size(); i++)
+	{
+		if (!m_key.Find(nIndex, funclist[i]))
+		{
+			info.nIndex = nIndex;
+			info.nFuncNo = funclist[i];
+			info.nSvrMainId  =nSvrMainId;
+			info.cSvrPrivateId = cSvrPrivateId;
+			info.nUpdateTime = time(NULL);
+			rid = m_table.Add(info);
+			m_key.Add(rid,m_table.m_table[rid].nIndex, m_table.m_table[rid].nFuncNo);
+			m_indexFunc.Add(rid, m_table.m_table[rid].nFuncNo) ;
+			m_indexindex.Add(rid, m_table.m_table[rid].nIndex);
+		}
+	}
+}
+//取消订阅
+void CSubscribeTbl::UnSubscribe(unsigned int   nIndex)
+{
+	CBF_PMutex pp(&m_mutex);
+	CInt iset;
+	if (m_indexindex.Select(iset, nIndex))
+	{
+		return;
+	}
+	m_indexindex.Delete(iset);
+	m_indexFunc.Delete(iset);
+	m_key.Delete(iset);
+	int rid;
+	int bret = iset.First(rid);
+	while (bret)
+	{
+		m_table.Delete(rid);
+		bret = iset.Next(rid);
+	}
+	return;
+}
+
+bool CSubscribeTbl::GetIndex(unsigned int nFunc, std::vector<S_SUBSCRIBE>& indexlist)
+{
+	CInt iset;
+	CBF_PMutex pp(&m_mutex);
+	if (!m_indexFunc.Select(iset, nFunc))
+	{
+		return false;
+	}
+	int rid;
+	S_SUBSCRIBE data;
+	bool bret = iset.First(rid);
+	while (bret)
+	{
+		data.cSvrPrivateId = m_table.m_table[rid].cSvrPrivateId;
+		data.nFuncNo = m_table.m_table[rid].nFuncNo;
+		data.nIndex = m_table.m_table[rid].nIndex;
+		data.nSvrMainId = m_table.m_table[rid].nSvrMainId;
+		data.nUpdateTime = m_table.m_table[rid].nUpdateTime;
+		indexlist.push_back(data);
+		bret = iset.Next(rid);
+	}
 	return true;
 }

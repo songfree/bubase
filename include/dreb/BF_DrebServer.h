@@ -28,6 +28,7 @@
 #include "BF_Xml.h"
 #include "DrebMsgProcBase.h"
 #include "IBF_DrebServer.h"
+#include <unordered_map>
 
 #ifdef DREBAPI_EXPORTS
 #define DREBAPI_EXPORT __declspec(dllexport)
@@ -39,9 +40,117 @@
 #endif
 #endif
 
+typedef struct _BC_SERIAL
+{
+	int node_id;
+	int node_pid;
+	int serial;
+	int timestamp;
+}S_BC_SERIAL;
+
+class CTbl_BcSerial
+{
+protected:
+
+    CMemTableNew <S_BC_SERIAL>  m_table;
+	CPkeyIntUnordered<3>                 m_keyId;//请求ID
+    CBF_Mutex                   m_mutex;//互斥锁
+public:
+
+    CBF_BufferPool* m_pMemPool;//内存分配池;
+	CTbl_BcSerial()
+    {
+
+    }
+    virtual ~CTbl_BcSerial()
+    {
+
+    }
+    void Clear()
+    {
+        m_keyId.Clear();
+        m_table.Clear();
+    }
+    int Insert(S_BC_SERIAL info)
+    {
+		CBF_PMutex pp(&m_mutex);
+        if (m_keyId.Find(info.node_id,info.node_pid,info.serial))
+        {
+            return -1;
+        }
+        int rid = m_table.Add(info);
+        m_keyId.Add(rid, m_table.m_table[rid].node_id, m_table.m_table[rid].node_pid, m_table.m_table[rid].serial);
+        return rid;
+    }
+	S_BC_SERIAL* Select(int nodeid,int nodepid,int serial)
+    {
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        if (!m_keyId.Select(rid, nodeid, nodepid,serial))
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rid]);
+    }
+
+	S_BC_SERIAL* At(int rowid)
+    {
+        if (rowid<0 || rowid > m_table.AllSize() - 1)
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rowid]);
+    }
+    
+    int Delete()
+    {
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        CInt iset;
+        bool bret = m_keyId.First(rid);
+        while (bret)
+        {
+            if (m_table.m_table[rid].timestamp - time(NULL) > 3600) //1小时
+            {
+                iset.Add(rid);
+            }
+            bret = m_keyId.Next(rid);
+        }
+        m_keyId.Delete(iset);
+        bret = iset.First(rid);
+        while (bret)
+        {
+            m_table.Delete(rid);
+            bret = iset.Next(rid);
+        }
+
+        return 0;
+    }
+    int Size()
+    {
+        return m_keyId.Size();
+    }
+};
+
 class DREBAPI_EXPORT CBF_DrebServer : public CIBF_DrebServer,CBF_Thread
 {
 public:
+
+    // 函数名: Subscribe
+    // 编程  : 王明松 20220614 14:09:01
+    // 返回  : void 
+    // 参数  : int index        dreb连接索引
+    // 参数  : CInt *funclist   广播功能列表
+    // 描述  : 在连接的DREB上广播订阅消息，订阅总线上的广播消息，当广播生产者没有指定此广播的服务对象时，则按此订阅来发送
+    virtual void Subscribe(int index, vector<int>* funclist);
+
+
+    // 函数名: UnSubscribe
+    // 编程  : 王明松 20220614 14:09:09
+    // 返回  : void 
+    // 描述  : 取消在dreb上广播订阅
+    virtual void UnSubscribe();
+
 	virtual int GetDataLogLevel();
 
 	// 函数名: GetErrMsg
@@ -312,6 +421,7 @@ private:
 	unsigned int m_nCurIndex;  //发送时的一个连接索引选择变量
 protected: 
 
+	CTbl_BcSerial m_bcSerial;//记录广播的信息，主键为dreb node_id node_pid derbserial
 	bool m_bIsPingTimer;      //是否要检查PING
 	bool m_bIsInit;          //是否调用Init方法
 	char m_errMsg[256];      //出错信息

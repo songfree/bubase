@@ -97,6 +97,23 @@ extern "C"
 	// 参数  : char *txlist    以|分隔的交易码，形如  1|2|3|4|  
 	// 描述  : 在总线上注册交易
 	 void BFDREBAPI_RegisterDreb(void *pClass,int index,char *txlist);
+
+     // 函数名: BFDREBAPI_UnSubscribe
+    // 编程  : 王明松 2022-06-14 14:20:18
+    // 返回  : void 
+    // 参数  : void *pClass
+    // 描述  : 取消在总线上的广播订阅
+     void BFDREBAPI_UnSubscribe(void* pClass);
+
+
+     // 函数名: BFDREBAPI_Subscribe
+     // 编程  : 王明松 2022-06-14 14:20:25
+     // 返回  : 
+     // 参数  : void *pClass    初始化时返回的指针
+     // 参数  : int index       在注册的总线连接索引
+     // 参数  : char *txlist    以|分隔的交易码，形如  1|2|3|4|  
+     // 描述  : 在总线上订阅广播消息
+     void BFDREBAPI_Subscribe(void* pClass, int index, char* txlist);
 	
 }
 

@@ -135,6 +135,8 @@ public:
 
 	int  g_nPrintRoute;//是否记录路由信息至日志
 
+	int  g_nSupportSubscribe;//是否支持广播订阅，只有当没有指定服务时，才看此参数。即不支持订阅时，广播没有指定服务则发给所有服务，否则发给订阅了的服务
+
 	CBF_CommDataLog    g_pDataLog; //二进制报文日志
 
 	int  g_nMaxRouteStep;//最大路由步进

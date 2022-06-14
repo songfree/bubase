@@ -1275,6 +1275,7 @@ void CBF_DrebServer::RegisterDreb(int index,vector<int> *funclist)
 #else
 		m_pLog.LogMp(LOG_DEBUG+2,__FILE__,__LINE__,"连接注册发送的数据 长度=%d",rcvdata.sMsgBuf->sDBHead.nLen);
 #endif
+		rcvdata.sMsgBuf->sDBHead.cCmd = CMD_REGSERVICE;
 		m_pSockMgr.at(index)->SendMsg(rcvdata);
 		return ;
 	}
@@ -1552,4 +1553,188 @@ int CBF_DrebServer::GetDataLogLevel()
 CBF_BufferPool *CBF_DrebServer::GetBufferPool()
 {
 	return &m_pMemPool;
+}
+
+void CBF_DrebServer::Subscribe(int index, vector<int>* funclist)
+{
+    S_BPC_RSMSG rcvdata;
+    S_SERVICEREG_MSG* data = NULL;
+    bool bRet;
+    int  offset;
+    int funcNo;
+    unsigned int* func = NULL;
+    if (!m_pSockMgr.AffirmIndex(index))
+    {
+#ifdef _ENGLISH_
+        m_pLog.LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "connect %d illegal", index);
+#else
+        m_pLog.LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "连接索引非法 %d", index);
+#endif
+        return;
+    }
+
+    if (m_pSockMgr.at(index)->m_sock == INVALID_SOCKET || !m_pSockMgr.at(index)->m_bChecked)
+    {
+#ifdef _ENGLISH_
+        m_pLog.LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "connect [%d] not affirmed ", index);
+#else
+        m_pLog.LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "连接索引[%d]的连接未连上总线或正在连接确认 ", index);
+#endif
+        return;
+    }
+    rcvdata.sMsgBuf = (PBPCCOMMSTRU)m_pMemPool.PoolMalloc();
+    if (rcvdata.sMsgBuf == NULL)
+    {
+#ifdef _ENGLISH_
+        m_pLog.LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "malloc msgdata fail");
+#else
+        m_pLog.LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "分配消息空间出错");
+#endif
+        return;
+    }
+    memset(rcvdata.sMsgBuf, 0, sizeof(BPCCOMMSTRU));
+
+    CInt listint;
+    for (int i = 0; i < funclist->size(); i++)
+    {
+        listint.Add(funclist->at(i));
+    }
+    if (listint.Size() < 1)
+    {
+#ifdef _ENGLISH_
+        m_pLog.LogMp(LOG_PROMPT, __FILE__, __LINE__, "no broadcast subscribe");
+#else
+        m_pLog.LogMp(LOG_PROMPT, __FILE__, __LINE__, "无广播订阅");
+#endif
+        data = (S_SERVICEREG_MSG*)rcvdata.sMsgBuf->sBuffer;
+        data->nSvrMainId = m_pRes->g_nSvrMainId;
+        m_pDrebEndian.Endian2Comm((unsigned char*)&(data->nSvrMainId), sizeof(data->nSvrMainId));
+        data->cSvrPrivateId = m_pRes->g_nSvrPrivateId;
+        data->nFuncNum = 0;
+        data->nFuncNo = 0;
+        m_pDrebEndian.Endian2Comm((unsigned char*)&(data->nFuncNo), sizeof(data->nFuncNo));
+        rcvdata.sMsgBuf->sDBHead.nLen = sizeof(S_SERVICEREG_MSG);
+        rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
+#ifdef _ENGLISH_
+        m_pLog.LogMp(LOG_DEBUG + 2, __FILE__, __LINE__, "subscribe data len=%d", rcvdata.sMsgBuf->sDBHead.nLen);
+#else
+        m_pLog.LogMp(LOG_DEBUG + 2, __FILE__, __LINE__, "广播订阅发送的数据 长度=%d", rcvdata.sMsgBuf->sDBHead.nLen);
+#endif
+		rcvdata.sMsgBuf->sDBHead.cCmd = CMD_SUBSCRIBE;
+        m_pSockMgr.at(index)->SendMsg(rcvdata);
+        return;
+    }
+    bRet = listint.First(funcNo);
+    while (bRet)
+    {
+        bRet = listint.Next(funcNo);
+    }
+#ifdef _ENGLISH_
+    m_pLog.LogMp(LOG_DEBUG, __FILE__, __LINE__, "DREB index[%d] [%d %d][%s-%d] register", \
+        index, m_pSockMgr.at(index)->m_nDrebId, m_pSockMgr.at(index)->m_nDrebPrivateId, \
+        m_pSockMgr.at(index)->m_sDrebIp.c_str(), m_pSockMgr.at(index)->m_nDrebPort);
+#else	
+    m_pLog.LogMp(LOG_DEBUG, __FILE__, __LINE__, "开始向DREB index[%d] [%d %d][%s-%d] 订阅广播功能", \
+        index, m_pSockMgr.at(index)->m_nDrebId, m_pSockMgr.at(index)->m_nDrebPrivateId, \
+        m_pSockMgr.at(index)->m_sDrebIp.c_str(), m_pSockMgr.at(index)->m_nDrebPort);
+#endif
+    rcvdata.sMsgBuf->sDBHead.cCmd = CMD_SUBSCRIBE;
+    rcvdata.sMsgBuf->sDBHead.cRaflag = 0;
+    rcvdata.sMsgBuf->sDBHead.cNextFlag = 0;
+    rcvdata.sMsgBuf->sDBHead.cZip = 0;
+
+    if (listint.First(funcNo))
+    {
+        data = (S_SERVICEREG_MSG*)rcvdata.sMsgBuf->sBuffer;
+        data->nSvrMainId = m_pRes->g_nSvrMainId;
+        m_pDrebEndian.Endian2Comm((unsigned char*)&(data->nSvrMainId), sizeof(data->nSvrMainId));
+        data->cSvrPrivateId = m_pRes->g_nSvrPrivateId;
+        data->nFuncNum = 1;
+        data->nFuncNo = funcNo;
+        m_pDrebEndian.Endian2Comm((unsigned char*)&(data->nFuncNo), sizeof(data->nFuncNo));
+        offset = sizeof(S_SERVICEREG_MSG);
+    }
+    bRet = listint.Next(funcNo);
+    while (bRet)
+    {
+        func = (unsigned int*)(rcvdata.sMsgBuf->sBuffer + offset);
+        *func = funcNo;
+        m_pDrebEndian.Endian2Comm((unsigned char*)func, sizeof(unsigned int));
+        data->nFuncNum++;
+        offset += sizeof(unsigned int);
+        if (offset > BPUDATASIZE - 30)
+        {
+            m_pMemPool.PoolFree(rcvdata.sMsgBuf);
+#ifdef _ENGLISH_
+            m_pLog.LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "too many txcode");
+#else
+            m_pLog.LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "注册功能太多,一个数据包无法在DREB上注册，请减少功能数");
+#endif
+            rcvdata.sMsgBuf = NULL;
+            return;
+        }
+        bRet = listint.Next(funcNo);
+    }
+#ifdef _ENGLISH_
+    m_pLog.LogMp(LOG_DEBUG, __FILE__, __LINE__, "total %d function subscribe", data->nFuncNum);
+#else	
+    m_pLog.LogMp(LOG_DEBUG, __FILE__, __LINE__, "总共有%d个功能广播订阅", data->nFuncNum);
+#endif
+    m_pDrebEndian.Endian2Comm((unsigned char*)&(data->nFuncNum), sizeof(data->nFuncNum));
+    rcvdata.sMsgBuf->sDBHead.nLen = offset;
+    rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
+#ifdef _ENGLISH_
+    m_pLog.LogMp(LOG_DEBUG + 2, __FILE__, __LINE__, "register data len=%d", rcvdata.sMsgBuf->sDBHead.nLen);
+#else
+    m_pLog.LogMp(LOG_DEBUG + 2, __FILE__, __LINE__, "广播订阅发送的数据 长度=%d", rcvdata.sMsgBuf->sDBHead.nLen);
+#endif
+
+    m_pSockMgr.at(index)->SendMsg(rcvdata);
+}
+
+void CBF_DrebServer::UnSubscribe()
+{
+    S_BPC_RSMSG rcvdata;
+    S_SERVICEREG_MSG* data = NULL;
+
+    for (int i = 0; i < m_pRes->g_vDrebLinkInfo.size(); i++)
+    {
+        if (m_pSockMgr.at(i)->m_sock == INVALID_SOCKET || !m_pSockMgr.at(i)->m_bChecked)
+        {
+            continue;
+        }
+        rcvdata.sMsgBuf = (PBPCCOMMSTRU)m_pMemPool.PoolMalloc();
+        if (rcvdata.sMsgBuf == NULL)
+        {
+            m_pLog.LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "分配消息空间出错");
+            return;
+        }
+        memset(rcvdata.sMsgBuf, 0, sizeof(BPCCOMMSTRU));
+#ifdef _ENGLISH_
+        m_pLog.LogMp(LOG_DEBUG, __FILE__, __LINE__, "DREB index[%d] [%d %d][%s-%d] unsubscribe", \
+            i, m_pSockMgr.at(i)->m_nDrebId, m_pSockMgr.at(i)->m_nDrebPrivateId, \
+            m_pSockMgr.at(i)->m_sDrebIp.c_str(), m_pSockMgr.at(i)->m_nDrebPort);
+#else
+        m_pLog.LogMp(LOG_DEBUG, __FILE__, __LINE__, "开始向DREB index[%d] [%d %d][%s-%d] 取消广播订阅", \
+            i, m_pSockMgr.at(i)->m_nDrebId, m_pSockMgr.at(i)->m_nDrebPrivateId, \
+            m_pSockMgr.at(i)->m_sDrebIp.c_str(), m_pSockMgr.at(i)->m_nDrebPort);
+#endif
+        rcvdata.sMsgBuf->sDBHead.cCmd = CMD_UNSUBSCRIBE;
+        rcvdata.sMsgBuf->sDBHead.cRaflag = 0;
+        rcvdata.sMsgBuf->sDBHead.cNextFlag = 0;
+        rcvdata.sMsgBuf->sDBHead.cZip = 0;
+        data = (S_SERVICEREG_MSG*)rcvdata.sMsgBuf->sBuffer;
+        data->nSvrMainId = m_pRes->g_nSvrMainId;
+        m_pDrebEndian.Endian2Comm((unsigned char*)&(data->nSvrMainId), sizeof(data->nSvrMainId));
+        data->cSvrPrivateId = m_pRes->g_nSvrPrivateId;
+        data->nFuncNum = 1;
+        data->nFuncNo = 0;
+        m_pDrebEndian.Endian2Comm((unsigned char*)&(data->nFuncNo), sizeof(data->nFuncNo));
+        m_pDrebEndian.Endian2Comm((unsigned char*)&(data->nFuncNum), sizeof(data->nFuncNum));
+        rcvdata.sMsgBuf->sDBHead.nLen = sizeof(S_SERVICEREG_MSG);
+        rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
+        m_pSockMgr.at(i)->SendMsg(rcvdata);
+
+    }
+    return;
 }
