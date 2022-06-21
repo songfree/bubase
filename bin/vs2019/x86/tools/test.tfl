@@ -1,7 +1,0 @@
-
-<package>
-   <pack>
-      <LIST apixml="D:\BUBASE_BIN\vc2019\x86\tools\cgateapi.xml" 登录交易码="9991002" 登录报文="D:\BUBASE_BIN\vc2019\x86\tools\drebclient.dat" 发压交易码="9991002" 发压报文="D:\BUBASE_BIN\vc2019\x86\tools\drebclient.dat" 开始时间="1" 线程数="30" />
-      <LIST apixml="D:\BUBASE_BIN\vc2019\x86\tools\cgateapi2.xml" 登录交易码="9991002" 登录报文="D:\BUBASE_BIN\vc2019\x86\tools\drebclient.dat" 发压交易码="9991002" 发压报文="D:\BUBASE_BIN\vc2019\x86\tools\drebclient.dat" 开始时间="1" 线程数="30" />
-   </pack>
-</package>

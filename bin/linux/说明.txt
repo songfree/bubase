@@ -1,8 +1,0 @@
-bin目录为编译好的可执行程序目录  在.bash_profile中设置环境变量PATH包含此目录
-include为框架头文件目录   使用该框架的库时，需要在makefile或cmakelist里加入此目录下面的子目录，根据需要加入
-lib 为框架的库目录 在.bash_profile中设置环境变量LD_LIBRARY_PATH包含此目录  
-libapp为应用库目录，此目录包含监控动态库，业务示例库，trade的业务库之类的，同样在.bash_profile中设置环境变量LD_LIBRARY_PATH包含此目录
-run目录，为总线运行示例的目录，运行的时候需要修改xml配置，其中的目录配置为实际的目录
-      
-     
-    
