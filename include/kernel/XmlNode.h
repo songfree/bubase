@@ -291,7 +291,7 @@ public:
 	// 参数  : bool isTransSign   名称是否转义符转换
 	// 参数  : vector<CXmlNode *> &nodelist  满足条件的子节点列表
 	// 描述  : 根据名称查找子节点
-	int GetChildNode(std::string nodename,bool isTransSign,vector<CXmlNode *> &nodelist);
+	int GetChildNode(std::string nodename,bool isTransSign, std::vector<CXmlNode *> &nodelist);
 	
 	// 函数名: DeleteAllChild
 	// 编程  : 王明松 2010-6-9 11:48:52

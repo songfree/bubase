@@ -19,7 +19,9 @@
 #include "PoolData.h"
 #include "FuncTbl.h"
 #include "dreberrcode.h"
+#include "BF_DrebServer.h"
 
+//本线程处理总线过来的数据，bpu过来的数据，消息处理线程
 class CMsgThread : public CBF_Thread  
 {
 public:
@@ -30,7 +32,7 @@ public:
 
 	
 
-	bool SetGlobalVar(CGResource *res,CPoolDataMsg *pooldata,CBF_BufferPool *mempool,CSocketMgr *sockmgr,CFuncTbl *tbl);
+	bool SetGlobalVar(CGResource *res,CPoolDataMsg *pooldata,CBF_BufferPool *mempool,CSocketMgr *sockmgr,CFuncTbl *tbl, CBF_DrebServer* api);
 
 protected:
 	void Dispatch2BpuGroupGetNext(S_BPC_RSMSG &rcvdata);
@@ -45,9 +47,7 @@ protected:
 	void Dispatch();
 
 	void LogDrebHead(int loglevel, DREB_HEAD head, const char *msg, const char *filename, int fileline);
-	std::string GetDrebCmdType(int cmdtype);
-
-	int GetDrebIndex(int nodeid,int nodepid);
+	
 
 	char m_headMsg[8192];
 
@@ -59,7 +59,9 @@ protected:
 	CBF_BufferPool *m_pMemPool;//内存分配池;
 	CPoolDataMsg   *m_pPoolData;//处理数据队列
 	CFuncTbl    *m_pFuncTbl;
-	
+	CBF_DrebServer  *m_pDrebApi;
+
+ 
 	CBpcEndian   m_pBpcEndian;
 	CDrebEndian  m_pDrebEndian;
 

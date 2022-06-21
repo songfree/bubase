@@ -15,7 +15,6 @@ CExchDll * getInstance()
 CExchDll::CExchDll()
 {
 	m_pLog = NULL;
-	m_pMemPool = NULL;
 	bzero(m_errMsg,sizeof(m_errMsg));
 }
 
@@ -37,7 +36,7 @@ int CExchDll::Send2Exch(S_TRADE_DATA &data,CXdp *xdp)
 	if (!xdp->ToBuffer(data.pData->sBuffer,len,m_errMsg))
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"Send2Exch XDP ToBuffer ERROR txcode[%d]",data.pData->sDBHead.d_Dinfo.d_nServiceNo);
-		m_pMemPool->PoolFree(data.pData);
+		m_pBusLink->PoolFree(data);
 		data.pData = NULL;
 		return -1;
 	}
@@ -51,13 +50,12 @@ int CExchDll::Send2Exch(S_TRADE_DATA &data,CXdp *xdp)
 // 返回  : virtual bool 
 // 参数  : CBF_Xml *xml
 // 描述  : 初始化
-bool CExchDll::Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog,CBF_BufferPool *pMemPool)
+bool CExchDll::Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog)
 {
 	m_pBusLink = pBusLink;
 	m_pXdp.XdpCopy(pXdp);
 	m_pMemDb= pMemDb;
 	m_pLog = pLog;
-	m_pMemPool = pMemPool;
 	return true;
 }
 

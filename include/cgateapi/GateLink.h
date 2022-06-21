@@ -138,6 +138,8 @@ public:
 	// 描述  : 向网关发送订阅请求，注意数据是一个结构，里面使用LE 主机序
 	int	Subscribe(PCGATE_COMMSTRU data,unsigned int timeout);
 
+	int Subscribe(int flag,std::vector<int> &keylist);
+
 	CGateLink();
 	virtual ~CGateLink();
 

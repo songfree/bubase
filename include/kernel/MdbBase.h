@@ -72,7 +72,7 @@ inline std::size_t hash_val(const Types&... args)
 #define O_BINARY 0
 #endif
 
-using namespace std;
+
 
 #ifdef WIN32
 #pragma warning(disable:4786) 
@@ -201,7 +201,7 @@ public:
 // #ifdef _GCC
 // 		Erase(rt);
 // #endif
-		pair<LP_SET,bool> r = m_index.insert(rt);
+		std::pair<LP_SET,bool> r = m_index.insert(rt);
 		return r.second;
 // #ifndef _GCC
 // 		if(!r.second) *r.first = rt;
@@ -310,7 +310,7 @@ public:
         // #ifdef _GCC
         // 		Erase(rt);
         // #endif
-        pair<LP_SET, bool> r = m_index.insert(rt);
+        std::pair<LP_SET, bool> r = m_index.insert(rt);
         return r.second;
         // #ifndef _GCC
         // 		if(!r.second) *r.first = rt;
@@ -5475,7 +5475,7 @@ public:
 			dd.cNodePrivateId = 0;
 			dbl.Insert(dd);
 		}
-		vector<S_TBL_SAMPLE>dlist;
+		std::vector<S_TBL_SAMPLE>dlist;
 		dbl.SelectByNode(1,dlist);
 		
 		for (int j=0;j<(int)dlist.size();j++)
@@ -5524,7 +5524,7 @@ public:
 		return true;
 	}
 	//这个取值，按索引的排序来保存数据
-	bool SelectByNode(int nodeid, vector<S_TBL_SAMPLE *> &drtp)
+	bool SelectByNode(int nodeid, std::vector<S_TBL_SAMPLE *> &drtp)
 	{
 		std::vector<int> iset;
 		if (!m_index_node.Select(iset,nodeid))
@@ -5538,7 +5538,7 @@ public:
 		return true;
 	}
 	//这个取值后按rowid排序，可能不是想要的
-	bool SelectByNode(int nodeid, vector<S_TBL_SAMPLE> &drtp)
+	bool SelectByNode(int nodeid, std::vector<S_TBL_SAMPLE> &drtp)
 	{
 		CInt iset;
 		if (!m_index_node.Select(iset,nodeid))
@@ -5571,7 +5571,7 @@ public:
 protected:
 	
 	CMemTable <S_TBL_SAMPLE> m_table;        //内存表
-	list<int>                m_queryResult;  //查询结果rowid列表
+	std::list<int>                m_queryResult;  //查询结果rowid列表
 	CIndexInt<1>             m_index_node;   //id索引
 	CPkeyInt<2>              m_pkey;         //id+私有id索引，唯一索引
 	

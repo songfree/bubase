@@ -249,7 +249,7 @@ int CSqlAPIData::GetAtI(std::string fieldname)
 	}
 	return 0;
 }
-std::string CSqlAPIData::GetAtS(string fieldname) 
+std::string CSqlAPIData::GetAtS(std::string fieldname)
 {
 	for (int i=0;i<SqlFieldCount;i++)
 	{
@@ -299,7 +299,7 @@ int CSqlAPIData::GetAt(std::string fieldname,int &FieldData)
 	}
 	return -1;
 }
-int CSqlAPIData::GetAt(string fieldname,long &FieldData)
+int CSqlAPIData::GetAt(std::string fieldname,long &FieldData)
 {
 	for (int i=0;i<SqlFieldCount;i++)
 	{

@@ -9,12 +9,12 @@
 #pragma once
 #endif // _MSC_VER > 1000
 #include "GateResource.h"
-#include "LinkThread.h"
-#include "SocketMgr.h"
 #include "BF_AIO.h"
 #include "AIO_Work.h"
 #include "MsgThread.h"
 #include "SendThread.h"
+#include "BF_DrebServer.h"
+#include "DrebMsgThread.h"
 
 class CGateWay  
 {
@@ -55,25 +55,21 @@ public:
 	virtual ~CGateWay();
 
 	CGateResource  g_pRes;
-
-	
+	CBF_DrebServer m_pDrebapi;	 //总线api
+	CDrebMsgThread m_pDrebSpi;   //总线api回调处理类
 protected:
 	
 	CBF_AIO        g_pAioRun;   //IO操作类   epoll  select 
 	CAIO_Work      g_pAioWork;  //IO处理类
 
-	CPoolData      m_pPoolData;  //客户请求队列  g_pAioWork放 m_pMsgThread取
 
+	CPoolData      m_pPoolData;  //客户请求队列  g_pAioWork放 m_pMsgThread取
 	CMsgThread     m_pMsgThread;//客户消息处理线程   所有收到的数据统一交给此线程处理
 
-	CLinkThread    g_pDrebLink; //dreb连接类
-	CSocketMgr     m_pSockMgr; //dreb连接管理类
-	CBF_BufferPool m_pMemPool; //数据缓冲池
+	CBF_BufferPool *m_pMemPool; //数据缓冲池
 	
 	CSendData      m_pSendData;   //发送客户端数据队列   m_pSendThread取并发送 g_pAioWork放  g_pDrebLink放
-	
 	CSendThread    m_pSendThread[51];//发送客户端线程
-	
 	CIErrlog       *m_pLog; //日志指针
 private:
 

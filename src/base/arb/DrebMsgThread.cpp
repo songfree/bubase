@@ -543,7 +543,7 @@ void CDrebMsgThread::MonitorHost(S_BPC_RSMSG &rcvdata)
 	xmlpack.SetNodeAttribute("Monitor/内存缓冲池",false,"每块大小",false,bufsize );
 	//取主机信息
 	S_MONITOR_HOST hf;
-	vector<S_MONITOR_DISK> di;
+	std::vector<S_MONITOR_DISK> di;
 	m_pDrebApi->GetHostInfo(hf,di);
 	
 	xmlpack.SetNodeValueByPath("Monitor/主机资源/CPU",false,(int)hf.nCpuRate);

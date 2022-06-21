@@ -18,14 +18,14 @@ CPPDEFS = -m64 -DLINUX -DUNIX  -D_THREAD_SAFE
 .cpp.o:
 	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(INC) $< -o $@
 
-OBJL = Bpc_Timer.o  HostInfo.o  AIO_Work.o  GateResource.o  GateWay.o  LinkThread.o  MsgThread.o  PoolData.o  SendQueue.o  SocketInfo.o  SocketMgr.o  cgate.o CgateLog.o SendData.o SendThread.o MdbQuotation.o SubScribeInfo.o
+OBJL = DrebMsgThread.o  AIO_Work.o  GateResource.o  GateWay.o  MsgThread.o  PoolData.o    cgate.o CgateLog.o SendData.o SendThread.o MdbQuotation.o SubScribeInfo.o
 
 
 ALL:   bfcgate clean
 
 
 
-BPCLIB = -L$(HOME)/lib  -lbf_kernel    -lpthread -ldl -lbf_dbpub -lbf_aio
+BPCLIB = -L$(HOME)/lib  -lbf_kernel  -lbf_drebapi  -lpthread -ldl -lbf_dbpub -lbf_aio
 
 bfcgate: $(OBJL)
 	g++ $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL) $(INC) -L$(HOME)/lib    $(CPPDEFS) $(BPCLIB)

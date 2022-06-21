@@ -323,7 +323,7 @@ bool CTradeMain::Init(const char *confile)
 // 		m_sExchDll.exchPoint->m_pMemDb = &m_pMemDb;
 // 		m_sExchDll.exchPoint->m_pLog = m_pLog;
 // 		m_sExchDll.exchPoint->m_pMemPool = m_pListenThread.m_pMemPool;
-		if (!m_sExchDll.exchPoint->Init(&(m_pRes.m_pXml),this,&m_pMemDb,&m_pXdp,m_pLog,m_pListenThread.m_pMemPool))
+		if (!m_sExchDll.exchPoint->Init(&(m_pRes.m_pXml),this,&m_pMemDb,&m_pXdp,m_pLog))
 		{
 #ifdef _ENGLISH_
 			m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"library [%s] Init error",m_sExchDll.exchdllname.c_str());
@@ -358,7 +358,6 @@ bool CTradeMain::Init(const char *confile)
 		tmp->m_pXdp.XdpCopy(&m_pXdp);//复制xdp配置
 		tmp->m_pExchLink =   m_sExchDll.exchPoint;       //交易所接口调用类
 		tmp->m_pClientLink = this;            //应答推送类
-		tmp->m_pMemPool = m_pListenThread.m_pMemPool;
 		tmp->m_pLog = m_pDrebApi.GetLogPoint();
 		tmp->m_pRcvQueue = &m_pRcvQueue;
 		tmp->m_nIndex = i;

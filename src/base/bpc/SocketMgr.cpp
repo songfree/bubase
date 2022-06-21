@@ -27,7 +27,7 @@ CSocketMgr::~CSocketMgr()
 bool CSocketMgr::Init(CGResource *res,CBF_BufferPool *pool)
 {
 	int num;
-	//bpu侦听2+dreb连接+BPU连接accept=30，然后每个bpu组为100个连接
+	//bpu侦听2+BPU连接accept=30，然后每个bpu组为100个连接
 	num = 31+res->g_vBpuGroupInfo.size()*100;
 	
 	for (int i=0;i<num;i++)
@@ -44,15 +44,6 @@ bool CSocketMgr::Init(CGResource *res,CBF_BufferPool *pool)
 		if (i == 0 || i==1 )
 		{
 			tmpsocket->m_nType = BPCSOCK_LISTEN;
-		}
-		else if (i < res->g_vDrebLinkInfo.size()+2)
-		{
-			tmpsocket->m_nType = BPCSOCK_DREB;
-			tmpsocket->m_bNeedConnect = true;
-			tmpsocket->m_bNeedread = false;
-			tmpsocket->m_sDrebIp = res->g_vDrebLinkInfo[i-2].sIp;
-			tmpsocket->m_nDrebPort = res->g_vDrebLinkInfo[i-2].nPort;
-			tmpsocket->m_DrebIsIpc =  res->g_vDrebLinkInfo[i-2].bIsIpc;
 		}
 		else if (i < 31)
 		{

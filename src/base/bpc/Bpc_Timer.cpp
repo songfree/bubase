@@ -35,19 +35,6 @@ void CBpc_Timer::ComputeStat()
 
 }
 
-void CBpc_Timer::GetHostInfo()
-{
-	m_sHostInfo.nCpuRate = m_pHostInfo.GetCpu();
-	S_MemoryInf smInfo;
-	m_pHostInfo.GetEms(smInfo);
-	m_sHostInfo.nTotalMemory = smInfo.EmsTotal;
-	m_sHostInfo.nUsedMemory = smInfo.EmsUse;
-	m_vdinfo.clear();
-	m_pHostInfo.GetDisk(m_vdinfo);
-	m_sHostInfo.nDiskNum = m_vdinfo.size();
-	
-}
-
 bool CBpc_Timer::StartTimer()
 {
 	return m_pTimer.Start();
@@ -67,10 +54,6 @@ int CBpc_Timer::OnTimer(unsigned int event, void *p)
 		//计算每秒接收发放
 		pp->ComputeStat();
 	}
-	else if (event == 1 )
-	{
-		pp->GetHostInfo();
-	}
 	else if (event == 2)
 	{
 		pp->DeleteNextFile();
@@ -83,35 +66,12 @@ bool CBpc_Timer::Init(CGResource *pVar)
 	m_pRes = pVar;
 	m_pNextTbl.m_pRes = m_pRes;
 
-	m_pHostInfo.m_log = &(m_pRes->m_log);
-
 	m_pTimer.Init(100,true);
 	//计算每秒数据量的定时器
 	m_pTimer.SetTimer(0,1000,&CBpc_Timer::OnTimer,this); //设置定时器 
-	//取主机资源信息的定时器
-	m_pTimer.SetTimer(1,5000,&CBpc_Timer::OnTimer,this);
 	//删除过期后续包定时器,每50分钟检查一次
 	m_pTimer.SetTimer(2,3000000,&CBpc_Timer::OnTimer,this);
 	return true;
-}
-
-void CBpc_Timer::GetHostInfo(S_MONITOR_HOST &hostinfo, V_MonitorDiskInfo  &diskinfo)
-{
-	
-	hostinfo.nCpuRate = m_sHostInfo.nCpuRate;
-	hostinfo.nDiskNum = m_sHostInfo.nDiskNum;
-	hostinfo.nTotalMemory = m_sHostInfo.nTotalMemory;
-	hostinfo.nUsedMemory = m_sHostInfo.nUsedMemory;
-
-	S_MONITOR_DISK pp;
-	for (int i=0;i<hostinfo.nDiskNum;i++)
-	{
-		pp.nTotalSpace = m_vdinfo[i].TotalSpace;
-		pp.nUsedSpace = m_vdinfo[i].UsedSpace;
-		CBF_Tools::StringCopy(pp.sDiskName,199,m_vdinfo[i].cIndex);
-//		printf("name:%s Total:%d used:%d\n",pp.sDiskName,pp.nTotalSpace,pp.nUsedSpace);
-		diskinfo.push_back(pp);
-	}
 }
 
 bool CBpc_Timer::IsStoped()

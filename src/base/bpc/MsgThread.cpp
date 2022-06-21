@@ -3,6 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "MsgThread.h"
+#include "DrebMsgProcBase.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -19,7 +20,7 @@ CMsgThread::CMsgThread()
 	m_nDispatchNum =0;
 	m_nBegin =0;
 	m_nEnd =0;
-
+	m_pDrebApi=NULL;
 	m_pLog = NULL;
 }
 
@@ -32,45 +33,7 @@ CMsgThread::~CMsgThread()
 	m_pPoolData= NULL;//处理数据队列
 	m_pFuncTbl= NULL;
 }
-std::string CMsgThread::GetDrebCmdType(int cmdtype)
-{
-	switch (cmdtype)
-	{
-		
-	case  CMD_ROUTER:      //1  //数据总线节点发送路由通知的命令字
-		return "CMD_ROUTER";
-	case  CMD_DEL_NODE:    //2  //数据总线节点之间取消数据总线节点的命令字,只发送至主动连接的数据总线节点
-		return "CMD_DEL_NODE";
-	case  CMD_DEL_SVR:     //3  //服务端取消注册服务的命令字
-		return "CMD_DEL_SVR";
-	case  CMD_PING:        //4  //心跳请求的命令字
-		return "CMD_PING";
-	case  CMD_CONNECT:     //5  //连接注册
-		return "CMD_CONNECT";
-	case  CMD_SERVICE:     //6  //服务路由
-		return "CMD_SERVICE";
-	case  CMD_REGSERVICE:  //7  //注册服务
-		return "CMD_REGSERVICE";			
-	case  CMD_DPCALL:      //8  //数据总线节点同步调用 要求最终处理完成后应答
-		return "CMD_DPCALL";
-	case  CMD_DPACALL:     //9  //数据总线节点异步调用 要求接收到的数据总线节点发送至服务后确认应答
-		return "CMD_DPACALL";
-	case  CMD_DPBC:        //10  //数据总线节点广播，即将信息发给指定数据总线节点上所有注册的服务,要求数据总线节点应答
-		return "CMD_DPBC";
-	case  CMD_DPABC:       //11  //数据总线节点广播，即将信息发给指定数据总线节点上所有注册的服务,不要求数据总线节点应答
-		return "CMD_DPABC";			
-	case  CMD_DPPUSH:      //12 //数据总线节点推送，无须应答
-		return "CMD_DPPUSH";
-	case  CMD_DPPOST:      //13 //数据总线节点投递，要求接收到的数据总线节点应答
-		return "CMD_DPPOST";			
-	case  CMD_MONITOR_DREB:     //15 //数据总线节点监控
-		return "CMD_MONITOR_DREB";
-	case  CMD_MONITOR_BPC:     //15 //数据总线节点监控
-		return "CMD_MONITOR_BPC";
-	default:
-		return "";
-	}
-}
+
 void CMsgThread::ExitThreadInstance()
 {
 	return ;
@@ -80,17 +43,15 @@ bool CMsgThread::InitThreadInstance()
 	return true;
 }
 
-bool CMsgThread::SetGlobalVar(CGResource *res,CPoolDataMsg *pooldata,CBF_BufferPool *mempool,CSocketMgr *sockmgr,CFuncTbl *tbl)
+bool CMsgThread::SetGlobalVar(CGResource *res,CPoolDataMsg *pooldata,CBF_BufferPool *mempool,CSocketMgr *sockmgr,CFuncTbl *tbl,CBF_DrebServer *api)
 {
 	m_pRes = res;
 	m_pSockMgr = sockmgr;
 	m_pMemPool = mempool;
 	m_pPoolData = pooldata;
 	m_pFuncTbl = tbl;
-
-	m_pLog = &(m_pRes->m_log);
-	
-	
+	m_pLog = m_pRes->m_log;
+	m_pDrebApi = api;
 	return true;
 }
 int CMsgThread::Run()
@@ -99,7 +60,6 @@ int CMsgThread::Run()
 	{
 		if (m_pPoolData->GetData(m_pDataBuf))
 		{
-
 			//分发数据
 			Dispatch();
 		}
@@ -144,119 +104,37 @@ void CMsgThread::Dispatch()
 void CMsgThread::DispatchExtCall(S_BPC_RSMSG &rcvdata)
 {
 	m_pLog->LogBin(LOG_DEBUG+2,__FILE__,__LINE__,"收到EXTCALL数据",rcvdata.sMsgBuf->sBuffer,rcvdata.sMsgBuf->sDBHead.nLen);
-	int index=0;
-	int num=0;
-	if (m_pRes->g_vDrebLinkInfo.size() < 1)
+    if (rcvdata.sMsgBuf->sBpcHead.cMsgType != MSG_BPCMONITOR) //monitor
+    {
+        //b_Cinfo的b_cIndex存放bpu连接index,b_nSerial存放bpu连接index时间戳
+        rcvdata.sMsgBuf->sDBHead.b_Cinfo.b_nSerial = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->m_nConntime;
+        rcvdata.sMsgBuf->sDBHead.b_Cinfo.b_cIndex = (int)(rcvdata.sMsgBuf->sBpcHead.nBpuIndex);
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "外调bpuindex[%d %d]", rcvdata.sMsgBuf->sBpcHead.nBpuIndex, rcvdata.sMsgBuf->sDBHead.b_Cinfo.b_cIndex);
+    }
+    else
+    {
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "发送监控通知");
+    }
+	rcvdata.sMsgBuf->sBpcHead.nIndex=100;
+	if (m_pDrebApi->SendMsg(rcvdata)<0)
 	{
-		m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"无DREB连接");
-		if (rcvdata.sMsgBuf->sBpcHead.cMsgType == MSG_BPCMONITOR) //monitor
-		{
-			m_pMemPool->PoolFree(rcvdata.sMsgBuf);
-			rcvdata.sMsgBuf = NULL;
-		}
-		else
-		{
-			rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode == ERR_DREBROUTE;
-			rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
-			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
-		}
-		return;
 	}
-	//这里要修改  20131024 根据dreb连接状态来进行
-	index = GetDrebIndex(rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nNodeId,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_cNodePrivateId);
-	if (index == 0)
-	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"没有DREB连接");
-		if (rcvdata.sMsgBuf->sBpcHead.cMsgType == MSG_BPCMONITOR) //monitor
-		{
-			m_pMemPool->PoolFree(rcvdata.sMsgBuf);
-			rcvdata.sMsgBuf = NULL;
-		}
-		else
-		{
-			rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode == ERR_DREBROUTE;
-			rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
-			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
-		}
-		return;
-	}
-	
-	if (m_pSockMgr->AffirmIndex(index))
-	{
-		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId = m_pSockMgr->at(index)->m_head.s_Sinfo.s_nNodeId;
-		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId = m_pSockMgr->at(index)->m_head.s_Sinfo.s_cNodePrivateId;
-		if (rcvdata.sMsgBuf->sBpcHead.cMsgType != MSG_BPCMONITOR) //monitor
-		{
-			//b_Cinfo的b_cIndex存放bpu连接index,b_nSerial存放bpu连接index时间戳
-			rcvdata.sMsgBuf->sDBHead.b_Cinfo.b_nSerial = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->m_nConntime;
-			rcvdata.sMsgBuf->sDBHead.b_Cinfo.b_cIndex = (int )(rcvdata.sMsgBuf->sBpcHead.nBpuIndex);
-			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"外调bpuindex[%d %d]",rcvdata.sMsgBuf->sBpcHead.nBpuIndex,rcvdata.sMsgBuf->sDBHead.b_Cinfo.b_cIndex);
-		}
-		else
-		{
-			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送监控通知[%d]",index);
-		}
-		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nTimestamp = m_pSockMgr->at(index)->m_head.s_Sinfo.s_nTimestamp;
-		m_pSockMgr->at(index)->SendMsg(rcvdata);
-		return;
-	}
-//	m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"EXTCALL取dreb连接不符");
-	m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"EXTCALL取dreb连接不符 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-		GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
-		rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
-		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
-		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
-		rcvdata.sMsgBuf->sDBHead.cZip,rcvdata.sMsgBuf->sDBHead.nLen);
-
-	m_pRes->m_pBpcCallDataLog.LogBpc(LOG_ERROR,rcvdata.sMsgBuf,true);
-
-	m_pMemPool->PoolFree(rcvdata.sMsgBuf);
-	rcvdata.sMsgBuf = NULL;
+	return;
 	
 }
 void CMsgThread::DispatchTrans(S_BPC_RSMSG &rcvdata)
 {
 	m_pLog->LogBin(LOG_DEBUG+2,__FILE__,__LINE__,"收到TRANS数据",rcvdata.sMsgBuf->sBuffer,rcvdata.sMsgBuf->sDBHead.nLen);
-	int index=0;
-	int num=0;
-	bool isfind=false;
+	rcvdata.sMsgBuf->sBpcHead.nIndex = 100;
 	//songfree 20180328 add 转移使用a_cNodePrivateId来标识，总线收到判断此标识，不对s_info进行重置
 	rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_cNodePrivateId = 100;
 	//add end
 
-	if (m_pRes->g_vDrebLinkInfo.size() < 1)
-	{
-		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode == ERR_DREBROUTE;
-		rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
-		return;
-	}
-	 //这里要修改  20131024 根据dreb连接状态来进行
-	index = GetDrebIndex(rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nNodeId,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_cNodePrivateId);
-	
-	if (index == 0)
-	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"没有DREB连接");
-		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode == ERR_DREBROUTE;
-		rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
-		return;
-	}
-	if (m_pSockMgr->AffirmIndex(index))
-	{
-		m_pSockMgr->at(index)->SendMsg(rcvdata);
-		return;
-	}
-//	m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"TRANS取dreb连接不符");
-	m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"TRANS取dreb连接不符 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-		GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
-		rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
-						rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
-						rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
-						rcvdata.sMsgBuf->sDBHead.cZip,rcvdata.sMsgBuf->sDBHead.nLen);
-	m_pRes->m_pBpcCallDataLog.LogBpc(LOG_ERROR,rcvdata.sMsgBuf,true);
-	m_pMemPool->PoolFree(rcvdata.sMsgBuf);
-	rcvdata.sMsgBuf = NULL;
+    rcvdata.sMsgBuf->sBpcHead.nIndex = 100;
+    if (m_pDrebApi->SendMsg(rcvdata))
+    {
+
+    }
 	
 }
 void CMsgThread::LogDrebHead(int loglevel, DREB_HEAD head, const char *msg, const char *filename, int fileline)
@@ -266,7 +144,7 @@ void CMsgThread::LogDrebHead(int loglevel, DREB_HEAD head, const char *msg, cons
 	   s_cNodePrivateId=%d s_nSvrMainId=%d s_cSvrPrivateId=%d s_nHook=%d s_nSerial=%d \
 	   s_nDrebSerial=%d s_nIndex=%d d_nNodeId=%d d_cNodePrivateId=%d d_nSvrMainId=%d \
 	   d_cSvrPrivateId=%d d_nServiceNo=%d a_nNodeId=%d a_cNodePrivateId=%d a_nRetCode=%d \
-	   n_nNextNo=%d n_nNextOffset=%d b_nSerial=%d b_cIndex=%d nLen=%d","%s",head.cZip,GetDrebCmdType(head.cCmd).c_str(),\
+	   n_nNextNo=%d n_nNextOffset=%d b_nSerial=%d b_cIndex=%d nLen=%d","%s",head.cZip, CDrebMsgProcBase::GetDrebCmdType(head.cCmd).c_str(),\
 	   head.cRaflag,head.cNextFlag,head.cDrebAffirm,head.s_Sinfo.s_nNodeId,head.s_Sinfo.s_cNodePrivateId,\
 	   head.s_Sinfo.s_nSvrMainId,head.s_Sinfo.s_cSvrPrivateId,head.s_Sinfo.s_nHook,head.s_Sinfo.s_nSerial,\
 	   head.s_Sinfo.s_nDrebSerial,head.s_Sinfo.s_nIndex,head.d_Dinfo.d_nNodeId,head.d_Dinfo.d_cNodePrivateId,\
@@ -403,31 +281,37 @@ void CMsgThread::RegisterDreb()
 	int index;
 	int  offset;
 	int j;
-	vector<S_FUNCINFO_TBL>vfunclist;
+	std::vector<S_FUNCINFO_TBL>vfunclist;
 	if (m_pFuncTbl->GetAllFunc(vfunclist)<1)
 	{
 		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"没有注册功能");
 		rcvdata.sMsgBuf = NULL;
 		return;
 	}
-	//前2个为侦听
+    char sip[40];
+    char drebstatus[40];
+    int  drebport;
+    int  drebid;
+    int  drebprivateid;
 	for (int i=0;i<m_pRes->g_vDrebLinkInfo.size();i++)
 	{
-		index = i+2;
-		if (m_pSockMgr->at(index)->m_sock == INVALID_SOCKET || !m_pSockMgr->at(index)->m_bChecked )
-		{
-			continue;
-		}
+		index = i;
 		rcvdata.sMsgBuf = (PBPCCOMMSTRU )m_pMemPool->PoolMalloc();
 		if (rcvdata.sMsgBuf == NULL)
 		{
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"分配消息空间出错");
 			return ;
 		}
-		//
+        bzero(sip, sizeof(sip));
+        bzero(drebstatus, sizeof(drebstatus));
+        m_pDrebApi->GetDrebInfo(i, sip, drebport, drebid, drebprivateid, drebstatus);
+		//if (strcmp(drebstatus, "正常") != 0)
+		//{
+		//	continue;
+		//}
 		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始向DREB注册服务功能 ip[%s] port[%d] index[%d] [%d:%d] 交易总数[%d]",\
-			m_pSockMgr->at(index)->m_sDrebIp.c_str(),m_pSockMgr->at(index)->m_nDrebPort,index,\
-			m_pSockMgr->at(index)->m_nDrebId,m_pSockMgr->at(index)->m_nDrebPrivateId,m_pFuncTbl->Size());
+			sip, drebport,index,\
+			drebid, drebprivateid,m_pFuncTbl->Size());
 		rcvdata.sMsgBuf->sDBHead.cCmd = CMD_REGSERVICE;
 		rcvdata.sMsgBuf->sDBHead.cRaflag = 0;
 		rcvdata.sMsgBuf->sDBHead.cNextFlag = 0;
@@ -465,78 +349,12 @@ void CMsgThread::RegisterDreb()
 		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"总共有%d个功能注册",data->nFuncNum);
 		m_pDrebEndian.Endian2Comm((unsigned char *)&(data->nFuncNum),sizeof(data->nFuncNum));
 		rcvdata.sMsgBuf->sDBHead.nLen = offset;
-		m_pSockMgr->at(index)->SendMsg(rcvdata);
+		rcvdata.sMsgBuf->sBpcHead.nIndex = index;
+		rcvdata.index = index;
+		m_pDrebApi->SendMsg(rcvdata);
 	}
 }
 
-int CMsgThread::GetDrebIndex(int nodeid, int nodepid)
-{
-	int i,j,ret;
-	int index=-1;
-	int num;
-	vector<int>m_vDrebIndex;
-
-	for (i=0 ; i<m_pRes->g_vDrebLinkInfo.size() ; i++)
-	{
-		if (m_pSockMgr->at(i+2)->m_bChecked)
-		{
-			m_vDrebIndex.push_back(i+2);
-		}
-	}
-	if (m_vDrebIndex.size()<1)
-	{
-		return -1;
-	}
-	if (m_vDrebIndex.size() == 1)
-	{
-		return m_vDrebIndex[0];
-	}
-	else
-	{	
-		if (nodepid != 0)
-		{
-			for (j=0;j<m_vDrebIndex.size();j++)
-			{
-				index = m_vDrebIndex[j];	
-				if (m_pSockMgr->at(index)->m_head.s_Sinfo.s_nNodeId == nodeid \
-					&& m_pSockMgr->at(index)->m_head.s_Sinfo.s_cNodePrivateId == nodepid)
-				{
-					return index;
-				}
-			}
-		}
-		else //私有节点为0，只要找公共节点即可
-		{
-			vector<int>drebindexlist;
-			for (j=0;j<m_vDrebIndex.size();j++)
-			{
-				index = m_vDrebIndex[j];	
-				if (m_pSockMgr->at(index)->m_head.s_Sinfo.s_nNodeId == nodeid)
-				{
-					drebindexlist.push_back(index);
-				}
-			}
-			num = drebindexlist.size();
-			if (num<1) //不在连接的dreb里 随机取一个吧
-			{
-				srand(m_datetime.GetTickCount());
-				//i = rand() %(最大-最小+1) + 最小
-				index = m_vDrebIndex[rand() % (m_vDrebIndex.size())];
-			}
-			else if (num == 1) //从中取一个
-			{
-				index = m_vDrebIndex[0];
-			}
-			else
-			{
-				srand(m_datetime.GetTickCount());
-				//i = rand() %(最大-最小+1) + 最小
-				index = m_vDrebIndex[rand() % (num)];
-			}
-		}
-	}
-	return index;
-}
 void CMsgThread::Dispatch2BpuGroupGetNext(S_BPC_RSMSG &rcvdata)
 {
 	int flag=0;
@@ -546,8 +364,8 @@ void CMsgThread::Dispatch2BpuGroupGetNext(S_BPC_RSMSG &rcvdata)
 	if (!isfind) //没有找到
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"无此功能 消息[%s]  DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-			m_pRes->GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
-			m_pRes->GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
+			CDrebMsgProcBase::GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
+			CDrebMsgProcBase::GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
 			rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
@@ -574,8 +392,8 @@ void CMsgThread::Dispatch2BpuGroupGetNext(S_BPC_RSMSG &rcvdata)
 	if (m_pRes->PushData(fn.nBpuGroupIndex,rcvdata,fn.cPrio) != 0)
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"入BPU组队列出错 消息[%s]  DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-			m_pRes->GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
-			m_pRes->GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
+			CDrebMsgProcBase::GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
+			CDrebMsgProcBase::GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
 			rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
@@ -594,8 +412,8 @@ void CMsgThread::Dispatch2BpuGroup(S_BPC_RSMSG &rcvdata)
 	if (flag == 0) //没有找到
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"无此功能 消息[%s]  DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-			m_pRes->GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
-			m_pRes->GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
+			CDrebMsgProcBase::GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
+			CDrebMsgProcBase::GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
 			rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
@@ -613,8 +431,8 @@ void CMsgThread::Dispatch2BpuGroup(S_BPC_RSMSG &rcvdata)
 	
 	rcvdata.nRtime = time(NULL);
 	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"BPU组[%s] 交易名称[%s] 优先级[%d] 消息[%s]  DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-		fn.sBpuGroupName,fn.sFuncName,fn.cPrio,m_pRes->GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
-		m_pRes->GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
+		fn.sBpuGroupName,fn.sFuncName,fn.cPrio, CDrebMsgProcBase::GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
+		CDrebMsgProcBase::GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
 		rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
 		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
@@ -631,8 +449,8 @@ void CMsgThread::Dispatch2BpuGroup(S_BPC_RSMSG &rcvdata)
 	if (m_pRes->PushData(fn.nBpuGroupIndex,rcvdata,fn.cPrio) != 0)
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"入BPU组队列出错 消息[%s]  DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-			m_pRes->GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
-			m_pRes->GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
+			CDrebMsgProcBase::GetBpcMsgType(rcvdata.sMsgBuf->sBpcHead.cMsgType).c_str(),\
+			CDrebMsgProcBase::GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
 			rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\

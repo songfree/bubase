@@ -18,7 +18,7 @@ CPoolData::~CPoolData()
 
 }
 
-int CPoolData::PushData(S_GATEDREB_RSMSG data)
+int CPoolData::PushData(S_BPC_RSMSG data)
 {
 	m_pEvent.Lock();
 	m_poolDataList.push_back(data);
@@ -27,7 +27,7 @@ int CPoolData::PushData(S_GATEDREB_RSMSG data)
 	return 0;
 }
 
-bool CPoolData::GetData(S_GATEDREB_RSMSG &data)
+bool CPoolData::GetData(S_BPC_RSMSG&data)
 {
 	if (m_pRes == NULL)
 	{

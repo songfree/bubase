@@ -65,7 +65,7 @@ public:
 	// 参数  : const char *nodename
 	// 参数  : vector<CXmlNode *> &nodelist
 	// 描述  : 根据节点名称查找节点
-	bool SelectNode(const char *nodename,vector<CXmlNode *> &nodelist);
+	bool SelectNode(const char *nodename, std::vector<CXmlNode *> &nodelist);
 	
 	// 函数名: Delete
 	// 编程  : 王明松 2010-6-4 17:23:41

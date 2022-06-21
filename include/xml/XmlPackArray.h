@@ -85,7 +85,7 @@ public:
 	/// 描述  : 删除最后一条记录，并销毁
 	void pop_back();
 protected:
-	vector <CXmlPack *> m_xmlarray;
+	std::vector <CXmlPack *> m_xmlarray;
 };
 #undef XML_EXPORT
 #endif /// !defined(AFX_XMLPACKARRAY_H__E6A80E21_BFF2_47A5_9B73_394EDB28C7D8__INCLUDED_)

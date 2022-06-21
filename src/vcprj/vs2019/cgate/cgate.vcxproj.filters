@@ -18,9 +18,6 @@
     <ClInclude Include="..\..\..\base\cgate\AIO_Work.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\base\cgate\Bpc_Timer.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\base\cgate\CgateLog.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -30,16 +27,7 @@
     <ClInclude Include="..\..\..\base\cgate\GateWay.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\base\cgate\HostInfo.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\base\cgate\LinkThread.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\base\cgate\MdbQuotation.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\base\cgate\MsgThread.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\base\cgate\PoolData.h">
@@ -48,27 +36,21 @@
     <ClInclude Include="..\..\..\base\cgate\SendData.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\base\cgate\SendQueue.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\base\cgate\SendThread.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\base\cgate\SocketInfo.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\base\cgate\SocketMgr.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\base\cgate\SubScribeInfo.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\base\cgate\DrebMsgThread.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\base\cgate\MsgThread.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\base\cgate\AIO_Work.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\base\cgate\Bpc_Timer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\base\cgate\cgate.cpp">
@@ -83,12 +65,6 @@
     <ClCompile Include="..\..\..\base\cgate\GateWay.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\base\cgate\HostInfo.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\base\cgate\LinkThread.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\base\cgate\MdbQuotation.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -101,19 +77,13 @@
     <ClCompile Include="..\..\..\base\cgate\SendData.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\base\cgate\SendQueue.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\base\cgate\SendThread.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\base\cgate\SocketInfo.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\base\cgate\SocketMgr.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\base\cgate\SubScribeInfo.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\base\cgate\DrebMsgThread.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

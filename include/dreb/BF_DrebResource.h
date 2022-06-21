@@ -83,7 +83,7 @@ public:
 	unsigned int   g_nSvrPrivateId;  //目标私有序号 0表示公共 >0为每个服务的序号，必须填写 默认为0
 	
 	//要连接的dreb信息
-	vector<S_DREBLINK_INFO> g_vDrebLinkInfo;  //要连接的dreb信息
+	std::vector<S_DREBLINK_INFO> g_vDrebLinkInfo;  //要连接的dreb信息
 	
 	
 	

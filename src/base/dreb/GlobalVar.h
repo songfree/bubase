@@ -20,8 +20,8 @@
 //数据总线结构
 typedef struct 
 {
-	string sname;  //数据总线名称
-	string sIp;    //连接的数据总线IP
+	std::string sname;  //数据总线名称
+	std::string sIp;    //连接的数据总线IP
 	unsigned int    nPort;  //端口
 	unsigned int    nSpeed; //速率，路由选择时一个条件 
 }S_CENTERINFO;
@@ -65,7 +65,7 @@ typedef struct
 }
 #endif
 
-typedef vector <S_CENTERINFO> S_DREBINFO;
+typedef std::vector <S_CENTERINFO> S_DREBINFO;
 
 
 

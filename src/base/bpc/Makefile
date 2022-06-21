@@ -18,14 +18,14 @@ CPPDEFS =  -DLINUX -DUNIX  -D_THREAD_SAFE
 .cpp.o:
 	$(CPP) $(CPPFLAGS) -c  $(CPPDEFS) $(INC) $< -o $@
 
-OBJL =  bpc.o     Bpc_Timer.o  GResource.o  LinkThread.o  NextPack.o  PoolData.o    PuThread.o   SocketInfo.o BpcRun.o  FuncTbl.o    HostInfo.o   MsgThread.o   NextTbl.o    SendQueue.o  SocketMgr.o  DispathThread.o
+OBJL =  bpc.o  DrebMsgThread.o   Bpc_Timer.o  GResource.o  LinkThread.o  NextPack.o  PoolData.o    PuThread.o   SocketInfo.o BpcRun.o  FuncTbl.o      MsgThread.o   NextTbl.o    SendQueue.o  SocketMgr.o  DispathThread.o
 
 
 ALL:   bfsap clean
 
 
 
-BPCLIB = -L$(HOME)/lib  -lbf_kernel    -lpthread -ldl -lbf_dbpub
+BPCLIB = -L$(HOME)/lib  -lbf_kernel  -lbf_drebapi  -lpthread -ldl -lbf_dbpub
 
 bfsap: $(OBJL)
 	g++ $(CPPFLAGS) $(CPPDEFS) -o $@ $(OBJL) $(INC) -L$(HOME)/lib    $(CPPDEFS) $(BPCLIB)

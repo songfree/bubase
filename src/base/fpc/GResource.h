@@ -211,7 +211,7 @@ public:
 	virtual long GetThreadShareSerial();
 
 protected:
-	vector<S_IP_HEAD> m_ip_head_list;//ip地址对应的通讯头额外长度
+	std::vector<S_IP_HEAD> m_ip_head_list;//ip地址对应的通讯头额外长度
 	unsigned long m_serial_connect;//连接序号
 	CBF_Mutex m_mutex;//互斥变量
 	std::string m_errMsg;//错误信息

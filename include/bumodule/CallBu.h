@@ -73,7 +73,7 @@ public:
 	// 返回  : int 
 	// 参数  : vector<S_TBL_FLOWTX> &txinfo
 	// 描述  : 获取所有的交易信息，以便注册到BCC
-	int GetAllTxInfo(vector<S_TBL_FLOWTX> &txinfo);
+	int GetAllTxInfo(std::vector<S_TBL_FLOWTX> &txinfo);
 
 	
 	// 函数名: BuInit

@@ -218,15 +218,13 @@ public:
 		strcpy(pFunc.sDllName,"");
 		m_pFuncTbl.Insert(pFunc);
 	}
-	virtual bool Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog,CBF_BufferPool *pMemPool,CDbApi *pSqlCmd,CIExchLink *pExchLink,int index)
+	virtual bool Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog,CDbApi *pSqlCmd,CIExchLink *pExchLink,int index)
 	{
 		m_pClientLink = pBusLink;
-		//m_pXdp->XdpCopy(pXdp);
 		m_pMemDb= pMemDb;
 		m_pLog = pLog;
 		m_pSqlCmd = pSqlCmd;
 		m_pExchLink = pExchLink;
-		//m_pMemPool = pMemPool;
 		m_nIndex = index;
 		return true;
 	}

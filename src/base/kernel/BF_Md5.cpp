@@ -85,14 +85,14 @@ CBF_Md5::CBF_Md5(const void *input, size_t length)
 }
 
 /* Construct a MD5 object with a string. */
-CBF_Md5::CBF_Md5(const string &str) 
+CBF_Md5::CBF_Md5(const std::string &str)
 {
 	Reset();
 	Update(str);
 }
 
 /* Construct a MD5 object with a file. */
-CBF_Md5::CBF_Md5(ifstream &in) 
+CBF_Md5::CBF_Md5(std::ifstream &in)
 {
 	Reset();
 	Update(in);
@@ -133,13 +133,13 @@ void CBF_Md5::Update(const void *input, size_t length)
 }
 
 /* Updating the context with a string. */
-void CBF_Md5::Update(const string &str) 
+void CBF_Md5::Update(const std::string &str)
 {
 	Update((const byte*)str.c_str(), str.length());
 }
 
 /* Updating the context with a file. */
-void CBF_Md5::Update(ifstream &in) 
+void CBF_Md5::Update(std::ifstream &in)
 {
 	if (! in)
 	{
@@ -354,7 +354,7 @@ void CBF_Md5::Decode(const byte *input, UINT32 *output, size_t length)
 /* Convert byte array to hex string. */
 std::string CBF_Md5::BytesToHexString(const byte *input, size_t length) 
 {
-	string str;
+	std::string str;
 	str.reserve(length << 1);
 	for(size_t i = 0; i < length; i++) 
 	{

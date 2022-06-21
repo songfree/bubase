@@ -18,6 +18,7 @@
 #include "BpcHead.h"
 #include "BF_CommDataLog.h"
 #include "BF_Queue.h"
+#include "BF_DrebResource.h"
 
 //配置文件范例
 /*<?xml version="1.0" encoding="GB2312"?>
@@ -93,13 +94,6 @@ typedef struct
 	int       bpugroupindex; //bpu组索引 
 }S_BPUGROUP_INFO;
 
-typedef struct
-{
-	std::string sIp;       //IP
-	int         nPort;     //端口
-	int         nBandwidth;//带宽
-	bool        bIsIpc;
-}S_DREBLINK_INFO;
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -145,7 +139,7 @@ typedef struct
 	char      bpugroupname[21];//bpu组名
 	int       bpugroupindex; //bpu组索引 
 }S_BPUGROUP_TBL;
-class  CGResource  : public CIGResource 
+class  CGResource  : public CIGResource,public CBF_DrebResource 
 {
 public:
 	
@@ -154,88 +148,32 @@ public:
 
 public:
 	S_SHM_PUBLIC  *m_pSerial;
-
 	bool g_bToExit;//是否退出程序
-	
 	int    g_nPort;//侦听端口 默认为9001
-	
-	int g_nLoglevel;//日志级别 默认为5
 
-	int g_nDrebLoglevel;//写入data下面的日志级别
-	int g_nDrebLogSize;//dat日志大小
-	std::string g_sDrebDatFileName;//dat日志文件名
+ 	std::string m_sBpcParaFileName;//配置文件名称
 
-	std::string g_sLogFileName;//日志文件名
-	std::string g_sLogFilePath;//日志文件目录
-
-	int g_nCrcFlag; //crc校验标志  0不校验不生成  1校验 生成
-
-	int g_nLogSize; //日志大小
-
-	std::string m_sBpcParaFileName;//配置文件名称
-
-	int g_nDisconnectTime;//未使用断开时间，如果一个连接在此时间内一直没有使用，则将此连接断开。单位秒默认600秒即10分钟
-	int g_nDispatchTime;//分配最大时间
+	int g_nDispatchTime;//消息分配的最大时间
 
 	int g_nRegisterMode;//交易注册模式   0表示动态注册，1表示静态注册 2表示不注册
 	std::string g_sRegisterFile;//交易注册文件
-
-	int g_nHeartRun;//心跳时间,当发现连接超过此时间未用时，主动发送心跳
-
 	unsigned long  g_processNum;//处理请求数
 	unsigned long  g_processSucessNum;//处理成功请求数
-	
 
-	bool g_bIsMonitor;//是否监控交易调用信息
-
-	int   g_nUseMonitor;       //是否监控
-	int   g_nMonitorHost;      //是否报告主机资源
-	int   g_nMonitorDrebId;            //公共节点号
-	int   g_nMonitorDrebPrivateId;     //私有节点号
-	int   g_nMonitorSvrId;            //公共服务节点号
-	int   g_nMonitorSvrPrivateId;     //私有服务节点号
-	int   g_nMonitorTxCode;           //监控交易码
-
-
-
-	unsigned int   g_nSvrMainId;     //目标服务功能号 ,必须填写
-	unsigned int   g_nSvrPrivateId;  //目标私有序号 0表示公共 >0为每个服务的序号，必须填写
-
-	vector<S_DREBLINK_INFO> g_vDrebLinkInfo;
-	vector<S_BPUGROUP_INFO> g_vBpuGroupInfo;
-
-	char g_sCurPath[300];
-	char g_sModulePath[300];
-	char g_sModuleName[300];
-	
-	char g_sStartDateTime[20];
-
+	std::vector<S_BPUGROUP_INFO> g_vBpuGroupInfo; //记录bpu组的信息
 	int  m_bIsRecTime;
+	std::vector<int>  g_lBCFuncList;//广播配置 需要向总线订阅的广播
 public:
-	// 函数名: GetBpcMsgType
-	// 编程  : 王明松 2013-4-8 15:09:48
-	// 返回  : std::string 
-	// 参数  : int msgtype
-	// 描述  : 取BPC消息类型说明
-	std::string GetBpcMsgType(int msgtype);
-	
-	// 函数名: GetDrebCmdType
-	// 编程  : 王明松 2013-4-8 15:09:53
-	// 返回  : std::string 
-	// 参数  : int cmdtype
-	// 描述  : 取DREB命令类型说明
-	std::string GetDrebCmdType(int cmdtype);
 
 	void Stop();
 
 	// 函数名: PushData
 	// 编程  : 王明松 2015-11-4 14:29:07
 	// 返回  : int 
-	// 参数  : char *bpugroupname
+	// 参数  : unsigned int bpugroypindex
 	// 参数  : S_BPC_RSMSG data
 	// 参数  : int prio
-	// 描述  : 根据组名将数据放入队列
-//	int PushData(char *bpugroupname,S_BPC_RSMSG data,int prio);
+	// 描述  : 根据BPU组index将数据放入队列
 	int PushData(unsigned int bpugroypindex,S_BPC_RSMSG data,int prio);
 
 	std::string GetNextFileName(unsigned int &serial);
@@ -245,8 +183,6 @@ public:
 	// 返回  : void 
 	// 描述  : 写回配置文件
 	void WriteBack();
-
-	
 
 	/// 函数名: PutProcessNum
 	/// 编程  : 王明松 2009-1-6 10:20:11
@@ -272,13 +208,11 @@ public:
 	/// 描述  : 将侦听标志置为true,若已侦听则返回false,否则将侦听标志置为true并返回true
 	bool SetListen();
 
-
 	/// 函数名: SetInitOnce
 	/// 编程  : 王明松 2008-9-4 9:17:41
 	/// 返回  : bool true要初始，false无需初始
 	/// 描述  : 将初始化标志置为true,若已初始则返回false,否则将初始标志置为true并返回true
 	bool SetInitOnce();
-
 
 	/// 函数名: OpenDll
 	/// 编程  : 王明松 2008-9-4 9:15:14
@@ -300,7 +234,7 @@ public:
 	/// 返回  : bool 
 	/// 参数  : char *confile
 	/// 描述  : 全局参数初始化
-	virtual bool Init(char *confile);
+	virtual bool Init(char *confile, CIErrlog *log);
 
 
 	/// 函数名: GetSerial
@@ -338,10 +272,7 @@ public:
 	/// 描述  : 取得唯一的流水号
 	virtual long GetThreadShareSerial();
 
-	CBF_LogClient m_log;//日志类
-
-	CBF_CommDataLog         m_pDrebDataLog;//记录从总线过来的请求及应答给总线的报文日志类
-	CBF_CommDataLog         m_pBpcCallDataLog;//记录发往总线的请求及应答给本API的报文日志类
+	CIErrlog *m_log;//日志类
 
 	void LogTime();
 //	void PutTime(const char *filename,int fileline);

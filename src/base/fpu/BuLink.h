@@ -175,7 +175,7 @@ public:
 protected:
 	int  m_nConnNum;//连接次数
 
-	vector <BPCCOMMSTRU> m_listAnsData;
+	std::vector <BPCCOMMSTRU> m_listAnsData;
 
 	S_BF_RSMSG_FPC    m_pHeadData;
 

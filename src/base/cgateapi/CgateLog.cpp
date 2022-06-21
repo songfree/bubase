@@ -54,15 +54,8 @@ void CCgateLog::LogCgate(int level ,PCGATE_COMMSTRU data,int index,const char *k
 		memcpy(tmpchar,key,8);
 		wdata.head.s_Sinfo.s_nDrebSerial = atoi(tmpchar);
 	}
-
-	//用s_nSerial保存连接索引和客户端流水号
-//	wdata.head.s_Sinfo.s_nSerial = data->head.stDest.nSerial;
-	PS_GATE_SERIAL gserial = (PS_GATE_SERIAL)(&(wdata.head.s_Sinfo.s_nSerial));
-	gserial->index = index;
-	gserial->serial = data->head.stDest.nSerial; 
-	wdata.head.s_Sinfo.s_nHook = data->head.stDest.nSerial;
-	
-	wdata.head.s_Sinfo.s_nSvrMainId = index;
+	wdata.head.s_Sinfo.s_nSerial = data->head.stDest.nSerial;
+	wdata.head.s_Sinfo.s_nGateIndex = index;
 	//取后续包的信息
 	wdata.head.n_Ninfo.n_nNextNo = data->head.stNext.n_nNextNo;
 	wdata.head.n_Ninfo.n_nNextOffset = data->head.stNext.n_nNextOffset;

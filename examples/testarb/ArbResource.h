@@ -37,7 +37,7 @@ public:
 	int           m_nArbReportTime;//切换时间 即服务上报给仲裁的时间
 	unsigned  int m_nSvrHostStatus;//服务的主备状态   
 
-	vector<int> g_lSvrTxList;//服务在总线上注册的交易列表
+	std::vector<int> g_lSvrTxList;//服务在总线上注册的交易列表
 };
 
 #endif // !defined(AFX_ARBRESOURCE_H__7EB044C4_3163_4702_85BF_1C99CAA5C716__INCLUDED_)

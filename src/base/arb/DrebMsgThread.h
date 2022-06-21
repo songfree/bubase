@@ -17,7 +17,7 @@
 class CDrebMsgThread : public CDrebMsgProcBase  
 {
 public:
-	void SetSwitchTime(vector<ARB_S_APPINFO *> &appinfo);
+	void SetSwitchTime(std::vector<ARB_S_APPINFO *> &appinfo);
 
 	// 函数名: SwitchHost
 	// 编程  : 王明松 2015-12-30 16:53:37

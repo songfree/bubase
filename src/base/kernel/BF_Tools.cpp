@@ -113,7 +113,7 @@ std::string & CBF_Tools::Ltrim(std::string &str)
 	int pos;
 	int offset=0;
 	pos=str.find(' ', 0);
-	vector<int>deleteList;
+	std::vector<int>deleteList;
 	while (pos != -1 ) 	
 	{
 		if (pos == offset)
@@ -146,7 +146,7 @@ std::string  &CBF_Tools::Rtrim(std::string &str)
 	int pos;
 	int offset=str.length()-1;
 	pos=str.rfind(' ', offset);
-	vector<int>deleteList;
+	std::vector<int>deleteList;
 	while (pos != -1 ) 	
 	{
 		if (pos == offset)

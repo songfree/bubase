@@ -27,7 +27,7 @@ typedef struct _DiskInf
 	int UsedSpace;
 	double DiskUseRadio;
 }S_DiskInf;
-typedef vector<S_DiskInf > V_DiskInfo;
+typedef std::vector<S_DiskInf > V_DiskInfo;
 class CHostInfo  
 {
 public:

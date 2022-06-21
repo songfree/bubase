@@ -575,7 +575,7 @@ CNode *CXML::getFirstChildItem(const std::string item)
 	{
 		return NULL;
 	}
-	string ss = item;
+	std::string ss = item;
 	putTransSign(ss) ;
 	pnode=m_curNode->m_firstChildNode;
 	while (pnode != NULL)
@@ -687,7 +687,7 @@ bool CXML::getAttribute(const std::string name, std::string &value)
 		return false;
 	}
 	pAttribute=m_curNode->m_attribute;
-	string ss = name;
+	std::string ss = name;
 	putTransSign(ss);
 	while (pAttribute != NULL)
 	{
@@ -1612,7 +1612,7 @@ CNode *CXML::LocateFirstByName(char *pString)
 
 	CNode  *pNode;
 	char   *pNodeName;
-	string  name;
+	std::string  name;
 	CNode *pRootNode=LocateRoot();
 	pNode=pRootNode;
 	CNode *pTmpNode=NULL;
@@ -1662,7 +1662,7 @@ char *CXML::GetCol(char *src, int index)
 }
 
 
-CNode *CXML::CompLayerNode(CNode *pFirst,const string item)
+CNode *CXML::CompLayerNode(CNode *pFirst,const std::string item)
 {
 	CNode *pTmpNode=NULL;
 	if (pFirst)

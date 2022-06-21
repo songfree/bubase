@@ -276,7 +276,7 @@ protected:
 	// 参数  : std::string xmlpathname  节点路径可以为/xx/yy/或/xx/yy或xx/yy/或xx/yy的格式
 	// 参数  : vector<std::string> &namelist
 	// 描述  : 取得节点名称列表
-	int GetNodeName(std::string xmlpathname,vector<std::string> *namelist);
+	int GetNodeName(std::string xmlpathname, std::vector<std::string> *namelist);
 
 	CXmlNode m_pRootNode; //根节点，固定为空
 

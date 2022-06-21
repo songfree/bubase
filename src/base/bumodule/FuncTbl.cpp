@@ -24,7 +24,7 @@ bool CFuncTbl::Insert(S_TBL_FUNC funcinfo)
 {
 	int id;
 	//通过主键查找，不存在则增加
-	if (!m_pkey.Find(id,funcinfo.nFuncNo))
+	if (!m_pkey.Find(funcinfo.nFuncNo))
 	{
 		id = m_table.Add(funcinfo);//增加到表
 		m_pkey.Add(id,funcinfo.nFuncNo);//增加主键
@@ -35,38 +35,32 @@ bool CFuncTbl::Insert(S_TBL_FUNC funcinfo)
 
 bool CFuncTbl::Update(S_TBL_FUNC funcinfo)
 {
-	CInt iset;
-	if (!m_pkey.Select(iset,funcinfo.nFuncNo))
+	int id;
+	if (!m_pkey.Select(id,funcinfo.nFuncNo))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
 	m_table.m_table[id] = funcinfo;
 	return true;
 }
 
 bool CFuncTbl::Select(int nFuncNo, S_TBL_FUNC &funcinfo)
 {
-	CInt iset;
-	if (!m_pkey.Select(iset,nFuncNo))
+	int id;
+	if (!m_pkey.Select(id,nFuncNo))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
 	funcinfo = m_table.m_table[id];
 	return true;
 }
 S_TBL_FUNC & CFuncTbl::Find(int nFuncNo)
 {
-	CInt iset;
-	if (!m_pkey.Select(iset,nFuncNo))
+	int id;
+	if (!m_pkey.Select(id,nFuncNo))
 	{
 		return m_pNull;
 	}
-	int id;
-	iset.First(id);
 	return m_table.m_table[id];
 	
 }

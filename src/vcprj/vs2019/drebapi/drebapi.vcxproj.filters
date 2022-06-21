@@ -51,6 +51,9 @@
     <ClInclude Include="..\..\..\..\include\dreb\DrebMsgProcBase.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\dreb\IBF_DrebServer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\base\drebapi\BF_DrebResource.cpp">

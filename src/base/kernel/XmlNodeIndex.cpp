@@ -54,7 +54,7 @@ bool CXmlNodeIndex::Delete(CXmlNode *node)
 	return true;
 }
 
-bool CXmlNodeIndex::SelectNode(const char *nodename, vector<CXmlNode *> &nodelist)
+bool CXmlNodeIndex::SelectNode(const char *nodename, std::vector<CXmlNode *> &nodelist)
 {
 	CInt iset;
 	if (!m_index_nodename.Select(iset,(char *)nodename))

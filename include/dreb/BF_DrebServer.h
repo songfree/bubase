@@ -142,7 +142,7 @@ public:
     // 参数  : int index        dreb连接索引
     // 参数  : CInt *funclist   广播功能列表
     // 描述  : 在连接的DREB上广播订阅消息，订阅总线上的广播消息，当广播生产者没有指定此广播的服务对象时，则按此订阅来发送
-    virtual void Subscribe(int index, vector<int>* funclist);
+    virtual void Subscribe(int index, std::vector<int>* funclist);
 
 
     // 函数名: UnSubscribe
@@ -207,7 +207,7 @@ public:
 	// 参数  : int index        dreb连接索引
 	// 参数  : CInt *funclist   交易列表
 	// 描述  : 在连接的DREB上发注册消息,将交易码注册到总线上,这样可以按交易码路由，但广播不受此限制，可调用多次来进行注册
-	virtual void RegisterDreb(int index,vector<int> *funclist);
+	virtual void RegisterDreb(int index, std::vector<int> *funclist);
 
 
 	// 函数名: UnRegisterDreb
@@ -282,7 +282,7 @@ public:
 	// 参数  : S_MONITOR_HOST &host
 	// 参数  : vector<S_MONITOR_DISK>&disk
 	// 描述  : 获取主机cpu、内存、磁盘信息，前提是资源的标志g_nMonitorHost为1
-	virtual void GetHostInfo(S_MONITOR_HOST &host,vector<S_MONITOR_DISK>&disk);
+	virtual void GetHostInfo(S_MONITOR_HOST &host, std::vector<S_MONITOR_DISK>&disk);
 
 	CBF_DrebServer();
 	virtual ~CBF_DrebServer();

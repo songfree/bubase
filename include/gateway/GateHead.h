@@ -125,31 +125,26 @@ typedef struct
 }__PACKED__ PKI_GATESTEP23,*PPKI_GATESTEP23;             //API和网关认证第二步通讯结构
 
 
-typedef struct 
-{
-	int             rtime;                 //入队列时间
-	unsigned int    sendnum;               //发送次数
-	unsigned int    offset;     //发送位移 ，即当前发送的数据位置，主要是发送一部分数据的情况
-	unsigned short  sendlen;    //发送数据长度
-	unsigned short  totallen;   //总数据长度
-	unsigned int    serial;    //dreb流水
-	unsigned int    nIndex;    //dreb连接索引
-	PCOMMSTRU       data; 
-}__PACKED__ S_GATEDREB_RSMSG,*PS_GATEDREB_RSMSG; //发送数据结构
+//typedef struct 
+//{
+//	int             rtime;                 //入队列时间
+//	unsigned int    sendnum;               //发送次数
+//	unsigned int    offset;     //发送位移 ，即当前发送的数据位置，主要是发送一部分数据的情况
+//	unsigned short  sendlen;    //发送数据长度
+//	unsigned short  totallen;   //总数据长度
+//	unsigned int    serial;    //dreb流水
+//	unsigned int    nIndex;    //dreb连接索引
+//	PCOMMSTRU       data; 
+//}__PACKED__ S_GATEDREB_RSMSG,*PS_GATEDREB_RSMSG; //发送数据结构
+
+
 
 
 typedef struct 
 {
-	unsigned short  index;
-	unsigned short  serial;
-}__PACKED__ S_GATE_SERIAL,*PS_GATE_SERIAL;   //客户端连接索引和客户端请求流水结构
-
-
-typedef struct 
-{
-	char            flag;             //0 取消订阅   1按合约编号订阅   2按市场订阅
-	unsigned int    datanum;          //当flag为1时，则为合约数量   当为2时，为市场代码
-	unsigned int    variety;          //合约编号    若有多个则一直在后面
+	char            flag;             //0 取消行情订阅   1 按行情合约编号订阅   2 按回报信息的key订阅 3 取消回报信息的订阅
+	unsigned int    datanum;          //合约编号或key的数量
+	unsigned int    variety;          //合约编号或回报信息的key    若有多个则一直在后面
 }__PACKED__ S_GATE_SUBSCRIBE,*PS_GATE_SUBSCRIBE;   //向网关订阅的报文结构
 
 	//取消字节对齐

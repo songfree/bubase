@@ -161,12 +161,11 @@
     <ClCompile Include="..\..\..\base\bpc\BpcRun.cpp" />
     <ClCompile Include="..\..\..\base\bpc\Bpc_Timer.cpp" />
     <ClCompile Include="..\..\..\base\bpc\DispathThread.cpp" />
+    <ClCompile Include="..\..\..\base\bpc\DrebMsgThread.cpp" />
     <ClCompile Include="..\..\..\base\bpc\FuncTbl.cpp" />
     <ClCompile Include="..\..\..\base\bpc\GResource.cpp" />
-    <ClCompile Include="..\..\..\base\bpc\HostInfo.cpp" />
     <ClCompile Include="..\..\..\base\bpc\LinkThread.cpp" />
     <ClCompile Include="..\..\..\base\bpc\MsgThread.cpp" />
-    <ClCompile Include="..\..\..\base\bpc\NextPack.cpp" />
     <ClCompile Include="..\..\..\base\bpc\NextTbl.cpp" />
     <ClCompile Include="..\..\..\base\bpc\PoolData.cpp" />
     <ClCompile Include="..\..\..\base\bpc\PuThread.cpp" />
@@ -178,12 +177,11 @@
     <ClInclude Include="..\..\..\base\bpc\BpcRun.h" />
     <ClInclude Include="..\..\..\base\bpc\Bpc_Timer.h" />
     <ClInclude Include="..\..\..\base\bpc\DispathThread.h" />
+    <ClInclude Include="..\..\..\base\bpc\DrebMsgThread.h" />
     <ClInclude Include="..\..\..\base\bpc\FuncTbl.h" />
     <ClInclude Include="..\..\..\base\bpc\GResource.h" />
-    <ClInclude Include="..\..\..\base\bpc\HostInfo.h" />
     <ClInclude Include="..\..\..\base\bpc\LinkThread.h" />
     <ClInclude Include="..\..\..\base\bpc\MsgThread.h" />
-    <ClInclude Include="..\..\..\base\bpc\NextPack.h" />
     <ClInclude Include="..\..\..\base\bpc\NextTbl.h" />
     <ClInclude Include="..\..\..\base\bpc\PuThread.h" />
     <ClInclude Include="..\..\..\base\bpc\SendQueue.h" />

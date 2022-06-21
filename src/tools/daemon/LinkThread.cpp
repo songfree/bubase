@@ -31,6 +31,7 @@ CLinkThread::CLinkThread()
 	m_bIsPingTimer = false;
 	m_nDrebIndex = 0;
 	bzero(m_sHeartBuffer,sizeof(m_sHeartBuffer));
+	bzero(&(m_pDataBuf.data.head),DREBHEADLEN);
 }
 
 CLinkThread::~CLinkThread()

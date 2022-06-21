@@ -54,7 +54,6 @@ public:
 	CIExchLink     *m_pExchLink;//交易所连接调用  注意b_Cinfo.b_cIndex保存处理线的index，这样应答返回就知道放到哪个应答队列
 
 	CIClientLink   *m_pClientLink; //客户端连接调用
-	CBF_BufferPool *m_pMemPool;//内存缓冲池
 	CMemDb         *m_pMemDb;//内存表
 	CIErrlog       *m_pLog;
 	CBF_Xml        *m_pXml;

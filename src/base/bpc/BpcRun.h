@@ -19,8 +19,9 @@
 
 #include "PuThread.h"
 #include "DispathThread.h"
-#include "BF_Queue.h"
 #include "BF_ProcessMgr.h"
+#include "DrebMsgThread.h"
+#include "BF_DrebServer.h"
 
 class CBpcRun  
 {
@@ -51,23 +52,21 @@ public:
 	CGResource m_pRes;
 	CIErrlog    *m_pLog;
 
-	CSocketMgr m_pSockMgr;     //连接管理类
-
-	CBF_BufferPool m_pMemPool; //数据缓冲池
-
+	CBF_DrebServer	m_pDrebApi;//总线api
+	CDrebMsgThread  m_pDrebSpi;//总线回调类
 	CPoolDataMsg   m_pPoolData;//消息处理线程队列
-
-
+	CMsgThread   m_pMsgThread;  //消息处理线程   所以收到的数据统一交给此线程处理
 
 	CFuncTbl     m_pFuncTbl;   //功能列表
 
+	
+	CBF_BufferPool  *m_pMemPool; //数据缓冲池
 	CBF_ProcessMgr  m_pMgrBpu;    //启动bpu
-	
-	CMsgThread   m_pMsgThread;  //消息处理线程   所以收到的数据统一交给此线程处理
 
-	CLinkThread  m_pDrebLinkThread;  //DREB连接线程
+	CLinkThread  m_pBpuLinkThread;  //BPU连接线程
 	CPuThread    m_pBuThread; //pu接收线程
-	
+	CSocketMgr m_pSockMgr;     //连接管理类 针对bpu的连接
+
 	std::vector<CDispathThread *>  m_pDispath;//每个bpu组一个分派线程
 	
 	CBF_Xml      m_pBpuPidXml;

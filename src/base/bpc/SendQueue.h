@@ -21,7 +21,7 @@ typedef struct
 	RDQUEUE  datas;
 	CBF_Mutex   m_mutex;
 	CBF_MutexEvent m_pEvent;
-} RQUEUEDATA;
+} RQUEUEDATA_SAP;
 
 
 
@@ -62,7 +62,7 @@ public:
 	/// 描述  : 放入一条发送信息入队列
 	int PutSendMsg(S_BPC_RSMSG msg);
 
-	RQUEUEDATA       m_qSendData;  //发送队列
+	RQUEUEDATA_SAP       m_qSendData;  //发送队列
 
 protected:
 

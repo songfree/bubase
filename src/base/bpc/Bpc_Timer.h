@@ -9,12 +9,11 @@
 #pragma once
 #endif // _MSC_VER > 1000
 #include "BF_Timer.h"
-#include "HostInfo.h"
 #include "GResource.h"
 #include "DrebPubDefine.h"
 #include "NextTbl.h"
 
-typedef vector<S_MONITOR_DISK > V_MonitorDiskInfo;
+
 typedef struct 
 {
 	UINT64_  g_nRcvBytes;//接收字节数
@@ -34,13 +33,6 @@ public:
 	void ReportRcv(unsigned int rcvbyte,unsigned int packnum=1);
 	bool IsStoped();
 
-	// 函数名: GetHostInfo
-	// 编程  : 王明松 2013-3-8 10:18:55
-	// 返回  : void 
-	// 参数  : S_MONITOR_HOST &hostinfo
-	// 参数  : vector<S_MONITOR_DISK>  &diskinfo
-	// 描述  : 应用取主机信息
-	void GetHostInfo(S_MONITOR_HOST &hostinfo,V_MonitorDiskInfo  &diskinfo);
 
 	// 函数名: Init
 	// 编程  : 王明松 2013-3-8 10:19:07
@@ -64,11 +56,6 @@ public:
 	// 描述  : 启动定时器
 	bool StartTimer();
 
-	// 函数名: GetHostInfo
-	// 编程  : 王明松 2013-3-8 10:19:24
-	// 返回  : void 
-	// 描述  : 定时器取主机信息
-	void GetHostInfo();
 
 	// 函数名: ComputeStat
 	// 编程  : 王明松 2013-3-8 10:19:28
@@ -94,17 +81,8 @@ public:
 
 protected:
 	CBF_Timer m_pTimer;//定时器
-	CHostInfo m_pHostInfo;
 	CGResource *m_pRes;
-	
-
-	S_MONITOR_HOST   m_sHostInfo;
-	V_DiskInfo       m_vdinfo;
-	
 	CBF_Mutex        m_mutex;
-
-	
-
 
 };
 

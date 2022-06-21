@@ -65,12 +65,27 @@ CSampleNew::CSampleNew()
 	InitFuncInfo(9991008,(FuncPointer )&CSampleNew::Test1008,"测试",1.0,"作者",1,false,true,false);
 	InitFuncInfo(9991009,(FuncPointer )&CSampleNew::Test1009,"测试",1.0,"作者",1,false,true,false);
 	InitFuncInfo(9991010,(FuncPointer )&CSampleNew::Test1010,"测试",1.0,"作者",1,false,true,false);
-	InitFuncInfo(99001,(FuncPointer )&CSampleNew::Test99001,"测试",1.0,"作者",1,false,true,false);
+	InitFuncInfo(1001,(FuncPointer )&CSampleNew::Test99001,"测试",1.0,"作者",1,false,true,false);
 }
 
 int CSampleNew::Test99001(PBPCCOMMSTRU data)
 {
-	m_pLog->LogBin(LOG_DEBUG,__FILE__,__LINE__,"监控数据内容",data->sBuffer,data->sDBHead.nLen);
+    m_pLogDat.LogBpc(LOG_DEBUG, data);
+    m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "请求内容大小 %d", data->sDBHead.nLen);
+    data->sDBHead.cRaflag = 1;
+    data->sDBHead.cNextFlag = 0;
+    data->sDBHead.cZip = 0;
+
+    char sdata[65534];
+    memset(sdata, 0, sizeof(sdata));
+    memcpy(sdata, data->sBuffer, data->sDBHead.nLen);
+    strcpy(data->sBuffer, "测试1001");
+    memcpy(data->sBuffer + 8, sdata, data->sDBHead.nLen);
+    data->sDBHead.nLen += 8;
+
+    data->sBpcHead.nBpcLen = DREBHEADLEN + data->sDBHead.nLen;
+    m_pLog->LogBin(LOG_DEBUG, __FILE__, __LINE__, "返回结果", data->sBuffer, data->sDBHead.nLen);
+    m_pPcLink->AnsData(data);
 	return 0;
 }
 

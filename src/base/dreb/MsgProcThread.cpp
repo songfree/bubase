@@ -208,7 +208,8 @@ void CMsgProcThread::OnMsgClose(S_DREB_RSMSG *msg)
 			}
 			//取消本地服务功能表
 			m_pMemDb->UnRegisterService(m_pRes->g_nDrebId,m_pRes->g_nDrebPrivateId,m_pSocketMgr->at(msg->msghead.index)->m_s_srv.nSvrMainId,m_pSocketMgr->at(msg->msghead.index)->m_s_srv.cSvrPrivateId);
-			
+			//取消广播订阅
+			m_pMemDb->m_subscribe.UnSubscribe(msg->msghead.index);
 			m_pSocketMgr->at(msg->msghead.index)->OnClose("断开连接",__FILE__,__LINE__);
 			if (m_pRes->g_nRegOtherDreb == 1) //向其它总线注册
 			{
@@ -254,8 +255,8 @@ void CMsgProcThread::OnMsgClose(S_DREB_RSMSG *msg)
 void CMsgProcThread::OnMsgRoute(S_DREB_RSMSG *msg)
 {
 	S_DREB_ROUTE *data=NULL;
-	vector<S_DREB_ROUTE *>rtlist;
-	vector<S_DREB_ROUTE *> dp;
+	std::vector<S_DREB_ROUTE *>rtlist;
+	std::vector<S_DREB_ROUTE *> dp;
 
 	std::string msginfo;
 	char tmpchar[500];
@@ -390,8 +391,8 @@ void CMsgProcThread::OnMsgRoute(S_DREB_RSMSG *msg)
 
 void CMsgProcThread::OnMsgServiceRoute(S_DREB_RSMSG *msg)
 {
-	vector<S_SERVICE_ROUTE *> rtlist;
-	vector<S_DREB_ROUTE *> dp;
+	std::vector<S_SERVICE_ROUTE *> rtlist;
+	std::vector<S_DREB_ROUTE *> dp;
 	//取所有的DREB信息，包括本端
 	m_pMemDb->GetAllDreb(dp);
 	if (dp.size()<1)
@@ -737,7 +738,7 @@ void CMsgProcThread::OnCmdConnect(S_DREB_RSMSG *msg)
 }
 void CMsgProcThread::OnCmdRoute(S_DREB_RSMSG *msg)
 {
-	vector<S_DREB_ROUTE>rtlist;
+	std::vector<S_DREB_ROUTE>rtlist;
 	S_DREB_ROUTE data;
 	bzero(&data,sizeof(S_DREB_ROUTE));
 	int rtnum = msg->message.head.nLen/sizeof(S_ROUTE_MSG);
@@ -1037,7 +1038,7 @@ bool CMsgProcThread::AnsConnect(S_DREB_RSMSG *msg, unsigned short errcode,const 
 }
 
 
-void CMsgProcThread::SendService(int index,vector<S_SERVICE_ROUTE *> rtlist)
+void CMsgProcThread::SendService(int index, std::vector<S_SERVICE_ROUTE *> rtlist)
 {
 	S_DREB_RSMSG *rsmsg=NULL;
 	if (rtlist.size()<1)
@@ -1266,7 +1267,7 @@ void CMsgProcThread::OnCmdService(S_DREB_RSMSG *msg)
 
 	std::string routemsg;
 	char tmpchar[300];
-	vector<S_SERVICE_ROUTE *>servicelist;
+	std::vector<S_SERVICE_ROUTE *>servicelist;
 	unsigned short nodeid;
 	int  privateid;
 	if (m_pSocketMgr->at(msg->msghead.index)->m_nType == SOCK_TODREB)
@@ -1965,7 +1966,7 @@ void CMsgProcThread::Monitor_info(S_DREB_RSMSG *msg)
 	xmlpack.SetNodeValueByPath("Monitor/私有节点",false,m_pRes->g_nDrebPrivateId);
 	xmlpack.SetNodeValueByPath("Monitor/启动时间",false,m_pRes->g_pDrebStatInfo.m_sStartDate,false);
 	//取所有注册的服务，在本dreb上注册的
-	vector<S_SVR_ROUTE>svrlist;
+	std::vector<S_SVR_ROUTE>svrlist;
 	m_pMemDb->GetAllSvr(svrlist);
 	for (unsigned int i=0 ; i<svrlist.size() ; i++)
 	{
@@ -2081,7 +2082,7 @@ void CMsgProcThread::Monitor_CurTxList(S_DREB_RSMSG *msg)
 	
 
 	//取所有交易
-	vector<S_SERVICE_ROUTE *> slist;
+	std::vector<S_SERVICE_ROUTE *> slist;
 	m_pMemDb->GetAllServiceOrder(slist);
 	CBF_Xml monixml;
 	monixml.SetNodeValueByPath("Monitor/公共节点",false,m_pRes->g_nDrebId);
@@ -2156,7 +2157,7 @@ void CMsgProcThread::Monitor_RouteDreb(S_DREB_RSMSG *msg)
 	xmlpack.SetNodeValueByPath("Monitor/启动时间",false,m_pRes->g_pDrebStatInfo.m_sStartDate,false);
 	xmlpack.SetNodeValueByPath("Monitor/路由表",false,"",false);
 	unsigned int i;
-	vector<S_DREB_ROUTE *>dreblist;
+	std::vector<S_DREB_ROUTE *>dreblist;
 	
 	//取所有直连的节点信息
 	m_pMemDb->GetAllDreb(dreblist);
@@ -2222,7 +2223,7 @@ void CMsgProcThread::Monitor_RouteService(S_DREB_RSMSG *msg)
 	std::string routemsg;
 	char tmpchar[DREBBUFSIZE];
 	//取所有交易
-	vector<S_SERVICE_ROUTE *> slist;
+	std::vector<S_SERVICE_ROUTE *> slist;
 	m_pMemDb->GetAllServiceOrder(slist);
 
 	sprintf(tmpchar,"\n  DREB SERVICE LIST,  TOTAL SERVICE:%d \n",slist.size());
@@ -2601,7 +2602,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 	if (msg->message.head.d_Dinfo.d_nNodeId<1)
 	{
 		//发送给所有的通讯平台
-		vector<S_DREB_ROUTE *>sendtlist;
+		std::vector<S_DREB_ROUTE *>sendtlist;
 		if (!m_pMemDb->GetAllRouteBc(sendtlist))
 		{
 			m_log->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"TransBroadCast 取所有要发广播的DREB节点信息出错");
@@ -2685,7 +2686,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 				else
 				{
                     //发送给所有的服务
-                    vector<S_SVR_ROUTE>svrlist;
+					std::vector<S_SVR_ROUTE>svrlist;
                     if (!m_pMemDb->GetAllSvr(svrlist))
                     {
                         m_pMemPool->PoolFree(msg);
@@ -2895,7 +2896,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
                 else
                 {
 					//发送给所有的服务
-					vector<S_SVR_ROUTE>svrlist;
+					std::vector<S_SVR_ROUTE>svrlist;
 					if (!m_pMemDb->GetAllSvr(svrlist))
 					{
 						m_pMemPool->PoolFree(msg);
@@ -3269,7 +3270,7 @@ void CMsgProcThread::OnMsgMonitor(S_DREB_RSMSG *msg)
 	}
 	//dreb服务列表
 	pXml.AddNodeByPath("Monitor/DREB信息",false,"SVRLIST",false,"");
-	vector<S_SVR_ROUTE>svrlist;
+	std::vector<S_SVR_ROUTE>svrlist;
 	m_pMemDb->GetAllSvr(svrlist);
 	for (i=0 ; i<svrlist.size() ; i++)
 	{
@@ -3327,7 +3328,7 @@ void CMsgProcThread::OnCmdUnReqTx(S_DREB_RSMSG *msg)
 	if (msg->message.head.d_Dinfo.d_nNodeId<1)
 	{
 		//发送给所有的通讯平台
-		vector<S_DREB_ROUTE *>sendtlist;
+		std::vector<S_DREB_ROUTE *>sendtlist;
 		if (!m_pMemDb->GetAllRouteBc(sendtlist))
 		{
 			m_log->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"OnCmdUnReqTx 取所有要发广播的DREB节点信息出错");
@@ -3859,7 +3860,7 @@ void CMsgProcThread::PrintRoute()
 	unsigned int i;
 	std::string routemsg;
 	char tmpchar[400];
-	vector<S_DREB_ROUTE *> dp;
+	std::vector<S_DREB_ROUTE *> dp;
 	sprintf(tmpchar,"\n  DREB LOCAL INFO\n");
 	routemsg = routemsg+tmpchar;
 	sprintf(tmpchar,"    nIndex=%d nStep=%d nNodeId=%d cNodePrivateId=%d nbandwidth=%d\n",\
@@ -3874,7 +3875,7 @@ void CMsgProcThread::PrintRoute()
 			dp[i]->nIndex,dp[i]->nStep,dp[i]->nNodeId,dp[i]->cNodePrivateId,dp[i]->bIsClose,dp[i]->nbandwidth);
 		routemsg = routemsg+tmpchar;
 	}
-	vector<S_SVR_ROUTE>svrlist;
+	std::vector<S_SVR_ROUTE>svrlist;
 	m_pMemDb->GetAllSvr(svrlist);
 	sprintf(tmpchar,"  DREB LOCAL SERVICE LIST\n");
 	routemsg = routemsg+tmpchar;
@@ -3885,7 +3886,7 @@ void CMsgProcThread::PrintRoute()
 		routemsg = routemsg+tmpchar;
 	}
 	
-	vector<S_DREB_ROUTE *> rt;
+	std::vector<S_DREB_ROUTE *> rt;
 	m_pMemDb->GetRouteList(rt);
 	sprintf(tmpchar,"  DREB ROUTE LIST\n");
 	routemsg = routemsg+tmpchar;
@@ -3909,7 +3910,7 @@ void CMsgProcThread::PrintServiceRoute()
 	std::string routemsg;
 	char tmpchar[DREBBUFSIZE];
 
-	vector<S_SERVICE_ROUTE *>servicelist;
+	std::vector<S_SERVICE_ROUTE *>servicelist;
 	m_pMemDb->GetAllServiceOrder(servicelist);
 	sprintf(tmpchar,"\n  DREB SERVICE LIST,  TOTAL SERVICE:%d \n",servicelist.size());
 	routemsg = routemsg+tmpchar;

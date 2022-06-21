@@ -17,10 +17,10 @@
 #include "BF_BufferPool.h"
 #include "PoolData.h"
 #include "FuncTbl.h"
-#include "HostInfo.h"
 #include "BpcEndian.h"
 #include "DrebEndian.h"
 #include "BF_Timer.h"
+#include "BF_DrebServer.h"
 
 //本线程接收bpu连接的数据，进行处理，若是外调或内调则交由msgthread线程来处理分发
 
@@ -61,21 +61,6 @@ public:
 	void DispatchTrans(S_BPC_RSMSG &rcvdata);
 
 	void LogDrebHead(int loglevel, DREB_HEAD head, const char *msg, const char *filename, int fileline);
-
-	// 函数名: GetBpcMsgType
-	// 编程  : 王明松 2013-4-9 10:29:32
-	// 返回  : std::string 
-	// 参数  : int msgtype
-	// 描述  : 取BPC消息类型说明
-	std::string GetBpcMsgType(int msgtype);
-
-	// 函数名: GetDrebCmdType
-	// 编程  : 王明松 2013-4-9 10:29:35
-	// 返回  : std::string 
-	// 参数  : int cmdtype
-	// 描述  : 取dreb命令类型说明
-	std::string GetDrebCmdType(int cmdtype);
-
 
 	// 函数名: DispatchExtCall
 	// 编程  : 王明松 2010-8-13 14:52:22
@@ -216,7 +201,7 @@ public:
 	// 参数  : CSocketMgr *sockmgr
 	// 参数  : CFuncTbl *tbl
 	// 描述  : 设置全局参数
-	bool SetGlobalVar(CGResource *res,CPoolDataMsg *pooldata,CBF_BufferPool *mempool,CSocketMgr *sockmgr,CFuncTbl *tbl);
+	bool SetGlobalVar(CGResource *res,CPoolDataMsg *pooldata,CBF_BufferPool *mempool,CSocketMgr *sockmgr,CFuncTbl *tbl, CBF_DrebServer* api);
 
 	int m_nEnd; //结束的连接序号，不包括此序号
 	int m_nBegin;//开始的连接序号
@@ -252,8 +237,7 @@ protected:
 	bool      m_bIsPingTimer;
 
 	CIErrlog      *m_pLog;
-//	CHostInfo     m_pHostInfo;
-	
+	CBF_DrebServer *m_pDrebApi;
 	CGResource  *m_pRes;
 	CSocketMgr  *m_pSockMgr;
 	CBF_BufferPool *m_pMemPool;//内存分配池;

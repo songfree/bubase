@@ -38,7 +38,7 @@ void CAIO_Work::SetGlobalVar(CGateResource *res,CPoolData *pool,CBF_BufferPool *
 	m_pDataPool = pool;
 	m_pRes = res;
 	m_pMemPool = mempool;
-	m_pLog = &(m_pRes->g_pLog);
+	m_pLog = m_pRes->g_pLog;
 	m_pSendData = senddata;
 
 	m_pGateLog = &(m_pRes->g_pGateLog);
@@ -66,12 +66,12 @@ void CAIO_Work::OnSendBack(PSOCKET_SEND_DATA data,bool issuccess)
 {
 	if (issuccess)
 	{
-		m_pRes->g_pLog.LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送完成 %d",data->s_nIndex);
+		m_pRes->g_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送完成 %d",data->s_nIndex);
 //		m_pRes->g_pLog.LogBin(LOG_DEBUG,__FILE__,__LINE__,"发送完成",data->s_sSendBuffer,data->s_nTotalLen);
 	}
 	else
 	{
-		m_pRes->g_pLog.LogMp(LOG_ERROR,__FILE__,__LINE__,"发送失败 %d",data->s_nIndex);
+		m_pRes->g_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送失败 %d",data->s_nIndex);
 //		m_pRes->g_pLog.LogBin(LOG_DEBUG,__FILE__,__LINE__,"发送完成",data->s_sSendBuffer,data->s_nTotalLen);
 	}
 }
@@ -79,12 +79,12 @@ void CAIO_Work::OnSendBack(SOCKSENDQUEUE::iterator  data,bool issuccess)
 {
 	if (issuccess)
 	{
-		m_pRes->g_pLog.LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送完成 %d",data->s_nIndex);
+		m_pRes->g_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送完成 %d",data->s_nIndex);
 //		m_pRes->g_pLog.LogBin(LOG_DEBUG,__FILE__,__LINE__,"发送完成",data->s_sSendBuffer,data->s_nTotalLen);
 	}
 	else
 	{
-		m_pRes->g_pLog.LogMp(LOG_ERROR,__FILE__,__LINE__,"发送失败 %d",data->s_nIndex);
+		m_pRes->g_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送失败 %d",data->s_nIndex);
 //		m_pRes->g_pLog.LogBin(LOG_DEBUG,__FILE__,__LINE__,"发送完成",data->s_sSendBuffer,data->s_nTotalLen);
 	}
 }
@@ -966,8 +966,8 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 	}
 	
 
-	S_GATEDREB_RSMSG drebdata;
-	drebdata.data = NULL;
+	S_BPC_RSMSG drebdata;
+	drebdata.sMsgBuf = NULL;
 
 	PKI_GATESTEP23 *pkidata=NULL;
 	char keyserial[40];
@@ -1139,14 +1139,10 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 		case MSG_GATESMS:
 		case MSG_GATELOGIN:
 		case MSG_GATEREQ:
-			drebdata.nIndex = info->s_nIndex;
-			drebdata.rtime = time(NULL);
-			drebdata.serial = data.head.stDest.nSerial;
-			drebdata.offset = 0;
-			drebdata.sendlen =0;
-			drebdata.sendnum = 0;
-			drebdata.data = (PCOMMSTRU)m_pMemPool->PoolMalloc();
-			if (drebdata.data == NULL)
+			drebdata.index = info->s_nIndex;
+			drebdata.nRtime = time(NULL);
+			drebdata.sMsgBuf = (PBPCCOMMSTRU)m_pMemPool->PoolMalloc();
+			if (drebdata.sMsgBuf == NULL)
 			{
 				data.head.nRetCode = 107;
 				m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"分配缓冲区失败");
@@ -1165,11 +1161,10 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				
 				return ;
 			}
-			bzero(drebdata.data,sizeof(COMMSTRU));
-
+			bzero(drebdata.sMsgBuf,sizeof(PBPCCOMMSTRU));
 			if (data.head.nLen>0 && data.head.nLen<DREBDATASIZE)
 			{
-				memcpy(drebdata.data->buffer,data.buffer,data.head.nLen);
+				memcpy(drebdata.sMsgBuf->sBuffer,data.buffer,data.head.nLen);
 			}
 			else if  (data.head.nLen >= DREBDATASIZE)
 			{
@@ -1189,45 +1184,33 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 					//通过发送线程加密发送
 					SendData(&data,info->s_nIndex,false,0);
 				}
-				m_pMemPool->PoolFree(drebdata.data);
-				drebdata.data = NULL;
+				m_pMemPool->PoolFree(drebdata.sMsgBuf);
+				drebdata.sMsgBuf = NULL;
 				return ;
 			}
-			drebdata.totallen = DREBHEADLEN + data.head.nLen;
+			drebdata.nTotalLen = BPCHEADLEN+DREBHEADLEN + data.head.nLen;
 			//报文头
-			drebdata.data->head.nLen = data.head.nLen;
-			drebdata.data->head.cCmd = data.head.stComm.cCmd;
-			drebdata.data->head.cZip = data.head.stComm.cZip;
-			drebdata.data->head.cDrebAffirm = 0;
-			drebdata.data->head.cNextFlag = data.head.stComm.cNextFlag; //是否是取后续包
-			drebdata.data->head.cRaflag = data.head.stComm.cRaflag;//请求应答标志
+			drebdata.sMsgBuf->sDBHead.nLen = data.head.nLen;
+			drebdata.sMsgBuf->sDBHead.cCmd = data.head.stComm.cCmd;
+			drebdata.sMsgBuf->sDBHead.cZip = data.head.stComm.cZip;
+			drebdata.sMsgBuf->sDBHead.cDrebAffirm = 0;
+			drebdata.sMsgBuf->sDBHead.cNextFlag = data.head.stComm.cNextFlag; //是否是取后续包
+			drebdata.sMsgBuf->sDBHead.cRaflag = data.head.stComm.cRaflag;//请求应答标志
 			
-			drebdata.data->head.d_Dinfo.d_cNodePrivateId = data.head.stDest.cNodePrivateId;
-			drebdata.data->head.d_Dinfo.d_cSvrPrivateId = data.head.stDest.cSvrPrivateId;
-			drebdata.data->head.d_Dinfo.d_nNodeId = data.head.stDest.nNodeId;
-			drebdata.data->head.d_Dinfo.d_nServiceNo = data.head.stDest.nServiceNo;
-			//20141023修改，当为收到9999999和9999998行情广播时，复制行情的三个字段
-			if (CMD_DPBC == drebdata.data->head.cCmd && (999999 == drebdata.data->head.d_Dinfo.d_nServiceNo || 999998 == drebdata.data->head.d_Dinfo.d_nServiceNo))
-			{
-				drebdata.data->head.d_Dinfo.d_nSvrMainId = 0;
-				drebdata.data->head.s_Sinfo.s_nHook =  data.head.stDest.nSvrMainId;//行情的合约编号
-				drebdata.data->head.s_Sinfo.s_nSerial = data.head.stNext.n_nNextOffset;//行情日期
-				drebdata.data->head.n_Ninfo.n_nNextNo = data.head.stNext.n_nNextNo;//行情序号
-				drebdata.data->head.n_Ninfo.n_nNextOffset = 0;
-			}
-			else
-			{
-				//取后续包的信息
-				drebdata.data->head.n_Ninfo.n_nNextNo = data.head.stNext.n_nNextNo;
-				drebdata.data->head.n_Ninfo.n_nNextOffset = data.head.stNext.n_nNextOffset;
-				//服务号
-				drebdata.data->head.d_Dinfo.d_nSvrMainId = data.head.stDest.nSvrMainId;
-			}
-			//20170616 用总线新增的字段 保存index和serial
+            //目的信息、服务号交易码等
+			drebdata.sMsgBuf->sDBHead.d_Dinfo.d_nNodeId = data.head.stDest.nNodeId;
+			drebdata.sMsgBuf->sDBHead.d_Dinfo.d_cNodePrivateId = data.head.stDest.cNodePrivateId;
+            drebdata.sMsgBuf->sDBHead.d_Dinfo.d_nSvrMainId = data.head.stDest.nSvrMainId;
+			drebdata.sMsgBuf->sDBHead.d_Dinfo.d_cSvrPrivateId = data.head.stDest.cSvrPrivateId;
+			drebdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo = data.head.stDest.nServiceNo;
 			
-			drebdata.data->head.s_Sinfo.s_nGateIndex = info->s_nIndex;
-			drebdata.data->head.s_Sinfo.s_nSerial = data.head.stDest.nSerial; 
-			drebdata.data->head.s_Sinfo.s_nHook = info->s_nTimestamp;//时间戳
+			//取后续包的信息
+			drebdata.sMsgBuf->sDBHead.n_Ninfo.n_nNextNo = data.head.stNext.n_nNextNo;
+			drebdata.sMsgBuf->sDBHead.n_Ninfo.n_nNextOffset = data.head.stNext.n_nNextOffset;
+			//连接信息、客户端流水、连接时间戳
+			drebdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex = info->s_nIndex;	//连接index
+			drebdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial = data.head.stDest.nSerial;	//客户端流水
+			drebdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook = info->s_nTimestamp;//时间戳
 
 			
 			//放入队列，由消息线程来处理
@@ -1237,7 +1220,7 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				info->s_cCheckFlag = CHECKFLAG_NORMAL;
 			}
 			break;
-		case MSG_GATESUBSCRIBE://行情订阅
+		case MSG_GATESUBSCRIBE://行情或回报订阅
 			if (NULL == info->ptr )
 			{
 				data.head.nRetCode = 110;
@@ -1260,12 +1243,10 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 					//通过发送线程加密发送
 					SendData(&data,info->s_nIndex,false,0);
 				}
-				m_pMemPool->PoolFree(drebdata.data);
-				drebdata.data = NULL;
 				return ;
 			}
 			psub = (CSubScribeInfo *)info->ptr;
-			if (!psub->QuoSubscribe(data.buffer,data.head.nLen,errmsg))
+			if (!psub->Subscribe(data.buffer,data.head.nLen,errmsg))
 			{
 				data.head.nRetCode = 111;
 				m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"行情订阅失败 %s",errmsg);

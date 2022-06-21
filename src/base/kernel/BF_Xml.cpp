@@ -142,8 +142,8 @@ void CBF_Xml::DeleteAllNode()
 
 CXmlNode * CBF_Xml::GetNodeByPath(const char *xmlpathname,bool isTransSign)
 {
-	vector<std::string> namelist;
-	vector<CXmlNode *> nodelist;
+	std::vector<std::string> namelist;
+	std::vector<CXmlNode *> nodelist;
 	int ret;
 	ret = GetNodeName(xmlpathname,&namelist);
 	if (ret<1)
@@ -164,7 +164,7 @@ CXmlNode * CBF_Xml::GetNodeByPath(const char *xmlpathname,bool isTransSign)
 	return getNode;
 }
 
-int CBF_Xml::GetNodeName(std::string xmlpathname, vector<std::string> *namelist)
+int CBF_Xml::GetNodeName(std::string xmlpathname, std::vector<std::string> *namelist)
 {
 	int bOffset;
 	int eOffset;
@@ -185,7 +185,7 @@ int CBF_Xml::GetNodeName(std::string xmlpathname, vector<std::string> *namelist)
 			}
 			else
 			{
-				string nodename=xmlpathname.substr(bOffset,eOffset-bOffset);
+				std::string nodename=xmlpathname.substr(bOffset,eOffset-bOffset);
 				namelist->push_back(nodename);
 				pbuf++;
 				eOffset++;
@@ -195,7 +195,7 @@ int CBF_Xml::GetNodeName(std::string xmlpathname, vector<std::string> *namelist)
 		}
 		if (eOffset >= buflen-1 && buflen-bOffset>0)
 		{
-			string nodename=xmlpathname.substr(bOffset,buflen-bOffset);
+			std::string nodename=xmlpathname.substr(bOffset,buflen-bOffset);
 			namelist->push_back(nodename);
 			pbuf = NULL;
 			return namelist->size();
@@ -265,8 +265,8 @@ CXmlNode * CBF_Xml::GetNodeValueByPath(const char *xmlpathname, bool isTransSign
 }
 CXmlNode * CBF_Xml::SetNodeValueByPath(const char *xmlpathname, bool isTransSign,const char *value, bool isTransValue)
 {
-	vector<std::string> namelist;
-	vector<CXmlNode *> nodelist;
+	std::vector<std::string> namelist;
+	std::vector<CXmlNode *> nodelist;
 	int ret;
 	ret = GetNodeName(xmlpathname,&namelist);
 	if (ret<1)
@@ -331,8 +331,8 @@ bool CBF_Xml::ToBuffer(char *buffer)
 
 CXmlAttribute * CBF_Xml::SetNodeAttribute(const char *xmlpathname, bool isTransSign, const char *attrname, bool isTransAttrName, const char *value, bool isTransValue)
 {
-	vector<std::string> namelist;
-	vector<CXmlNode *> nodelist;
+	std::vector<std::string> namelist;
+	std::vector<CXmlNode *> nodelist;
 	int ret;
 	ret = GetNodeName(xmlpathname,&namelist);
 	if (ret<1)

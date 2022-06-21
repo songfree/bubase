@@ -405,7 +405,7 @@ public:
 	// 参数  : string dbuserpwd
 	// 参数  : int dbtype 0-oracl 1-sybase 2-sqlserver 3-infomi 4-db2 5-odbc 6-mysql
 	// 描述  : 连接数据库
-	bool Connect(string dbname,string dbuser,string dbuserpwd,int dbtype);
+	bool Connect(std::string dbname, std::string dbuser, std::string dbuserpwd,int dbtype);
 
 	void SetMysqlCharset(char *charset);
 

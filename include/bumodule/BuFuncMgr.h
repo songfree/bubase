@@ -87,8 +87,8 @@ protected:
 	
 	char m_errMsg[256];
 	
-	vector <CBuModule *> m_alldllclass;
-	vector <DLLHANDLE> m_allhandle;
+	std::vector <CBuModule *> m_alldllclass;
+	std::vector <DLLHANDLE> m_allhandle;
 
 };
 #undef BUMODULE_EXPORT

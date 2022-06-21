@@ -106,7 +106,7 @@ public:
 	unsigned int  g_nTimeOutSend; //发送数据超时时间 秒 当数据在队列里超过此时间后不发送
 	unsigned int  g_nDataSendNum; //数据发送次数
 	
-	vector<GATE_IPPORT>  g_lGateList; //网关IP地址端口列表
+	std::vector<GATE_IPPORT>  g_lGateList; //网关IP地址端口列表
 	
 private:
 	char          m_sErrMsg[256];

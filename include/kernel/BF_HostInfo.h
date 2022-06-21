@@ -28,7 +28,7 @@ typedef struct _DiskInf
 	double DiskUseRadio;
 }S_DiskInf;
 
-typedef vector<S_DiskInf > V_DiskInfo;
+typedef std::vector<S_DiskInf > V_DiskInfo;
 
 #ifdef KERNEL_EXPORTS
 #define KERNEL_EXPORT __declspec(dllexport)

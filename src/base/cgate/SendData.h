@@ -16,6 +16,8 @@
 
 typedef std::deque<S_CGATE_SMSG> LIST_SENDDATA;//连接池连接列表
 
+//总线过来的，要发给客户的队列
+
 class CSendData  
 {
 public:

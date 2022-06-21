@@ -332,7 +332,7 @@ protected:
 	// 参数  : int index dreb连接序号
 	// 参数  : vector<S_SERVICE_ROUTE> rtlist
 	// 描述  : 发送服务路由
-	void SendService(int index,vector<S_SERVICE_ROUTE *> rtlist);
+	void SendService(int index, std::vector<S_SERVICE_ROUTE *> rtlist);
 
 	// 函数名: OnMsgService
 	// 编程  : 王明松 2010-7-26 15:40:13

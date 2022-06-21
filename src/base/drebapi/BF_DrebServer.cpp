@@ -7,7 +7,7 @@
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
-char g_DrebApiVERSION[20]="1.0.2.20100724";   //api的版本
+char g_DrebApiVERSION[20]="2.0.2.20220616";   //api的版本
 
 #define  DESENCRYPTKEY    "rd402wms"
 #define  DESENCRYPTKEY3   "wms13711songfree"
@@ -677,7 +677,14 @@ void CBF_DrebServer::ProcessDreb(S_BPC_RSMSG &rcvdata)
 			rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN+rcvdata.sMsgBuf->sDBHead.nLen;
 			rcvdata.sMsgBuf->sBpcHead.cMsgType = MSG_GETBPCNEXT;
 			rcvdata.nRtime = time(NULL);
-			m_qRcvQueue.PushData(rcvdata);
+            if (m_spi != NULL) //有设定回调
+            {
+                m_spi->ProcessDrebData(rcvdata);
+            }
+            else //放入队列
+            {
+                m_qRcvQueue.PushData(rcvdata);
+            }
 			return;
 		}
 		if (rcvdata.sMsgBuf->sDBHead.cNextFlag == 3) //bpu取后续包
@@ -890,7 +897,7 @@ void CBF_DrebServer::OnMonitor()
 	if (m_pRes->g_nMonitorHost == 1)
 	{
 		S_MONITOR_HOST hostinfo;
-		vector<S_MONITOR_DISK> diskinfo;
+		std::vector<S_MONITOR_DISK> diskinfo;
 		//取得主机信息
 		GetHostInfo(hostinfo,diskinfo);
 		pXml.SetNodeValueByPath("Monitor/主机资源/CPU",false,(int)hostinfo.nCpuRate);
@@ -970,7 +977,14 @@ void CBF_DrebServer::OnMonitor()
 	mdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo = m_pRes->g_nMonitorTxCode;
 	mdata.sMsgBuf->sBpcHead.cMsgType = MSG_BPCMONITOR;
 	
-	m_qRcvQueue.PushData(mdata);
+    if (m_spi != NULL) //有设定回调
+    {
+        m_spi->ProcessDrebData(mdata);
+    }
+    else //放入队列
+    {
+        m_qRcvQueue.PushData(mdata);
+    }
 	return;
 }
 int CBF_DrebServer::OnTimer(unsigned int event, void *p)
@@ -1136,7 +1150,7 @@ void CBF_DrebServer::Stop()
 	
 }
 
-void CBF_DrebServer::GetHostInfo(S_MONITOR_HOST &host,vector<S_MONITOR_DISK>&disk)
+void CBF_DrebServer::GetHostInfo(S_MONITOR_HOST &host, std::vector<S_MONITOR_DISK>&disk)
 {
 	CBF_PMutex ppmutex(&m_pHostMutex);
 	host.nCpuRate = m_sHostInfo.nCpuRate;
@@ -1210,7 +1224,7 @@ bool CBF_DrebServer::GetMsgData(S_BPC_RSMSG &rdata,unsigned int waitetms,bool ge
 {
 	return m_qRcvQueue.GetData(rdata,waitetms,get_front);
 }
-void CBF_DrebServer::RegisterDreb(int index,vector<int> *funclist)
+void CBF_DrebServer::RegisterDreb(int index, std::vector<int> *funclist)
 {
 	S_BPC_RSMSG rcvdata;
 	S_SERVICEREG_MSG *data=NULL;
@@ -1555,7 +1569,7 @@ CBF_BufferPool *CBF_DrebServer::GetBufferPool()
 	return &m_pMemPool;
 }
 
-void CBF_DrebServer::Subscribe(int index, vector<int>* funclist)
+void CBF_DrebServer::Subscribe(int index, std::vector<int>* funclist)
 {
     S_BPC_RSMSG rcvdata;
     S_SERVICEREG_MSG* data = NULL;

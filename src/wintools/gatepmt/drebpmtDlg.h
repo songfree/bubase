@@ -14,7 +14,7 @@
 #include "BF_SimpleLog.h"
 #include "BF_Date_Time.h"
 
-#define  MAXTHREADNUM  10000
+#define  MAXTHREADNUM  500
 
 #define  ONTIMER1 24
 #define  ONTIMER2 25

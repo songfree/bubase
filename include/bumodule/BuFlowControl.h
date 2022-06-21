@@ -76,7 +76,7 @@ public:
 	// 返回  : virtual int 
 	// 参数  : vector<S_TBL_FLOWTX> &txlist
 	// 描述  : 取得流程交易信息
-	virtual int  GetFlowFunc(vector<S_TBL_FLOWTX> &txlist);
+	virtual int  GetFlowFunc(std::vector<S_TBL_FLOWTX> &txlist);
 
 protected:
 	CDbApi         *m_pSqlCmd;//数据库api

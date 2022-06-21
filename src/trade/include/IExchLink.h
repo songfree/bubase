@@ -35,7 +35,7 @@ public:
 	// 返回  : virtual bool 
 	// 参数  : CBF_Xml *xml
 	// 描述  : 初始化
-	virtual bool Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog,CBF_BufferPool *pMemPool)=0;
+	virtual bool Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog)=0;
 
 	// 函数名: Start
 	// 编程  : 王明松 2017-8-10 15:39:45
@@ -62,7 +62,6 @@ public:
 	{
 		m_pMemDb = NULL;
 		m_pLog = NULL;
-		m_pMemPool = NULL;
 	}
 	virtual ~CIExchLink()
 	{
@@ -73,7 +72,6 @@ protected:
 	CMemDb       *m_pMemDb;
 	CXdp          m_pXdp;
 	CIErrlog      *m_pLog;
-	CBF_BufferPool *m_pMemPool;//内存缓冲池
 
 };
 

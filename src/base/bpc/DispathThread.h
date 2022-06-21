@@ -39,8 +39,6 @@ protected:
 	void Dispatch();
 	
 	void LogDrebHead(int loglevel, DREB_HEAD head, const char *msg, const char *filename, int fileline);
-	std::string GetDrebCmdType(int cmdtype);
-	
 		
 	char m_headMsg[8192];
 	

@@ -41,8 +41,8 @@ class KERNEL_EXPORT CBF_Md5
 public:
 	CBF_Md5();
 	CBF_Md5(const void *input, size_t length);
-	CBF_Md5(const string &str);
-	CBF_Md5(ifstream &in);
+	CBF_Md5(const std::string &str);
+	CBF_Md5(std::ifstream &in);
 	virtual ~CBF_Md5();
 
 
@@ -59,14 +59,14 @@ public:
 	// 返回  : void 
 	// 参数  : const string &str
 	// 描述  : 更新要做MD5的数据
-	void Update(const string &str);
+	void Update(const std::string &str);
 
 	// 函数名: Update
 	// 编程  : 王明松 2012-4-17 14:39:39
 	// 返回  : void 
 	// 参数  : ifstream &in
 	// 描述  : 更新要做MD5的数据
-	void Update(ifstream &in);
+	void Update(std::ifstream &in);
 
 	// 函数名: digest
 	// 编程  : 王明松 2012-4-17 14:36:53

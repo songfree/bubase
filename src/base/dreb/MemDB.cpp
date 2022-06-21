@@ -100,9 +100,9 @@ bool CMemDB::UnRegisterSvr(int svrid, int privateid)
 bool CMemDB::SelectASvr(int svrid, S_SVR_ROUTE &svr)
 {
 	int id;
-	vector<S_SVR_ROUTE> svrlist;
-	vector<int>s_list;
-	vector<int>c_list;
+	std::vector<S_SVR_ROUTE> svrlist;
+	std::vector<int>s_list;
+	std::vector<int>c_list;
 	if (!m_svrTbl.SelectBySvr(svrid,svrlist))
 	{
 		return false;

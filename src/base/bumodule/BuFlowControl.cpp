@@ -57,7 +57,7 @@ int  CBuFlowControl::RunFlow(PBPCCOMMSTRU data)
 	return 0;
 }
 
-int  CBuFlowControl::GetFlowFunc(vector<S_TBL_FLOWTX> &txlist)
+int  CBuFlowControl::GetFlowFunc(std::vector<S_TBL_FLOWTX> &txlist)
 {
 	return 0;
 }

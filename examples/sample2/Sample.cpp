@@ -115,7 +115,7 @@ int CSample::Test2001(PBPCCOMMSTRU data)
 	calldata.sDBHead.d_Dinfo.d_cNodePrivateId = 0;
 	calldata.sDBHead.d_Dinfo.d_nSvrMainId = 0;
 	calldata.sDBHead.d_Dinfo.d_cSvrPrivateId = 0;
-	calldata.sDBHead.d_Dinfo.d_nServiceNo = 1001;//调用1001
+	calldata.sDBHead.d_Dinfo.d_nServiceNo = 9991001;//调用1001
 	
 
 	if (m_pPcLink->ExtCall(&calldata,ansdata,5)<0)
@@ -171,7 +171,7 @@ int CSample::Test2002(PBPCCOMMSTRU data)
 	calldata.sDBHead.d_Dinfo.d_cNodePrivateId = 0;
 	calldata.sDBHead.d_Dinfo.d_nSvrMainId = 0;
 	calldata.sDBHead.d_Dinfo.d_cSvrPrivateId = 0;
-	calldata.sDBHead.d_Dinfo.d_nServiceNo = 1002;//调用1002
+	calldata.sDBHead.d_Dinfo.d_nServiceNo = 9991002;//调用1002
 	
 	
 	if (m_pPcLink->BpcCall(&calldata,ansdata,5)<0)

@@ -209,7 +209,7 @@ int CBPCLink::Run()
 
 std::string CBPCLink::GetBpcIp()
 {
-	string sip;
+	std::string sip;
 	if (m_pConfXml == NULL)
 	{
 		return "";
@@ -1198,7 +1198,7 @@ void CBPCLink::OnClose(const char *file,int fileline,const char *msg)
 bool CBPCLink::RegisterBuGroup()
 {
 	int ret;
-	vector<S_TBL_FLOWTX> txinfo;
+	std::vector<S_TBL_FLOWTX> txinfo;
 	int nAllTxNum = m_pCallBu.GetAllTxInfo(txinfo);
 	if (nAllTxNum<1)
 	{

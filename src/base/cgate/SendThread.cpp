@@ -8,6 +8,7 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 #define  DESENCRYPTKEY3   "wms13711songfree"
+#define  DESENCRYPTKEY    "rd402wms"
 
 CSendThread::CSendThread()
 {
@@ -38,7 +39,7 @@ bool CSendThread::SetGlobalVar(CGateResource *res,CSendData *senddata,CAIO_Work 
  	m_pRes = res;
  	m_pSendData = senddata;
 	m_pAioWork = aiowork;
- 	m_pLog = &(m_pRes->g_pLog);
+ 	m_pLog = m_pRes->g_pLog;
 	m_pGateLog = &(m_pRes->g_pGateLog);
 	return true;
 }
@@ -52,17 +53,26 @@ int CSendThread::Run()
 	{
 		if (m_pSendData->GetData(m_pSmsg))
 		{
-			//当为加密且数据不为行情时要进入到加密部分
-			if (m_pSmsg.prio != 2)
+			//对数据进行解密(若总线过来的数据是加密的情况下)
+			if (!UnzipDrebBuf(m_pSmsg))
+			{
+				m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "总线数据解密失败");
+				continue;
+			}
+			if (m_pSmsg.isBC == 0)	 //表示应答和推送
 			{
 				SendMsg(&m_pSmsg);
 			}
-			else
+			else  if (m_pSmsg.isBC == 1)	 //行情广播等公共信息
 			{
-				
-				//发送广播
-				SendBCMsg(&m_pSmsg);
+                //发送广播
+                SendBCMsg(&m_pSmsg);
 			}
+			else	//订阅的信息
+			{
+				SendSubscribeMsg(&m_pSmsg);
+			}
+			
 			etime = time(NULL);
 			if ((etime - rtime) > 20)
 			{
@@ -247,12 +257,6 @@ void CSendThread::SendSingleBcMsg(S_CGATE_SMSG *msg)
 	dd.s_serial  = msg->s_nDrebSerial;
 	dd.s_nTimestamp = msg->timestamp;
 	dd.s_nSendLen = 0;
-
-// 	char tmpchar[100];
-// 	sprintf(tmpchar,"cgate_%d.dat",info->s_nIndex);
-// 	m_pGateLog->SetLogPara(m_pRes->g_nLoglevel,m_pRes->g_sCurPath,tmpchar);
-// 	m_pGateLog->LogCgate(LOG_PROMPT,&(msg->data),info->s_nIndex);
-
 	if (!m_pAioWork->Send2Client(dd))
 	{
 		m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"发送广播失败 标识[%d %d %d %d] ",msg->d_nNodeId,msg->d_cNodePrivateId,msg->s_nDrebSerial,msg->data.head.stDest.nSerial);
@@ -296,31 +300,23 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 		}
 		if (m_pRes->g_nQuoSubScribe == 1) //支持行情订阅
 		{
-			//如果是行情，查看是否订阅
-			//后台送过来的交易码9999999为交易行情 9999998为交割行情
-			//20161130 9999998改为其它，不为行情，不用订阅
-			//if (9999999 == msg->txcode || 9999998 == msg->txcode)
-			if (9999999 == msg->txcode )
+			if (msg->nVerietyId != 0) //有合约id，表示是行情，否则是公告类的，直接发
 			{
-				if (NULL == info->ptr)
-				{
-					continue;
-				}
-				CSubScribeInfo *psub = (CSubScribeInfo *)info->ptr;
-				if (!psub->IsQuoSubscribe(msg->nVerietyId))
-				{
-					m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"连接index[%d] 未订阅行情 %d",i,msg->nVerietyId );
-					continue;
-				}
+                if (NULL == info->ptr)
+                {
+                    continue;
+                }
+                CSubScribeInfo* psub = (CSubScribeInfo*)info->ptr;
+                if (!psub->IsQuoSubscribe(msg->nVerietyId))
+                {
+                    m_pLog->LogMp(LOG_DEBUG + 1,__FILE__,__LINE__,"连接index[%d] 未订阅行情 %d",i,msg->nVerietyId);
+                    continue;
+                }
 			}
 		}
-		
-
-
 		memcpy(&senddata,msg,sizeof(S_CGATE_SMSG));	
 		senddata.index = i;
 		senddata.timestamp = 0;
-		
 		SendSingleBcMsg(&senddata);
 
 	}
@@ -657,3 +653,113 @@ bool CSendThread::ZipBuf(PSOCKET_POOL_DATA info,PCGATE_COMMSTRU  data,int nZipFl
 	m_pGateLog->LogCgate(LOG_DEBUG,data,info->s_nIndex,info->s_sSessionKey);
 	return true;
 }
+
+bool CSendThread::UnzipDrebBuf(S_CGATE_SMSG &data)
+{
+    //0明文 1des加密密钥长度16 2压缩 3DES加密 4DES加密并压缩
+    if (data.data.head.nLen == 0)
+    {
+        return true;
+    }
+    if (data.data.head.stComm.cZip > 0 && data.data.head.stComm.cZip <= 4)
+    {
+        char zipDataBuf[BPUDATASIZE];
+        bzero(zipDataBuf, sizeof(zipDataBuf));
+        int ddlen;
+        switch (data.data.head.stComm.cZip)
+        {
+        case 1:
+            ddlen = data.data.head.nLen;
+            if (m_pDes.UncryptString(data.data.buffer, ddlen, DESENCRYPTKEY) < 1)
+            {
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "解密出错");
+                return false;
+            }
+			data.data.head.nLen = ddlen;
+			data.data.head.stComm.cZip = 0;
+            break;
+        case 2:
+            break;
+        case 3:
+            ddlen = data.data.head.nLen;
+            if (m_pDes.UncryptString(data.data.buffer, ddlen, DESENCRYPTKEY3) < 1)
+            {
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "解密出错");
+                return false;
+            }
+			data.data.head.nLen = ddlen;
+			data.data.head.stComm.cZip = 0;
+            break;
+        case 4:
+            ddlen = data.data.head.nLen;
+            if (m_pDes.UncryptString(data.data.buffer, ddlen, DESENCRYPTKEY3) < 1)
+            {
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "解密出错");
+                return false;
+            }
+			data.data.head.nLen = ddlen;
+			data.data.head.stComm.cZip = 2;
+            break;
+        default:
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void CSendThread::SendSubscribeMsg(S_CGATE_SMSG* msg)
+{
+    msg->timestamp = 0;
+    S_CGATE_SMSG senddata;
+    bzero(&senddata, sizeof(S_CGATE_SMSG));
+    int total;
+    char tmpchar[100];
+
+    m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "开始发送回报类的广播数据 标识[%d %d %d %d] cMsgType[%s] cCmd[%s] cRaFlag[%d] cNextFlag[%d] Node[%d %d] svr[%d %d] 交易码[%d] next[%d %d]", \
+        msg->d_nNodeId, msg->d_cNodePrivateId, msg->s_nDrebSerial, msg->data.head.stDest.nSerial, GetMsgType(msg->data.head.stComm.cMsgType).c_str(), \
+        GetDrebCmdType(msg->data.head.stComm.cCmd).c_str(), msg->data.head.stComm.cRaflag, \
+        msg->data.head.stComm.cNextFlag, msg->data.head.stDest.nNodeId, msg->data.head.stDest.cNodePrivateId, \
+        msg->data.head.stDest.nSvrMainId, msg->data.head.stDest.cSvrPrivateId, msg->data.head.stDest.nServiceNo, \
+        msg->data.head.stNext.n_nNextNo, msg->data.head.stNext.n_nNextOffset);
+    int poolsize = m_pAioWork->GetConnectPoolInfo(total);
+    PSOCKET_POOL_DATA info = NULL;
+    for (int i = 1; i < poolsize; i++) //0是网关的侦听
+    {
+        info = m_pAioWork->GetPoolData(i);
+        if (info == NULL)
+        {
+            continue;
+        }
+        if (info->s_hSocket == INVALID_SOCKET)
+        {
+            continue;
+        }
+        if (info->s_cCheckFlag != CHECKFLAG_NORMAL) //未验证通过，暂不发送
+        {
+            continue;
+        }
+
+		//要验证key是否订阅
+        if (NULL == info->ptr)
+        {
+            continue;
+        }
+        CSubScribeInfo* psub = (CSubScribeInfo*)info->ptr;
+        if (!psub->IsSubscribe(msg->data.head.stDest.nSerial))
+        {
+            m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅回报 key[%d]", i, msg->data.head.stDest.nSerial);
+            continue;
+        }
+
+        memcpy(&senddata, msg, sizeof(S_CGATE_SMSG));
+        senddata.index = i;
+        senddata.timestamp = 0;
+        SendSingleBcMsg(&senddata);
+
+    }
+    m_nSendQuoteNum++;
+    m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "发送回报类广播数[%d],成功发给客户广播数[%d]", m_nSendQuoteNum, m_nSendCustNum);
+    m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "发送回报类广播完成 标识[%d %d %d] ", msg->d_nNodeId, msg->d_cNodePrivateId, msg->s_nDrebSerial);
+}
+

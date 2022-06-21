@@ -112,8 +112,8 @@ typedef struct //长度30
 	char           s_cNodePrivateId; //数据总线节点私有序号
 	unsigned int   s_nSvrMainId;     //注册在数据总线节点上的主服务功能号   只有服务调用时才用填写
 	char           s_cSvrPrivateId;  //注册在数据总线节点上的私有序号 0表示公共 >0为每个服务的序号，s_nSvrMainId+s_cSvrPrivateId 即为私有功能号   只有服务调用时才用填写
-	int            s_nHook;          //客户端使用的字段，数据总线节点不用，原样返回;  网关cgate用来存客户端的连接时间戳
-	int            s_nSerial;        //异步时填写的流水，数据总线节点不用，原样返回;  客户端的请求序号 请求和应答匹配
+	int            s_nHook;          //客户端使用的字段，数据总线节点不用，原样返回;  网关cgate用来存客户端的连接时间戳	 若是广播时，保存广播的合约id  若为0表示不用订阅类的广播，如公告
+	int            s_nSerial;        //异步时填写的流水，数据总线节点不用，原样返回;  客户端的请求序号 请求和应答匹配  若是订阅的消息，这里填写发布的消息的key，网关根据这个key来订阅转发，当key=0时，表示行情类的公共广播
 	int            s_nGateIndex;     //网关连接索引，原样返回;                         网关cgate用来存客户端的连接序号
 	unsigned int   s_nDrebSerial;    //数据总线节点产生的流水，标志唯一的请求数据包
 	unsigned short s_nIndex;         //发送此请求的数据总线节点连接索引

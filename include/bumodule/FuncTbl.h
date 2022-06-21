@@ -28,8 +28,8 @@ class BUMODULE_EXPORT CFuncTbl
 {
 protected:
 	
-	CMemTable <S_TBL_FUNC> m_table;
-	CIndexInt<1>                 m_pkey;               //功能号的key
+	CMemTableNew <S_TBL_FUNC> m_table;
+	CPkeyIntUnordered<1>                 m_pkey;               //功能号的key
 public:
 
 	// 函数名: Clear

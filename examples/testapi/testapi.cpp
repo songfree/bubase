@@ -63,6 +63,7 @@ private:
 					m_pLog.LogMp(LOG_PROMPT,__FILE__,__LINE__,"取到广播总数%d",quotenum);
 					m_pLog.LogBin(LOG_PROMPT,__FILE__,__LINE__,"收到报文",data.buffer,data.head.nLen);
 				}
+				printf("收到数据 来自node[%d %d] svr [%d %d]的功能号[%d]的消息 \n", data.head.stDest.nNodeId,data.head.stDest.cNodePrivateId, data.head.stDest.nSvrMainId, data.head.stDest.cSvrPrivateId,data.head.stDest.nServiceNo);
 			}
 		}
 	}
@@ -464,7 +465,7 @@ int main(int argc, char* argv[])
 // 		return -1;
 // 	}
 
-	globaldata.head.stComm.cCmd = 8; 
+	globaldata.head.stComm.cCmd = CMD_DPCALL; 
 	
 
 	int packnum=0;
@@ -493,7 +494,31 @@ int main(int argc, char* argv[])
 			if (data.head.stComm.cNextFlag == 0)
 			{
 				printf("无后续包\n");
-				SLEEP(10);
+				//向网关订阅	 key为9021 9022 9023的数据，9021可以为后台回报类的交易账户 
+                CGATE_COMMSTRU data;
+				bzero(&data.head,CGATEHEADLEN);
+                S_GATE_SUBSCRIBE* subscribe = (S_GATE_SUBSCRIBE*)(data.buffer);
+                subscribe->flag = 2;
+                subscribe->datanum = 3;
+                subscribe->variety = 9021;
+				int *key1 = (int *)(data.buffer+ sizeof(S_GATE_SUBSCRIBE));
+				*key1 = 9022;
+				key1 = (int*)(data.buffer + sizeof(S_GATE_SUBSCRIBE)+4);
+				*key1 = 9023;
+				data.head.nLen = sizeof(S_GATE_SUBSCRIBE)+4+4;
+                BFCGATE_Subscribe(&data, timeout);
+				//向网关订阅行情 10011 20012 10013合约的行情
+                subscribe = (S_GATE_SUBSCRIBE*)(data.buffer);
+                subscribe->flag = 1;
+                subscribe->datanum = 3;
+                subscribe->variety = 10011;
+                key1 = (int*)(data.buffer + sizeof(S_GATE_SUBSCRIBE));
+                *key1 = 10012;
+                key1 = (int*)(data.buffer + sizeof(S_GATE_SUBSCRIBE) + 4);
+                *key1 = 10013;
+                data.head.nLen = sizeof(S_GATE_SUBSCRIBE) + 4 + 4;
+                BFCGATE_Subscribe(&data, timeout);
+				SLEEP(sendtime);
 				continue;
 			}
 			
@@ -534,7 +559,13 @@ int main(int argc, char* argv[])
 				}
 				printf("收到应答的数据包数 %d",packnum);
 			}
-			
+			////订阅
+			//CGATE_COMMSTRU data;
+			//S_GATE_SUBSCRIBE   *subscribe=(S_GATE_SUBSCRIBE *)(data.buffer);
+			//subscribe->flag = 2;
+			//subscribe->datanum = 1;
+			//subscribe->variety = 9021;
+			//BFCGATE_Subscribe(&data, timeout);
 		}
 		else if (ret == 0)
 		{
@@ -559,6 +590,7 @@ int main(int argc, char* argv[])
 			}
 		}
 		SLEEP(sendtime);
+		SLEEP_SECONDS(60);
 	}
 	return 0;
 }

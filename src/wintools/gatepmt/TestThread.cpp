@@ -75,7 +75,7 @@ int CTestThread::Run()
 	//启动接收推送线程
 	m_pGetPush.m_bisRun = true;
 	m_pGetPush.m_log = &m_log;
-	//m_pGetPush.CreateThread();
+	m_pGetPush.CreateThread();
 
 	while (!m_pShareData->m_bIsExit)
 	{
@@ -261,7 +261,7 @@ int CTestThread::ThreadInit()
 	std::string logfilename;
 	int pid;
 	m_pGateLink.m_pRes.g_pLog.GetLogPara(level,logfilepath,logfilename,pid);
-	char tmpchar[100];
+	char tmpchar[500];
 	sprintf(tmpchar,"%s.%d",logfilename.c_str(),m_nID);
 
 	m_pGateLink.m_pRes.g_pLog.SetLogPara(level,logfilepath.c_str(),tmpchar,m_nID);

@@ -72,14 +72,12 @@ bool CFuncTbl::First(S_FUNCINFO_TBL &fn)
 // 描述  : 获取功能
 bool CFuncTbl::Select(unsigned int func,S_FUNCINFO_TBL &fn)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,func))
+	if (!m_pkey.Select(id,func))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
 	fn.cPrio = m_table.m_table[id].cPrio;
 	fn.cServiceFlag = m_table.m_table[id].cServiceFlag;
 	fn.nFuncNo = m_table.m_table[id].nFuncNo;
@@ -96,14 +94,14 @@ bool CFuncTbl::Select(unsigned int func,S_FUNCINFO_TBL &fn)
 bool CFuncTbl::Delete(unsigned int func)
 {
 	CBF_PMutex pp(&m_mutex);
-	CInt iset;
-	if (!m_pkey.Select(iset,func))
+	int id;
+	if (!m_pkey.Select(id,func))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
-	m_pkey.Delete(iset,func);
+	CInt iset;
+	iset.Add(id);
+	m_pkey.Delete(func);
 	m_indexgroup.Delete(iset,m_table.m_table[id].sBpuGroupName);
 	m_table.Delete(id);
 	return true;
@@ -117,15 +115,12 @@ bool CFuncTbl::Delete(unsigned int func)
 bool CFuncTbl::Update(S_FUNCINFO_TBL fn)
 {
 	CBF_PMutex pp(&m_mutex);
-	CInt iset;
-	if (!m_pkey.Select(iset,fn.nFuncNo))
+	int id;
+	if (!m_pkey.Select(id,fn.nFuncNo))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
-//	
-//	m_table.m_table[id] = fn;
+
 	m_table.m_table[id].cPrio = fn.cPrio;
 	m_table.m_table[id].cServiceFlag = fn.cServiceFlag ;
 	m_table.m_table[id].nFuncNo =fn.nFuncNo;
@@ -144,12 +139,11 @@ bool CFuncTbl::Insert(S_FUNCINFO_TBL fn)
 	int id;
 	CBF_PMutex pp(&m_mutex);
 	//通过主键查找，不存在则增加
-	if (!m_pkey.Find(id,fn.nFuncNo))
+	if (!m_pkey.Find(fn.nFuncNo))
 	{
-		
 		id = m_table.Add(fn);//增加到表
-		m_pkey.Add(id,fn.nFuncNo);//增加主键
-		m_indexgroup.Add(id,fn.sBpuGroupName);
+		m_pkey.Add(id, m_table.m_table[id].nFuncNo);//增加主键
+		m_indexgroup.Add(id,m_table.m_table[id].sBpuGroupName);
 		return true;
 	}
 	return false;
@@ -158,20 +152,18 @@ bool CFuncTbl::Insert(S_FUNCINFO_TBL fn)
 S_FUNCINFO_TBL & CFuncTbl::FindFunc(unsigned int func,int &findflag)
 {
 	CBF_PMutex pp(&m_mutex);
-	CInt iset;
-	if (!m_pkey.Select(iset,func))
+	int id;
+	if (!m_pkey.Select(id,func))
 	{
 		findflag = 0;
 		return m_null;
 	}
-	int id;
-	iset.First(id);
 	findflag = 1;
 	m_table.m_table[id].nCallNum++;
 	return m_table.m_table[id];
 }
 
-int CFuncTbl::GetAllFunc(vector<S_FUNCINFO_TBL> &funclist)
+int CFuncTbl::GetAllFunc(std::vector<S_FUNCINFO_TBL> &funclist)
 {
 	CBF_PMutex pp(&m_mutex);
 	bool bRet;
@@ -188,7 +180,7 @@ int CFuncTbl::GetAllFunc(vector<S_FUNCINFO_TBL> &funclist)
 	}
 	return funclist.size();
 }
-int CFuncTbl::GetAllFuncByGroup(vector<S_FUNCINFO_TBL> &funclist)
+int CFuncTbl::GetAllFuncByGroup(std::vector<S_FUNCINFO_TBL> &funclist)
 {
 	CBF_PMutex pp(&m_mutex);
 	bool bRet;

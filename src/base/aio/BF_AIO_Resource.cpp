@@ -31,6 +31,8 @@ CBF_AIO_Resource::CBF_AIO_Resource()
 
 	g_nQuoteQueueDeleteTime =10;//默认为行情过期10秒就不发给客户
 	g_nQuoteQueueNum = 100; //只保留最新的100条记录
+	g_pLog = NULL;
+	g_bIsLocalLog = false;
 }
 void CBF_AIO_Resource::ReSetPara()
 {
@@ -53,10 +55,19 @@ void CBF_AIO_Resource::ReSetPara()
 	bzero(g_sModulePath,sizeof(g_sModulePath));
 	g_nListenIndex = 0;
 	g_nSendOnceNum = 16;
+	g_nCrcFlag=0;
 }
 CBF_AIO_Resource::~CBF_AIO_Resource()
 {
-
+	  if (g_bIsLocalLog)
+	  {
+		  if (NULL!=g_pLog)
+		  {
+			((CBF_LogClient*)g_pLog)->StopLog();
+			 delete g_pLog;
+			g_pLog = NULL;
+		  }
+	  }
 }
 bool CBF_AIO_Resource::SetRunMode(unsigned int mode)
 {

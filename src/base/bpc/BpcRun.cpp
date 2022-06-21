@@ -3,13 +3,10 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "BpcRun.h"
-#include "Bpc_Timer.h"
-#include "DrebBpcLog.h"
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-extern CBpc_Timer  g_pBpcTime;
 
 CBpcRun::CBpcRun()
 {
@@ -30,13 +27,17 @@ CBpcRun::~CBpcRun()
 
 bool CBpcRun::Init(const char *confile)
 {
-	if (!m_pRes.Init((char *)confile))
+	m_pLog = m_pDrebApi.GetLogPoint();
+	if (!m_pRes.Init((char *)confile, m_pLog))
 	{
 		printf("%s\n",m_pRes.GetMsg().c_str());
 		return false;
 	}
-
-	m_pLog = &(m_pRes.m_log);
+	m_pDrebSpi.Init(&m_pDrebApi,&m_pRes);
+	m_pDrebSpi.SetGlobalVar(&m_pPoolData,&m_pFuncTbl,&m_pSockMgr);
+	m_pDrebSpi.m_lBcRegister = &m_pRes.g_lBCFuncList;
+	m_pDrebApi.Init(&m_pRes,&m_pDrebSpi);
+	m_pMemPool = m_pDrebApi.GetBufferPool();
 
 	if (m_pRes.g_nRegisterMode == 1) //静态注册
 	{
@@ -100,13 +101,9 @@ bool CBpcRun::Init(const char *confile)
 	}
 
 	m_pRes.g_bToExit = false;
-
-	m_pMemPool.Init(10,BPCBUFSIZE);
 	m_pPoolData.m_pRes = &m_pRes;
-
-//	m_pMgrBpu.m_log = &(m_pRes.m_log);
 	
-	if (!m_pSockMgr.Init(&m_pRes,&m_pMemPool))
+	if (!m_pSockMgr.Init(&m_pRes,m_pMemPool))
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"%s",m_pSockMgr.m_errMsg);
 		return false;
@@ -133,13 +130,13 @@ bool CBpcRun::Init(const char *confile)
 	char tmpchar[400];
 	//接收线程有 dreb接收+bpu组接收
 	//dreb及侦听为一个线程
-	m_pDrebLinkThread.SetGlobalVar(&m_pRes,&m_pPoolData,&m_pMemPool,&m_pSockMgr,&m_pFuncTbl);
-	m_pDrebLinkThread.m_nBegin = 0;
-	m_pDrebLinkThread.m_nEnd = 31;
+	m_pBpuLinkThread.SetGlobalVar(&m_pRes,&m_pPoolData,m_pMemPool,&m_pSockMgr,&m_pFuncTbl);
+	m_pBpuLinkThread.m_nBegin = 0;
+	m_pBpuLinkThread.m_nEnd = 31;
 	nbegin = 31;
 
 	m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"总线接收、BPU连接线程连接池范围[%d - %d] 不含[%d]",\
-		m_pDrebLinkThread.m_nBegin,m_pDrebLinkThread.m_nEnd,m_pDrebLinkThread.m_nEnd);
+		m_pBpuLinkThread.m_nBegin, m_pBpuLinkThread.m_nEnd, m_pBpuLinkThread.m_nEnd);
 
 	//启动bpu组分派线程
 	CDispathThread *disthread=NULL;
@@ -156,42 +153,30 @@ bool CBpcRun::Init(const char *confile)
 		m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"BPU组[%s %d]分派线程 起始socket 连接池[%d %d],不包含%d",\
 			m_pRes.g_vBpuGroupInfo[i].g_sBpuGroupName.c_str(),i,disthread->m_nBegin,\
 			disthread->m_nEnd,disthread->m_nEnd);
-		disthread->SetGlobalVar(&m_pRes,m_pRes.g_vBpuGroupInfo[i].pdispathQueue,&m_pMemPool,&m_pSockMgr,&m_pFuncTbl);
+		disthread->SetGlobalVar(&m_pRes,m_pRes.g_vBpuGroupInfo[i].pdispathQueue,m_pMemPool,&m_pSockMgr,&m_pFuncTbl);
 		m_pDispath.push_back(disthread);
 
 	}
 	m_pBuThread.m_nEnd = nbegin;
-	m_pBuThread.SetGlobalVar(&m_pRes,&m_pPoolData,&m_pMemPool,&m_pSockMgr,&m_pFuncTbl);
+	m_pBuThread.SetGlobalVar(&m_pRes,&m_pPoolData,m_pMemPool,&m_pSockMgr,&m_pFuncTbl, &m_pDrebApi);
 		m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"BPU接收线程的起始socket index[%d %d],不包含%d",\
 			m_pBuThread.m_nBegin,m_pBuThread.m_nEnd,m_pBuThread.m_nEnd);
 
 	//启动线程
-	m_pDrebLinkThread.CreateThread();//侦听dreb线程
+	m_pBpuLinkThread.CreateThread();//侦听dreb线程
 	m_pBuThread.CreateThread();
-	
+	m_pDrebApi.Start();
 
 	//消息处理线程 处理dreb来的请求及bpu外调内调的请求
-	m_pMsgThread.SetGlobalVar(&m_pRes,&m_pPoolData,&m_pMemPool,&m_pSockMgr,&m_pFuncTbl);
+	m_pMsgThread.SetGlobalVar(&m_pRes,&m_pPoolData,m_pMemPool,&m_pSockMgr,&m_pFuncTbl,&m_pDrebApi);
 	m_pMsgThread.CreateThread();
 	
 	for (i=0;i<m_pDispath.size();i++)
 	{
 		m_pDispath[i]->CreateThread();
 	}
-	
-
-	
 	//启动定时器
-	if (m_pRes.g_nUseMonitor == 1)
-	{
-		if (m_pRes.g_nMonitorHost == 1)
-		{
-			g_pBpcTime.Init(&m_pRes);
-			g_pBpcTime.StartTimer();
-		}
-	} 
-	
-	m_pDrebLinkThread.StartTimer();
+	m_pBpuLinkThread.StartTimer();
 	m_pBuThread.StartTimer();
 	
 	if (m_pBpuPidXml.FromFile("BpuPid.xml"))
@@ -212,13 +197,13 @@ bool CBpcRun::Init(const char *confile)
 void CBpcRun::Stop()
 {
 	m_pRes.g_bToExit = true;
-	g_pBpcTime.StopTimer();
-	m_pDrebLinkThread.StopTimer();
+	m_pBpuLinkThread.StopTimer();
 	m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"BPC开始停止");
-	m_pDrebLinkThread.Join();
+	m_pBpuLinkThread.Join();
 	m_pMsgThread.Join();
 	m_pBuThread.StopTimer();
 	m_pBuThread.Join();
+	m_pDrebApi.Stop();
 	int i;
 	for (i=0;i<m_pDispath.size();i++)
 	{
@@ -244,16 +229,15 @@ void CBpcRun::Stop()
 		m_pBpuPidXml.ToFile("BpuPid.xml");
 	}
 
-	
 }
 
 void CBpcRun::Monitor()
 {
 	int i,j,k;
-	if (m_pDrebLinkThread.IsStoped())
+	if (m_pBpuLinkThread.IsStoped())
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"重启DREB连接及BPU侦听线程[%s]","CLinkThread");
-		m_pDrebLinkThread.CreateThread();
+		m_pBpuLinkThread.CreateThread();
 	}
 	if (m_pMsgThread.IsStoped())
 	{
@@ -265,11 +249,6 @@ void CBpcRun::Monitor()
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"重启BPU接收线程");
 		m_pBuThread.CreateThread();
 	}
-	if (g_pBpcTime.IsStoped())
-	{
-		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"重启定时器");
-		g_pBpcTime.StartTimer();
-	}
 	for (i=0;i<m_pDispath.size();i++)
 	{
 		if (m_pDispath[i]->IsStoped())
@@ -277,21 +256,6 @@ void CBpcRun::Monitor()
 			m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"重启分派线程 %d",i);
 			m_pDispath[i]->CreateThread();
 		}
-	}
-	if (m_pRes.m_log.IsStopedThread())
-	{
-		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"重启日志线程");
-		m_pRes.m_log.StartLog();
-	}
-	if (m_pRes.m_pDrebDataLog.IsStoped())
-	{
-		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"重启DATA日志线程DrebDataLog");
-		m_pRes.m_pDrebDataLog.StartLog();
-	}
-	if (m_pRes.m_pBpcCallDataLog.IsStoped())
-	{
-		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"重启DATA日志线程BpcCallDataLog");
-		m_pRes.m_pBpcCallDataLog.StartLog();
 	}
 
 	S_PROCESS_NODE node;
@@ -362,20 +326,6 @@ void CBpcRun::Monitor()
 					m_pMgrBpu.StartProcess(&node,errmsg);
 					isstart = true;
 				}
-// 				if (m_pRes.g_vBpuGroupInfo[i].g_nStartBpuNum > m_pRes.g_vBpuGroupInfo[i].g_nBpuNum)
-// 				{
-// 					int connNum=0;
-// 					//更新g_nStartBpuNum
-// 					for (int k=m_pRes.g_vBpuGroupInfo[i].g_nBeginSocketIndex ; k < m_pRes.g_vBpuGroupInfo[i].g_nEndSocketIndex; k++)
-// 					{
-// 						if (m_pSockMgr.at(k)->m_sock != INVALID_SOCKET)
-// 						{
-// 							connNum++;
-// 						}
-// 					}
-// 					m_pRes.g_vBpuGroupInfo[i].g_nStartBpuNum = connNum;
-// 				}
-				
 			}
 		}
 	}

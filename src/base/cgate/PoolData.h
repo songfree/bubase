@@ -13,16 +13,16 @@
 #include "BpcHead.h"
 #include "BF_Mutex.h"
 #include "GateResource.h"
-#include "GateHead.h"
+#include "BpcHead.h"
 
-typedef std::deque<S_GATEDREB_RSMSG> LIST_POOLDATA;//连接池连接列表
+typedef std::deque<S_BPC_RSMSG> LIST_POOLDATA;//连接池连接列表
 
 class  CPoolData  
 {
 public:
 	int  GetSize();
-	bool GetData(S_GATEDREB_RSMSG &data);
-	int  PushData(S_GATEDREB_RSMSG data);
+	bool GetData(S_BPC_RSMSG&data);
+	int  PushData(S_BPC_RSMSG data);
 	CPoolData();
 	virtual ~CPoolData();
 

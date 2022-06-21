@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
 {
 
 	memset(g_VERSION,0,sizeof(g_VERSION));
-	sprintf(g_VERSION,"1.0.4 %s",__DATE__);
+	sprintf(g_VERSION,"2.0.1 %s",__DATE__);
 	
 	CBF_Tools::GetModuleNamePath(argv,g_pDreb.g_Vars.g_curentpath,g_pDreb.g_Vars.g_modulepath,g_pDreb.g_Vars.g_modulename);
 
@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
 	memset(confile,0,sizeof(confile));
 	if (argc == 1)
 	{
-		printf("dreb build [%s %s]命令行参数说明:\n",__DATE__,__TIME__);
+		printf("dreb %s build [%s %s]命令行参数说明:\n", g_VERSION,__DATE__,__TIME__);
 		printf("               不带参数 后台运行 配置文件为bfdreb.xml \n");
 		printf("               stop/STOP  退出bfdreb \n");
 		printf("               -cf  前台运行 \n");

@@ -14,7 +14,7 @@
 #include "IErrLog.h"
 #include "BF_SocketTcp.h"
 #include "GateResource.h"
-#include "SocketMgr.h"
+#include "BF_DrebServer.h"
 #include "BF_BufferPool.h"
 #include "PoolData.h"
 #include "BF_Des.h"
@@ -30,7 +30,7 @@ public:
 
 	
 
-	bool SetGlobalVar(CGateResource *res,CPoolData *pooldata,CBF_BufferPool *mempool,CSocketMgr *sockmgr);
+	bool SetGlobalVar(CGateResource *res,CPoolData *pooldata,CBF_BufferPool *mempool, CBF_DrebServer* drebapi);
 private:
 // 	bool ZipBuf(PCOMMSTRU data);
 // 	bool UnzipBuf(COMMSTRU &data);
@@ -68,23 +68,17 @@ protected:
 	char m_headMsg[8192];
 
 	CIErrlog        *m_pLog;
-	CBF_CommDataLog *m_pDrebLog;
 
 	CBF_Date_Time m_datetime;
 	CBF_Des       m_pDes;
 	CEncryptCommBuffer m_pDesZip;
 	
 	CGateResource  *m_pRes;
-	CSocketMgr  *m_pSockMgr;
+	CBF_DrebServer  *m_pDrebApi;
 	CBF_BufferPool *m_pMemPool;//内存分配池;
 	CPoolData   *m_pPoolData;//处理数据队列
 
-	S_GATEDREB_RSMSG  m_pDataBuf;//发送数据结构
-
-	int m_nDispatchNum;
-
-	int m_nDrebNum;
-
+	S_BPC_RSMSG  m_pDataBuf;//发送数据结构
 };
 
 #endif // !defined(AFX_MSGTHREAD_H__D0B49BB3_617E_41A8_8E96_203DB815C048__INCLUDED_)

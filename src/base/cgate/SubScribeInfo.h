@@ -14,6 +14,7 @@
 #include "DrebEndian.h"
 #include "GateHead.h"
 #include "IErrLog.h"
+#include "BF_Mutex.h"
 //订阅信息  每个连接一个实例。
 
 class CSubScribeInfo  
@@ -26,6 +27,7 @@ public:
 	// 参数  : int varietycode
 	// 描述  : 判断此编号合约的行情是否订阅
 	bool IsQuoSubscribe(int varietycode);
+	bool IsSubscribe(int key);
 
 	// 函数名: Subscribe
 	// 编程  : 王明松 2014-10-22 10:55:12
@@ -34,7 +36,7 @@ public:
 	// 参数  : int datalen   订阅数据长度
 	// 参数  : char *msg   失败信息
 	// 描述  : 行情订阅
-	bool QuoSubscribe(const char *data,int datalen,char *msg);
+	bool Subscribe(const char *data,int datalen,char *msg);
 
 	CSubScribeInfo();
 	virtual ~CSubScribeInfo();
@@ -42,11 +44,10 @@ public:
 	CIErrlog   *m_pLog;
 	
 protected:
-	int   m_nQuoSubcribeFlag;  //行情订阅标志 0 取消订阅   1按合约编号订阅   2按市场订阅
-	unsigned int  m_nQuoDataNum; //当flag为1时，则为合约数量   当为2时，为市场代码
-	CInt          m_listVariety; //订阅的行情合约列表
-
+	CInt          m_listVariety;      //订阅的行情合约列表
+	CInt          m_listSubscribeKey; //订阅的key，针对回报等
 	CDrebEndian   m_pEndian;
+	CBF_Mutex     m_mutex;
 };
 
 #endif // !defined(AFX_SUBSCRIBEINFO_H__26E08F03_B50A_4FC7_B2BA_F8A211CB2F81__INCLUDED_)

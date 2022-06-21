@@ -30,6 +30,7 @@ CLinkThread::CLinkThread()
 	m_sThreadName = "CLinkThread";
 	m_bIsPingTimer = false;
 	m_nDrebIndex = 0;
+	bzero(&(m_pDataBuf.data.head),DREBHEADLEN);
 }
 
 CLinkThread::~CLinkThread()
@@ -837,6 +838,7 @@ void CLinkThread::OnRecv(int conindex)
 
 bool CLinkThread::ResetData(int index,S_GWDREB_RSMSG *data)
 {
+	
 	data->offset = 0;
 	data->rtime = time(NULL);
 	data->nIndex = index;

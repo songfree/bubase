@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 #include <string>
-using namespace std;
+
 
 #ifdef KERNEL_EXPORTS
 #define KERNEL_EXPORT __declspec(dllexport)

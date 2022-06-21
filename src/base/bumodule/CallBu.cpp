@@ -395,7 +395,7 @@ bool CCallBu::InitAll()
 	CXmlNode *getNode = m_pConfXml.GetNodeByPath("/package/head/business/test",false);
 	if (getNode!=NULL)
 	{
-		string svalue;
+		std::string svalue;
 		if(m_pConfXml.GetNodeValueByPath("/package/head/business/test/autoloaddll",false,svalue,false)!=NULL)
 		{
 			if (atoi(svalue.c_str())==1)
@@ -748,7 +748,7 @@ int CCallBu::GetDllInfo(PBPCCOMMSTRU data)
 int CCallBu::GetTxInfo(PBPCCOMMSTRU data)
 {
 	char tmpchar[30];
-	vector<S_TBL_FLOWTX> txinfo;
+	std::vector<S_TBL_FLOWTX> txinfo;
 	GetAllTxInfo(txinfo);
 // 	CXmlNode *txnode = pXml->AddNodeByPath("package/head/ResultSet",false,"交易列表",false,"",false);
 // 	if (txnode != NULL)
@@ -773,7 +773,7 @@ int CCallBu::GetTxInfo(PBPCCOMMSTRU data)
 	return 0;
 }
 
-int CCallBu::GetAllTxInfo(vector<S_TBL_FLOWTX> &txinfo)
+int CCallBu::GetAllTxInfo(std::vector<S_TBL_FLOWTX> &txinfo)
 {
 	S_TBL_FLOWTX tx;
 	S_TBL_FUNC   func;

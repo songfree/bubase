@@ -20,6 +20,21 @@
 class  CIBF_DrebServer 
 {
 public:
+    // 函数名: Subscribe
+        // 编程  : 王明松 20220614 14:09:01
+        // 返回  : void 
+        // 参数  : int index        dreb连接索引
+        // 参数  : CInt *funclist   广播功能列表
+        // 描述  : 在连接的DREB上广播订阅消息，订阅总线上的广播消息，当广播生产者没有指定此广播的服务对象时，则按此订阅来发送
+    virtual void Subscribe(int index, std::vector<int>* funclist)=0;
+
+
+    // 函数名: UnSubscribe
+    // 编程  : 王明松 20220614 14:09:09
+    // 返回  : void 
+    // 描述  : 取消在dreb上广播订阅
+    virtual void UnSubscribe()=0;
+
     virtual int GetDataLogLevel()=0;
 
     // 函数名: GetErrMsg
@@ -76,7 +91,7 @@ public:
     // 参数  : int index        dreb连接索引
     // 参数  : CInt *funclist   交易列表
     // 描述  : 在连接的DREB上发注册消息,将交易码注册到总线上,这样可以按交易码路由，但广播不受此限制，可调用多次来进行注册
-    virtual void RegisterDreb(int index, vector<int>* funclist)=0;
+    virtual void RegisterDreb(int index, std::vector<int>* funclist)=0;
 
 
     // 函数名: UnRegisterDreb
@@ -145,7 +160,7 @@ public:
     // 参数  : S_MONITOR_HOST &host
     // 参数  : vector<S_MONITOR_DISK>&disk
     // 描述  : 获取主机cpu、内存、磁盘信息，前提是资源的标志g_nMonitorHost为1
-    virtual void GetHostInfo(S_MONITOR_HOST& host, vector<S_MONITOR_DISK>& disk)=0;
+    virtual void GetHostInfo(S_MONITOR_HOST& host, std::vector<S_MONITOR_DISK>& disk)=0;
 
 };
 

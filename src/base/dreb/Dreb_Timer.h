@@ -14,7 +14,7 @@
 #include "DrebPubDefine.h"
 
 
-typedef vector<S_MONITOR_DISK > V_MonitorDiskInfo;
+typedef std::vector<S_MONITOR_DISK > V_MonitorDiskInfo;
 
 class CDreb_Timer  
 {

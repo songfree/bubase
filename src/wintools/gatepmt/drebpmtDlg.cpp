@@ -293,7 +293,7 @@ void CDrebpmtDlg::OnOK()
 
 	int itemCount = m_lstScript.GetItemCount();
 	//释放原来的线程
-	FreeThread();
+	//FreeThread();
 	for ( i=0;i<itemCount;i++)
 	{
 		memset(tmpchar,0,sizeof(tmpchar));
@@ -332,7 +332,7 @@ void CDrebpmtDlg::OnOK()
 			m_pShareData.m_bIsExit = true;
 			return;
 		}
-		memset(sendData,0,sizeof(sendData));
+		memset(loginData,0,sizeof(loginData));
 		loginDatalen = fread(loginData,1,CLIENTDATASIZE,fp);
 		fclose(fp);
 
@@ -393,15 +393,16 @@ void CDrebpmtDlg::OnOK()
 		m_curThreadNum +=tpara.nThreadNum;
 
 	}
-	sprintf(tmpchar,"%d",m_curThreadNum);
-	m_edtTotalThread.SetWindowText(tmpchar);
-	
-	m_pDate.Update();
-	sprintf(tmpchar,"log\\%s%s",m_pDate.ToStringD8().c_str(),"gatepmt.log");
-	UNLINK(tmpchar);
+    sprintf(tmpchar, "%d", m_curThreadNum);
+    m_edtTotalThread.SetWindowText(tmpchar);
+
+    m_pDate.Update();
+    sprintf(tmpchar, "log\\%s%s", m_pDate.ToStringD8().c_str(), "gatepmt.log");
+    UNLINK(tmpchar);
 	for (int jj=0;jj<m_curThreadNum;jj++)
 	{
 		m_pThread[jj]->CreateThread();//启动线程
+		//m_pThread[jj]->m_pGetPush.CreateThread();
 	}
 	m_pShareData.m_nTotalThreadNum = m_curThreadNum;
 	m_pShareData.m_bIsRun = true;
@@ -455,7 +456,7 @@ void CDrebpmtDlg::OnButtonStop()
 	KillTimer(m_timerID1);
 	
 	//释放线程
-	FreeThread();
+	//FreeThread();
 	//保存初始变量
 	SaveVarInitData();
 }
@@ -1066,10 +1067,12 @@ void CDrebpmtDlg::FreeThread()
 {
 	if (m_pShareData.m_nTotalThreadNum>0)
 	{
+		m_pShareData.m_bIsExit = true;
 		for (int jjj=0;jjj<m_pShareData.m_nTotalThreadNum;jjj++)
 		{
 			if (m_pThread[jjj]!=NULL)
 			{
+				m_pThread[jjj]->Join();
 				delete m_pThread[jjj] ;
 				m_pThread[jjj] = NULL;
 			}

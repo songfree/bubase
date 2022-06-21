@@ -46,7 +46,7 @@ public:
 	// 返回  : virtual bool 
 	// 参数  : CBF_Xml *xml
 	// 描述  : 初始化
-	virtual bool Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog,CBF_BufferPool *pMemPool);
+	virtual bool Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog);
 	
 	// 函数名: Start
 	// 编程  : 王明松 2017-8-10 15:39:45

@@ -19,7 +19,6 @@ CProcThread::CProcThread()
 	m_pSqlCmd = NULL; //数据库连接
 	m_pExchLink = NULL;//交易所连接调用
 	m_pClientLink = NULL; //客户端连接调用
-	m_pMemPool = NULL;//内存缓冲池
 	m_pMemDb = NULL;//内存表
 	m_pLog = NULL;
 	m_pRcvQueue = NULL;
@@ -32,7 +31,6 @@ CProcThread::~CProcThread()
 	m_pSqlCmd = NULL; //数据库连接
 	m_pExchLink = NULL;//交易所连接调用
 	m_pClientLink = NULL; //客户端连接调用
-	m_pMemPool = NULL;//内存缓冲池
 	m_pMemDb = NULL;//内存表
 	m_pLog = NULL;
 	g_nSvrHostStatus = NULL;
@@ -106,7 +104,7 @@ int CProcThread::Run()
 #endif
 				if (m_sData.src >1) //不用应答，定时器发出的
 				{
-					m_pMemPool->PoolFree(m_sData.pData);
+					m_pClientLink->PoolFree(m_sData);
 					m_sData.pData = NULL;
 					continue;
 				}
@@ -487,7 +485,7 @@ bool CProcThread::Init(CBF_Xml *xml)
 //			tmp.iProcBase->m_nIndex = m_nIndex;
 			tmp.iProcBase->g_nSvrHostStatus = g_nSvrHostStatus;
 			tmp.iProcBase->g_pPubData = g_pPubData;
-			if (!tmp.iProcBase->Init(m_pXml,m_pClientLink,m_pMemDb,&m_pXdp,m_pLog,m_pMemPool,m_pSqlCmd,m_pExchLink,m_nIndex))
+			if (!tmp.iProcBase->Init(m_pXml,m_pClientLink,m_pMemDb,&m_pXdp,m_pLog,m_pSqlCmd,m_pExchLink,m_nIndex))
 			{
 #ifdef _ENGLISH_
 				m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"library [%s] init error",tmp.procdllname.c_str());

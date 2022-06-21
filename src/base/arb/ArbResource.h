@@ -31,7 +31,7 @@ public:
 	int           m_nSwitchTime;//切换时间 即主机在此时间未响应切换到备机的时间
 	int           m_nSwitchSeg;//切换间隔   在这个时间点内不用检查是否切换
 
-	vector<int> g_lArbTxList;//仲裁机在总线上注册的交易列表
+	std::vector<int> g_lArbTxList;//仲裁机在总线上注册的交易列表
 };
 
 #endif // !defined(AFX_ARBRESOURCE_H__7EB044C4_3163_4702_85BF_1C99CAA5C716__INCLUDED_)

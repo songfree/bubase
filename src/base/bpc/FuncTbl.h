@@ -34,7 +34,7 @@ public:
 	// 返回  : int 
 	// 参数  : vector<S_FUNCINFO_TBL> &funclist
 	// 描述  : 获取所有的功能列表，按交易码排序
-	int GetAllFunc(vector<S_FUNCINFO_TBL> &funclist);
+	int GetAllFunc(std::vector<S_FUNCINFO_TBL> &funclist);
 
 
 	// 函数名: GetAllFuncByGroup
@@ -42,7 +42,7 @@ public:
 	// 返回  : int 
 	// 参数  : vector<S_FUNCINFO_TBL> &funclist
 	// 描述  : 获取所有的功能列表，按bpu组排序
-	int GetAllFuncByGroup(vector<S_FUNCINFO_TBL> &funclist);
+	int GetAllFuncByGroup(std::vector<S_FUNCINFO_TBL> &funclist);
 
 	// 函数名: FindFunc
 	// 编程  : 王明松 2013-4-8 11:40:16
@@ -107,9 +107,9 @@ protected:
 	bool Update(S_FUNCINFO_TBL fn);
 
 
-	CMemTable <S_FUNCINFO_TBL> m_table;        //功能 内存表
-	CIndexInt<1>               m_pkey;           //功能号，唯一索引
-	CIndexCharF<21,1>          m_indexgroup;     //以bpu组为索引
+	CMemTableNew <S_FUNCINFO_TBL> m_table;        //功能 内存表
+	CPkeyIntUnordered<1>          m_pkey;           //功能号，唯一索引
+	CIndexVarChar<1>          m_indexgroup;     //以bpu组为索引
 	S_FUNCINFO_TBL             m_null;
 	CBF_Mutex m_mutex;	
 };

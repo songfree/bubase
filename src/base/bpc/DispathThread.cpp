@@ -3,7 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "DispathThread.h"
-
+#include "DrebMsgProcBase.h"
 
 
 CDispathThread::CDispathThread()
@@ -31,45 +31,7 @@ CDispathThread::~CDispathThread()
 	m_pPoolData= NULL;//处理数据队列
 	m_pFuncTbl= NULL;
 }
-std::string CDispathThread::GetDrebCmdType(int cmdtype)
-{
-	switch (cmdtype)
-	{
-		
-	case  CMD_ROUTER:      //1  //数据总线节点发送路由通知的命令字
-		return "CMD_ROUTER";
-	case  CMD_DEL_NODE:    //2  //数据总线节点之间取消数据总线节点的命令字,只发送至主动连接的数据总线节点
-		return "CMD_DEL_NODE";
-	case  CMD_DEL_SVR:     //3  //服务端取消注册服务的命令字
-		return "CMD_DEL_SVR";
-	case  CMD_PING:        //4  //心跳请求的命令字
-		return "CMD_PING";
-	case  CMD_CONNECT:     //5  //连接注册
-		return "CMD_CONNECT";
-	case  CMD_SERVICE:     //6  //服务路由
-		return "CMD_SERVICE";
-	case  CMD_REGSERVICE:  //7  //注册服务
-		return "CMD_REGSERVICE";			
-	case  CMD_DPCALL:      //8  //数据总线节点同步调用 要求最终处理完成后应答
-		return "CMD_DPCALL";
-	case  CMD_DPACALL:     //9  //数据总线节点异步调用 要求接收到的数据总线节点发送至服务后确认应答
-		return "CMD_DPACALL";
-	case  CMD_DPBC:        //10  //数据总线节点广播，即将信息发给指定数据总线节点上所有注册的服务,要求数据总线节点应答
-		return "CMD_DPBC";
-	case  CMD_DPABC:       //11  //数据总线节点广播，即将信息发给指定数据总线节点上所有注册的服务,不要求数据总线节点应答
-		return "CMD_DPABC";			
-	case  CMD_DPPUSH:      //12 //数据总线节点推送，无须应答
-		return "CMD_DPPUSH";
-	case  CMD_DPPOST:      //13 //数据总线节点投递，要求接收到的数据总线节点应答
-		return "CMD_DPPOST";			
-	case  CMD_MONITOR_DREB:     //15 //数据总线节点监控
-		return "CMD_MONITOR_DREB";
-	case  CMD_MONITOR_BPC:     //15 //数据总线节点监控
-		return "CMD_MONITOR_BPC";
-	default:
-		return "";
-	}
-}
+
 void CDispathThread::ExitThreadInstance()
 {
 	return ;
@@ -86,10 +48,7 @@ bool CDispathThread::SetGlobalVar(CGResource *res,CPoolData *pooldata,CBF_Buffer
 	m_pMemPool = mempool;
 	m_pPoolData = pooldata;
 	m_pFuncTbl = tbl;
-
-	m_pLog = &(m_pRes->m_log);
-	
-	
+	m_pLog = m_pRes->m_log;
 	return true;
 }
 int CDispathThread::Run()
@@ -136,7 +95,7 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 	if (rtime - rcvdata.nRtime > m_pRes->g_nDispatchTime)
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"请求在队列里超时[%d]秒 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-			m_pRes->g_nDispatchTime,GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
+			m_pRes->g_nDispatchTime, CDrebMsgProcBase::GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
 			rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
 						rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 						rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,rcvdata.sMsgBuf->sDBHead.cZip,rcvdata.sMsgBuf->sDBHead.nLen);
@@ -169,7 +128,7 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"消息所在BPU组[%s %d] BPU连接范围[%d %d] BPU数目[%d] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
 		m_pRes->g_vBpuGroupInfo[m_nBpugroupindex].g_sBpuGroupName.c_str(),m_nBpugroupindex,\
 		m_nBegin,m_nEnd,m_pRes->g_vBpuGroupInfo[m_nBpugroupindex].g_nBpuNum,\
-		GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
+		CDrebMsgProcBase::GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
 		rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
 		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
@@ -291,7 +250,7 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 		} //end while
 	}
 	m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"BPU组[%s %d]在指定的时间内无空闲BPU来处理[%d]秒 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-		m_pRes->g_vBpuGroupInfo[m_nBpugroupindex].g_sBpuGroupName.c_str(),m_nBpugroupindex,m_pRes->g_nDispatchTime,GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
+		m_pRes->g_vBpuGroupInfo[m_nBpugroupindex].g_sBpuGroupName.c_str(),m_nBpugroupindex,m_pRes->g_nDispatchTime, CDrebMsgProcBase::GetDrebCmdType(rcvdata.sMsgBuf->sDBHead.cCmd).c_str(),rcvdata.sMsgBuf->sDBHead.cNextFlag,\
 		rcvdata.sMsgBuf->sDBHead.cRaflag,rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
 		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 		rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
@@ -330,7 +289,7 @@ void CDispathThread::LogDrebHead(int loglevel, DREB_HEAD head, const char *msg, 
 	   s_cNodePrivateId=%d s_nSvrMainId=%d s_cSvrPrivateId=%d s_nHook=%d s_nSerial=%d \
 	   s_nDrebSerial=%d s_nIndex=%d d_nNodeId=%d d_cNodePrivateId=%d d_nSvrMainId=%d \
 	   d_cSvrPrivateId=%d d_nServiceNo=%d a_nNodeId=%d a_cNodePrivateId=%d a_nRetCode=%d \
-	   n_nNextNo=%d n_nNextOffset=%d b_nSerial=%d b_cIndex=%d nLen=%d","%s",head.cZip,GetDrebCmdType(head.cCmd).c_str(),\
+	   n_nNextNo=%d n_nNextOffset=%d b_nSerial=%d b_cIndex=%d nLen=%d","%s",head.cZip, CDrebMsgProcBase::GetDrebCmdType(head.cCmd).c_str(),\
 	   head.cRaflag,head.cNextFlag,head.cDrebAffirm,head.s_Sinfo.s_nNodeId,head.s_Sinfo.s_cNodePrivateId,\
 	   head.s_Sinfo.s_nSvrMainId,head.s_Sinfo.s_cSvrPrivateId,head.s_Sinfo.s_nHook,head.s_Sinfo.s_nSerial,\
 	   head.s_Sinfo.s_nDrebSerial,head.s_Sinfo.s_nIndex,head.d_Dinfo.d_nNodeId,head.d_Dinfo.d_cNodePrivateId,\

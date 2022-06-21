@@ -15,6 +15,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="drebpmt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -47,11 +50,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="drebpmt.rc">
-      <Filter>Source Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="drebpmt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -67,7 +65,7 @@
     <ClInclude Include="MultiColumnComboBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Resource.h">
+    <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ShareData.h">
@@ -90,19 +88,21 @@
     <Image Include="drebpmt.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="res\drebpmt.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="icon1.ico">
       <Filter>Resource Files</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="res\drebpmt.rc2">
+    <Image Include="res\drebpmt.ico">
       <Filter>Resource Files</Filter>
-    </CustomBuild>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="drebpmt.rc">
+      <Filter>Source Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\drebpmt.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

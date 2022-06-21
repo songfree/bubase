@@ -39,7 +39,7 @@ void CBF_AIO::SetParameter(CBF_AIO_WorkBase *workcallback,CBF_AIO_Resource *res)
 		//小于2000则直接分配到最大
 		m_pAioPool.Init(m_pAioRes->g_nMaxConnectNum);
 	}
-	m_pLog = &(m_pAioRes->g_pLog);
+	m_pLog = m_pAioRes->g_pLog;
 }
 
 

@@ -370,7 +370,7 @@ bool CGResource::Init(char *confile)
 		m_log.LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"ÅäÖÃÎÄ¼þ´í %s",(char *)m_errMsg.c_str());
 		return false;
 	}
-	string ss;
+	std::string ss;
 	pChildNode->GetAttributeValue("use",ss);
 	if (atoi(ss.c_str())== 1)
 	{

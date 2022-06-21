@@ -117,7 +117,7 @@ CAttribute *CNode::SetAttribute(std::string name, std::string value,bool isTrans
 	}
 	else
 	{
-		string ss = name;
+		std::string ss = name;
 		if (isTransSign)
 		{
 			putTransSign(ss);
@@ -244,7 +244,7 @@ int CNode::GetAttributeValue(std::string name, std::string &value)
 }
 int CNode::GetAttributeValue(std::string name, int &value)
 {
-	string svalue;
+	std::string svalue;
 	if (GetAttributeValue(name,svalue)<0)
 	{
 		return -1;
@@ -258,7 +258,7 @@ int CNode::GetAttributeValue(std::string name, int &value)
 }
 int CNode::GetAttributeValue(std::string name, long &value)
 {
-	string svalue;
+	std::string svalue;
 	if (GetAttributeValue(name,svalue)<0)
 	{
 		return -1;
@@ -272,7 +272,7 @@ int CNode::GetAttributeValue(std::string name, long &value)
 }
 int CNode::GetAttributeValue(std::string name, double &value)
 {
-	string svalue;
+	std::string svalue;
 	if (GetAttributeValue(name,svalue)<0)
 	{
 		return -1;

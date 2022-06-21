@@ -62,8 +62,8 @@ public:
 	CBF_Xml  g_pRunXml; //保存进程运行信息，如PID的xml文件
 	char     m_sErrMsg[256]; //出错信息
 
-	vector<S_DREBLINK_INFO> g_vDrebLinkInfo;//dreb连接列表
-	vector<S_PROCESS_NODE>  g_vProcessInfo; //管理的进程信息
+	std::vector<S_DREBLINK_INFO> g_vDrebLinkInfo;//dreb连接列表
+	std::vector<S_PROCESS_NODE>  g_vProcessInfo; //管理的进程信息
 	
 public:
 	bool UpdateLastTimeById(std::string nodeid);

@@ -5,7 +5,6 @@
 #include "BF_Md5.h"
 #include "BF_Tools.h"
 #include "GateWay.h"
-#include "Bpc_Timer.h"
 
 
 #ifdef WIN32
@@ -13,12 +12,14 @@
 #pragma comment(lib, "bf_aiod.lib") 
 #pragma comment(lib, "bf_dbpubd.lib") 
 #pragma comment(lib, "bf_kerneld.lib") 
-#pragma message("Automatically linking with  bf_kerneld.lib bf_dbpubd.lib ")
+#pragma comment(lib, "bf_drebapid.lib") 
+#pragma message("Automatically linking with  bf_kerneld.lib bf_dbpubd.lib bf_drebapid.lib")
 #else
 #pragma comment(lib, "bf_aio.lib") 
 #pragma comment(lib, "bf_dbpub.lib") 
 #pragma comment(lib, "bf_kernel.lib") 
-#pragma message("Automatically linking with  bf_kernel.lib bf_dbpub.lib")
+#pragma comment(lib, "bf_drebapi.lib") 
+#pragma message("Automatically linking with  bf_kernel.lib bf_dbpub.lib bf_drebapi.lib")
 #endif
 #endif
 
@@ -26,9 +27,8 @@ char *g_pExitFlag=NULL;
 int  g_pRunFlag=1;
 
 CGateWay   g_pGWRun;
-CBpc_Timer  g_pBpcTime;
 
-char g_VERSION[20]="1.0.2.20100724";   //api的版本
+char g_VERSION[20];
 
 
 #ifndef _WINDOWS
@@ -148,10 +148,11 @@ int main(int argc, char* argv[])
 	memset(shmname,0,sizeof(shmname));
 	memset(confile,0,sizeof(confile));
 	CShareMemory pShare;
-	
+    memset(g_VERSION, 0, sizeof(g_VERSION));
+    sprintf(g_VERSION, "2.0.1 %s", __DATE__);
 	if (argc == 1)
 	{
-		printf("命令行参数说明:\n");
+		printf("cgate %s build [%s %s] 命令行参数说明:\n",g_VERSION,__DATE__,__TIME__);
 		printf("               不带参数 后台运行 配置文件为bfcgate.xml \n");
 		printf("               stop/STOP  退出bfdreb \n");
 		printf("               -cf  前台运行 \n");
@@ -353,8 +354,8 @@ int main(int argc, char* argv[])
 
 	printf("启动bfcgate成功 %d\n",g_pGWRun.g_pRes.g_nPort);
 	g_pExitFlag[0] = 1;
-	g_pExitFlag[2] = g_pGWRun.g_pRes.g_pLog.GetLogLevel();
-	g_pExitFlag[3] = g_pGWRun.g_pRes.g_pDrebLog.GetLogLevel();
+	g_pExitFlag[2] = ((CBF_LogClient *)g_pGWRun.g_pRes.g_pLog)->GetLogLevel();
+	g_pExitFlag[3] = g_pGWRun.m_pDrebapi.GetDataLogLevel();
 	while (true)
 	{
 		if (g_pRunFlag == 0)
@@ -378,12 +379,12 @@ int main(int argc, char* argv[])
 		{
 			if (g_pExitFlag[1] == 2)
 			{
-				g_pGWRun.g_pRes.g_pLog.SetLogLevel(g_pExitFlag[2]);
+				((CBF_LogClient*)g_pGWRun.g_pRes.g_pLog)->SetLogLevel(g_pExitFlag[2]);
 			}
 			else if (g_pExitFlag[1] == 3)
 			{
-				g_pGWRun.g_pRes.g_pLog.SetLogLevel(g_pExitFlag[3]);
-				g_pGWRun.g_pRes.g_pDrebLog.SetLogLevel(g_pExitFlag[3]);
+				((CBF_LogClient*)g_pGWRun.g_pRes.g_pLog)->SetLogLevel(g_pExitFlag[3]);
+				g_pGWRun.m_pDrebapi.SetDataLogLevel(g_pExitFlag[3]);
 				g_pGWRun.g_pRes.g_pGateLog.SetLogLevel(g_pExitFlag[3]);
 			}
 			g_pExitFlag[1] =0;

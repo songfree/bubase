@@ -409,7 +409,7 @@ int CKvData::setHead(std::string key, std::string svalue)
 	char* item[12]= {m_kvHead.m_seq_no, m_kvHead.m_msg_type, m_kvHead.m_exch_code, m_kvHead.m_msg_flag, 
 		m_kvHead.m_term_type, m_kvHead.m_user_type, m_kvHead.m_user_id, m_kvHead.m_area_code, m_kvHead.m_branch_id, 
 		m_kvHead.m_c_teller_id1, m_kvHead.m_c_teller_id2, m_kvHead.m_rsp_code};
-	string itemstr[12]= {"seq_no", "msg_type", "exch_code", "msg_flag", "term_type", "user_type", "user_id", "area_code", "branch_id", "c_teller_id1", "c_teller_id2", "rsp_code"};
+	std::string itemstr[12]= {"seq_no", "msg_type", "exch_code", "msg_flag", "term_type", "user_type", "user_id", "area_code", "branch_id", "c_teller_id1", "c_teller_id2", "rsp_code"};
 	
 	//先判断消息类型是请求还是应答
 	if (key.compare(itemstr[3]) == 0)
@@ -521,7 +521,7 @@ bool CKvData::getHead(std::string key, std::string &svalue)
 	char* item[12]= {m_kvHead.m_seq_no, m_kvHead.m_msg_type, m_kvHead.m_exch_code, m_kvHead.m_msg_flag,
 		m_kvHead.m_term_type, m_kvHead.m_user_type, m_kvHead.m_user_id, m_kvHead.m_area_code, 
 		m_kvHead.m_branch_id, m_kvHead.m_c_teller_id1, m_kvHead.m_c_teller_id2, m_kvHead.m_rsp_code};
-	string itemstr[12]= {"seq_no", "msg_type", "exch_code", "msg_flag", "term_type", "user_type", "user_id", "area_code", "branch_id", "c_teller_id1", "c_teller_id2", "rsp_code"};
+	std::string itemstr[12]= {"seq_no", "msg_type", "exch_code", "msg_flag", "term_type", "user_type", "user_id", "area_code", "branch_id", "c_teller_id1", "c_teller_id2", "rsp_code"};
 	for (unsigned int i=0; i< sizeof(item)/sizeof(char*); i++)
 	{
 		if (key.compare(itemstr[i]) == 0)

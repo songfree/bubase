@@ -14,26 +14,22 @@
 #ifdef _WINDOWS
 #ifdef _DEBUG
 #pragma comment(lib, "bf_kerneld.lib") 
-#pragma message("Automatically linking with   bf_kerneld.lib")
+#pragma comment(lib, "bf_drebapid.lib") 
+#pragma message("Automatically linking with   bf_kerneld.lib bf_drebapid.lib")
 #else
 #pragma comment(lib, "bf_kernel.lib") 
-#pragma message("Automatically linking with   bf_kernel.lib")
+#pragma comment(lib, "bf_drebapi.lib") 
+#pragma message("Automatically linking with   bf_kernel.lib bf_drebapi.lib")
 #endif
 
 #endif
-
-
 
 char *g_pExitFlag=NULL;
 int   g_pRunFlag= 1;
 CBpc_Timer  g_pBpcTime;
 CBpcRun frun;
 
-
-
-
-
-char g_VERSION[20]="1.0.2.20100724";   //api的版本
+char g_VERSION[20];   //api的版本
 
 #ifndef _WINDOWS
 
@@ -153,9 +149,11 @@ int main(int argc, char* argv[])
 	memset(shmname,0,sizeof(shmname));
 	memset(confile,0,sizeof(confile));
 	CShareMemory pShare;
+    memset(g_VERSION, 0, sizeof(g_VERSION));
+    sprintf(g_VERSION, "2.0.1 %s", __DATE__);
 	if (argc == 1)
 	{
-		printf("命令行参数说明:\n");
+		printf("sap/bpc %s build [%s %s] 命令行参数说明:\n",g_VERSION,__DATE__,__TIME__);
 		printf("               不带参数 后台运行 配置文件为bfsap.xml \n");
 		printf("               stop/STOP  退出bfsap \n");
 		printf("               -cf  前台运行 \n");
@@ -353,17 +351,17 @@ int main(int argc, char* argv[])
 	}
 	
 #ifdef _WINDOWS
-	g_pBpcTime.m_sNxtFilePath = std::string(frun.m_pRes.g_sCurPath)+"\\nxt";
+    g_pBpcTime.m_sNxtFilePath = std::string(frun.m_pRes.g_sCurPath) + "\\nxt";
 #else
-	g_pBpcTime.m_sNxtFilePath = std::string(frun.m_pRes.g_sCurPath)+"/nxt";
+    g_pBpcTime.m_sNxtFilePath = std::string(frun.m_pRes.g_sCurPath) + "/nxt";
 #endif
 	printf("启动bfsap成功 %d\n",frun.m_pRes.g_nPort);
 	
 	frun.Monitor();
 	
 	g_pExitFlag[0] = 1;
-	g_pExitFlag[2] = frun.m_pRes.m_log.GetLogLevel();
-	g_pExitFlag[3] = frun.m_pRes.m_pDrebDataLog.GetLogLevel();
+	g_pExitFlag[2] = ((CBF_LogClient *)frun.m_pDrebApi.GetLogPoint())->GetLogLevel();
+	g_pExitFlag[3] = frun.m_pDrebApi.GetDataLogLevel();
 	SLEEP(15000);
 	while (true)
 	{
@@ -393,20 +391,17 @@ int main(int argc, char* argv[])
 		{
 			if (g_pExitFlag[1] == 2)
 			{
-				frun.m_pRes.m_log.SetLogLevel(g_pExitFlag[2]);
+				((CBF_LogClient*)frun.m_pDrebApi.GetLogPoint())->SetLogLevel(g_pExitFlag[2]);
 			}
 			else if (g_pExitFlag[1] == 3)
 			{
-				frun.m_pRes.m_pDrebDataLog.SetLogLevel(g_pExitFlag[3]);
-				frun.m_pRes.m_pBpcCallDataLog.SetLogLevel(g_pExitFlag[3]);
+				frun.m_pDrebApi.SetDataLogLevel(g_pExitFlag[3]);
 			}
 			g_pExitFlag[1] =0;
 		}
 		//监控处理线程
 		SLEEP_SECONDS(5);
 		frun.Monitor();
-		
-		
 	}
 	return 0;
 }

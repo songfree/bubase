@@ -102,7 +102,7 @@ public:
 
 	
 	int m_nID;//线程的ID
-
+	CGetPushThread      m_pGetPush;
 protected:
 	CBF_SimpleLog m_log;
 	
@@ -116,7 +116,7 @@ protected:
 
 	CGateLink          m_pGateLink;//网关api类
 
-	CGetPushThread      m_pGetPush;
+	
 
 	CGATE_COMMSTRU     m_pCgateLogin;
 

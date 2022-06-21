@@ -58,8 +58,8 @@ public:
 
 	char     m_sErrMsg[256]; //出错信息
 
-	vector<S_DREBLINK_INFO> g_vDrebLinkInfo;//dreb连接列表
-	vector<S_TRANSCONF> m_gwList;//网关转发列表
+	std::vector<S_DREBLINK_INFO> g_vDrebLinkInfo;//dreb连接列表
+	std::vector<S_TRANSCONF> m_gwList;//网关转发列表
 
 	
 	

@@ -109,7 +109,7 @@ extern "C" {
 	}__PACKED__ S_BPC_RSMSG;    
 	
 
-	typedef vector<BPCCOMMSTRU> LIST_BPC_RSMSG;
+	typedef std::vector<BPCCOMMSTRU> LIST_BPC_RSMSG;
 
 	typedef struct //³¤¶È 47
 	{

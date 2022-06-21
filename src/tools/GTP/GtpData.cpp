@@ -512,7 +512,7 @@ int CGtpData::GetValueByName(const char *fieldname, std::string &fieldvalue, int
 
 int CGtpData::GetValueByName(const char *fieldname, char *fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -524,7 +524,7 @@ int CGtpData::GetValueByName(const char *fieldname, char *fieldvalue, int &field
 
 int CGtpData::GetValueByName(const char *fieldname, int &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -539,7 +539,7 @@ int CGtpData::GetValueByName(const char *fieldname, int &fieldvalue, int &fieldt
 }
 int CGtpData::GetValueByName(const char *fieldname, unsigned char &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -554,7 +554,7 @@ int CGtpData::GetValueByName(const char *fieldname, unsigned char &fieldvalue, i
 }
 int CGtpData::GetValueByName(const char *fieldname, double &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -570,7 +570,7 @@ int CGtpData::GetValueByName(const char *fieldname, double &fieldvalue, int &fie
 
 int CGtpData::GetValueByName(const char *fieldname, unsigned int &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -586,7 +586,7 @@ int CGtpData::GetValueByName(const char *fieldname, unsigned int &fieldvalue, in
 
 int CGtpData::GetValueByName(const char *fieldname, unsigned long &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -602,7 +602,7 @@ int CGtpData::GetValueByName(const char *fieldname, unsigned long &fieldvalue, i
 
 int CGtpData::GetValueByName(const char *fieldname, unsigned short &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -618,7 +618,7 @@ int CGtpData::GetValueByName(const char *fieldname, unsigned short &fieldvalue, 
 
 int CGtpData::GetValueByName(const char *fieldname, short &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -634,7 +634,7 @@ int CGtpData::GetValueByName(const char *fieldname, short &fieldvalue, int &fiel
 
 int CGtpData::GetValueByName(const char *fieldname, long &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -1815,7 +1815,7 @@ int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, std::st
 
 int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, char *fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(recnum,fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -1827,7 +1827,7 @@ int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, char *f
 
 int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, int &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(recnum,fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -1843,7 +1843,7 @@ int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, int &fi
 
 int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, double &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(recnum,fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -1859,7 +1859,7 @@ int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, double 
 
 int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, unsigned int &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(recnum,fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -1875,7 +1875,7 @@ int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, unsigne
 
 int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, unsigned long &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(recnum,fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -1891,7 +1891,7 @@ int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, unsigne
 
 int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, unsigned short &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(recnum,fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -1907,7 +1907,7 @@ int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, unsigne
 
 int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, short &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(recnum,fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -1923,7 +1923,7 @@ int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, short &
 
 int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, long &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(recnum,fieldname,ss,fieldtype);
 	if (nRet<0)
 	{
@@ -1938,7 +1938,7 @@ int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, long &f
 }
 int CGtpData::GetValueByName(unsigned int recnum,std::string &fieldname, unsigned char &fieldvalue, int &fieldtype)
 {
-	string ss;
+	std::string ss;
 	int nRet= GetValueByName(recnum,fieldname,ss,fieldtype);
 	if (nRet<0)
 	{

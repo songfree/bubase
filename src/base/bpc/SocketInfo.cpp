@@ -119,7 +119,7 @@ void CSocketInfo::Init(CGResource *res,CBF_BufferPool *pool)
 	m_pMemPool = pool;
 	m_gRes = res;
 
-	m_log= &(m_gRes->m_log);
+	m_log= m_gRes->m_log;
 	ResetInfo();
 	m_nCloseTime = 0;
 	m_pDrebEndian.SetCommEndian(true);//使用主机序
@@ -447,16 +447,6 @@ int CSocketInfo::SendMsg(S_BPC_RSMSG &msg,bool sendimmediate)
 			m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"发送给BPU[%s %d]的消息[%s] 业务数据长度[%d]",\
 				m_sBpuGroupName.c_str(),m_index,GetBpcMsgType(msg.sMsgBuf->sBpcHead.cMsgType).c_str(),msg.sMsgBuf->sDBHead.nLen);
 		}
-		if (msg.sMsgBuf->sDBHead.cRaflag == 1) //发给bpu的应答
-		{
-			m_gRes->m_pBpcCallDataLog.LogBpc(LOG_PROMPT,msg.sMsgBuf);
-		}
-		else
-		{
-			m_gRes->m_pDrebDataLog.LogBpc(LOG_PROMPT,msg.sMsgBuf);
-		}
-		
-//		g_pBpcLog.LogBpc(LOG_PROMPT,msg.sMsgBuf);
 		//转换成通讯字节序,这里为主机字节序
 
 		if (m_gRes->g_vBpuGroupInfo[m_nBpuGroupIndex].g_nUseBigEndian == 1) //java版的bpu使用网络序时
@@ -535,16 +525,6 @@ int CSocketInfo::SendMsg(S_BPC_RSMSG &msg,bool sendimmediate)
 				m_index,GetDrebCmdType(msg.sMsgBuf->sDBHead.cCmd).c_str(),msg.sMsgBuf->sDBHead.nLen);
 		}
 
-		if (msg.sMsgBuf->sDBHead.cRaflag == 1) 
-		{
-			m_gRes->m_pDrebDataLog.LogDreb(LOG_PROMPT,msg.sMsgBuf,false);
-		}
-		else //发给dreb的请求
-		{
-			m_gRes->m_pBpcCallDataLog.LogDreb(LOG_PROMPT,msg.sMsgBuf,false);
-		}
-
-//		g_pBpcLog.LogDreb(LOG_PROMPT,msg.sMsgBuf,false);
 		if (m_gRes->g_nCrcFlag == 1)
 		{
 			m_pDrebEndian.Endian2CommGenCrc(&(msg.sMsgBuf->sDBHead));
@@ -764,15 +744,7 @@ int CSocketInfo::GetRecvData(S_BPC_RSMSG *msg)
 			}
 			else
 			{
-				if (msg->sMsgBuf->sDBHead.cRaflag == 1) //应答，写bpccall
-				{
-					m_gRes->m_pBpcCallDataLog.LogDreb(LOG_PROMPT,msg->sMsgBuf,false);
-				}
-				else
-				{
-					m_gRes->m_pDrebDataLog.LogDreb(LOG_PROMPT,msg->sMsgBuf,false);
-				}
-//				g_pBpcLog.LogDreb(LOG_PROMPT,msg->sMsgBuf,false);
+
 			}
 			
 
@@ -857,11 +829,11 @@ int CSocketInfo::GetRecvData(S_BPC_RSMSG *msg)
 			if (msg->sMsgBuf->sDBHead.cRaflag == 0) 
 			{
 				msg->sMsgBuf->sBpcHead.nBpuIndex = m_index;//只有在请求时才要更新，因为有内调，内调根据此值返回给调用的bpu
-				m_gRes->m_pBpcCallDataLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
+				//m_gRes->m_pBpcCallDataLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
 			}
 			else
 			{
-				m_gRes->m_pDrebDataLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
+				//m_gRes->m_pDrebDataLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
 			}
 			//g_pBpcLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
 			//收多了，将原包重新给m_sRcvBuffer

@@ -6,8 +6,8 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommand>$(BUBASE_TOOLS_X86)/cgatepmtd.exe</LocalDebuggerCommand>
-    <LocalDebuggerWorkingDirectory>$(BUBASE_TOOLS_X86)</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommand>$(BUBASE_TOOLS_X64)/cgatepmtd.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>$(BUBASE_TOOLS_X64)</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

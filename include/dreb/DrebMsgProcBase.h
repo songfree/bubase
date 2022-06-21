@@ -71,7 +71,7 @@ public:
 
 	S_BPC_RSMSG      m_rMsgData;
 	
-	virtual std::string GetBpcMsgType(int msgtype)
+	static std::string GetBpcMsgType(int msgtype)
 	{
 		switch (msgtype)
 		{
@@ -111,7 +111,7 @@ public:
 			return "";
 		}
 	}
-	virtual std::string GetDrebCmdType(int cmdtype)
+	static std::string GetDrebCmdType(int cmdtype)
 	{
 		switch (cmdtype)
 		{
@@ -148,6 +148,12 @@ public:
 			return "CMD_MONITOR_DREB";
 		case  CMD_MONITOR_BPC:     //16 //数据总线节点监控
 			return "CMD_MONITOR_BPC";
+        case  CMD_DPBC_UNREGTX:     //17 发送取消注册交易广播  针对某一个服务，DREB_D_NODEINFO
+            return "CMD_DPBC_UNREGTX";
+        case  CMD_SUBSCRIBE:     //18 服务向总线订阅广播
+            return "CMD_SUBSCRIBE";
+        case  CMD_UNSUBSCRIBE:     //19 服务向总线取消订阅广播
+            return "CMD_UNSUBSCRIBE";
 		default:
 			return "";
 		}
@@ -507,7 +513,7 @@ protected:
 		xmlpack.SetNodeAttribute("Monitor/内存缓冲池",false,"每块大小",false,bufsize );
 		//取主机信息
 		S_MONITOR_HOST hf;
-		vector<S_MONITOR_DISK> di;
+		std::vector<S_MONITOR_DISK> di;
 		m_pDrebApi->GetHostInfo(hf,di);
 		
 		xmlpack.SetNodeValueByPath("Monitor/主机资源/CPU",false,(int)hf.nCpuRate);

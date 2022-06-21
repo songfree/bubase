@@ -55,7 +55,7 @@ public:
 	/// 参数  : string buffer
 	/// 参数  : int nIndex
 	/// 描述  : update指定字段 从0开始
-	int SetAt(string buffer,int nIndex); 
+	int SetAt(std::string buffer,int nIndex);
 	
 
 	/// 函数名: GetAt
@@ -124,7 +124,7 @@ public:
 	/// 返回  : string 
 	/// 参数  : int nIndex
 	/// 描述  : 取指定字段 从0开始
-	string GetAtS(int nIndex) ;         
+	std::string GetAtS(int nIndex) ;
 
 
 	/// 函数名: GetAt
@@ -133,7 +133,7 @@ public:
 	/// 参数  : string fieldname 字段名
 	/// 参数  : char *FieldData
 	/// 描述  : 取指定字段
-    int GetAt(string fieldname,char *FieldData);           
+    int GetAt(std::string fieldname,char *FieldData);
 	
 	/// 函数名: GetAt
 	/// 编程  : 王明松 2006-3-30 17:13:56
@@ -141,7 +141,7 @@ public:
 	/// 参数  : string fieldname 字段名
 	/// 参数  : double &FieldData
 	/// 描述  : 取指定字段 
-    int GetAt(string fieldname,double &FieldData);          
+    int GetAt(std::string fieldname,double &FieldData);
 	
 	/// 函数名: GetAt
 	/// 编程  : 王明松 2006-3-30 17:14:00
@@ -149,7 +149,7 @@ public:
 	/// 参数  : string fieldname 字段名
 	/// 参数  : long &FieldData
 	/// 描述  : 取指定字段 
-    int GetAt(string fieldname,long &FieldData);            
+    int GetAt(std::string fieldname,long &FieldData);
 	
 	/// 函数名: GetAt
 	/// 编程  : 王明松 2006-3-30 17:14:04
@@ -157,7 +157,7 @@ public:
 	/// 参数  : string fieldname 字段名
 	/// 参数  : int &FieldData
 	/// 描述  : 取指定字段 从0开始
-    int GetAt(string fieldname,int &FieldData);             
+    int GetAt(std::string fieldname,int &FieldData);
     
 	
 	/// 函数名: *GetAt
@@ -165,35 +165,35 @@ public:
 	/// 返回  : char 
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取指定字段的char值
-	char *GetAt(string fieldname);           
+	char *GetAt(std::string fieldname);
 	
 	/// 函数名: GetAtD
 	/// 编程  : 王明松 2006-3-30 17:14:31
 	/// 返回  : double 
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取指定字段 
-    double GetAtD(string fieldname);         
+    double GetAtD(std::string fieldname);
 	
 	/// 函数名: GetAtL
 	/// 编程  : 王明松 2006-3-30 17:14:35
 	/// 返回  : long 
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取指定字段 
-    long GetAtL(string fieldname);            
+    long GetAtL(std::string fieldname);
 	
 	/// 函数名: GetAtI
 	/// 编程  : 王明松 2006-3-30 17:14:38
 	/// 返回  : int 
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取指定字段 
-    int GetAtI(string fieldname);             
+    int GetAtI(std::string fieldname);
 	
 	/// 函数名: GetAtS
 	/// 编程  : 王明松 2006-3-30 17:14:42
 	/// 返回  : string 
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取指定字段 
-	string GetAtS(string fieldname) ;         
+	std::string GetAtS(std::string fieldname) ;
 
 	/// 函数名: Add
 	/// 编程  : 王明松 2006-3-30 17:15:23
@@ -207,7 +207,7 @@ public:
 	/// 返回  : int 
 	/// 参数  : string buffer
 	/// 描述  : 加一个字段到最后
-	int Add(string buffer);                           
+	int Add(std::string buffer);
 
     ~CSqlAPIData();
     CSqlAPIData();
@@ -310,7 +310,7 @@ public:
 	/// 参数  : int Record
 	/// 参数  : int FieldNo
 	/// 描述  : 取某一记录的某一字段的string值
-	string GetAtS(int Record,int FieldNo);   
+	std::string GetAtS(int Record,int FieldNo);
 	
 	/// 函数名: GetAt
 	/// 编程  : 王明松 2006-3-30 17:16:47
@@ -319,7 +319,7 @@ public:
 	/// 参数  : string fieldname 字段名
 	/// 参数  : char *FieldData
 	/// 描述  : 取某一记录的某一字段的char值
-    int GetAt(int Record,string fieldname,char *FieldData);     
+    int GetAt(int Record, std::string fieldname,char *FieldData);
 	
 	/// 函数名: GetAt
 	/// 编程  : 王明松 2006-3-30 17:16:56
@@ -328,7 +328,7 @@ public:
 	/// 参数  : string fieldname 字段名
 	/// 参数  : double &FieldData
 	/// 描述  : 取某一记录的某一字段的double值
-    int GetAt(int Record,string fieldname,double &FieldData);    
+    int GetAt(int Record, std::string fieldname,double &FieldData);
 	
 	/// 函数名: GetAt
 	/// 编程  : 王明松 2006-3-30 17:17:00
@@ -337,7 +337,7 @@ public:
 	/// 参数  : string fieldname 字段名
 	/// 参数  : long &FieldData
 	/// 描述  : 取某一记录的某一字段的long值
-    int GetAt(int Record,string fieldname,long &FieldData);      
+    int GetAt(int Record, std::string fieldname,long &FieldData);
 	
 	/// 函数名: GetAt
 	/// 编程  : 王明松 2006-3-30 17:17:04
@@ -346,7 +346,7 @@ public:
 	/// 参数  : string fieldname 字段名
 	/// 参数  : int &FieldData
 	/// 描述  : 取某一记录的某一字段的int值
-    int GetAt(int Record,string fieldname,int &FieldData);      
+    int GetAt(int Record, std::string fieldname,int &FieldData);
 	
 	
 	/// 函数名: GetAt
@@ -355,7 +355,7 @@ public:
 	/// 参数  : int Record
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取某一记录的某一字段的char值
-	char * GetAt(int Record,string fieldname);     
+	char * GetAt(int Record, std::string fieldname);
 	
 	/// 函数名: GetAtD
 	/// 编程  : 王明松 2006-3-30 17:17:12
@@ -363,7 +363,7 @@ public:
 	/// 参数  : int Record
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取某一记录的某一字段的double值
-	double GetAtD(int Record,string fieldname);    
+	double GetAtD(int Record, std::string fieldname);
 	
 	/// 函数名:  GetAtL
 	/// 编程  : 王明松 2006-3-30 17:17:15
@@ -371,7 +371,7 @@ public:
 	/// 参数  : int Record
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取某一记录的某一字段的long值
-    long   GetAtL(int Record,string fieldname);      
+    long   GetAtL(int Record, std::string fieldname);
 	
 	/// 函数名:   GetAtI
 	/// 编程  : 王明松 2006-3-30 17:17:19
@@ -379,7 +379,7 @@ public:
 	/// 参数  : int Record
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取某一记录的某一字段的int值
-    int    GetAtI(int Record,string fieldname);      
+    int    GetAtI(int Record, std::string fieldname);
 	
 	/// 函数名: GetAtS
 	/// 编程  : 王明松 2006-3-30 17:17:22
@@ -387,7 +387,7 @@ public:
 	/// 参数  : int Record
 	/// 参数  : string fieldname 字段名
 	/// 描述  : 取某一记录的某一字段的string值
-	string GetAtS(int Record,string fieldname);
+	std::string GetAtS(int Record, std::string fieldname);
 
 public: 
     int          DB_ErrorCode;                            ///出错代码

@@ -435,7 +435,7 @@ CDbApi::~CDbApi()
 	
 }
 
-bool CDbApi::Connect(string dbname, string dbuser, string dbuserpwd, int dbtype)
+bool CDbApi::Connect(std::string dbname, std::string dbuser, std::string dbuserpwd, int dbtype)
 {
 	bool isconn;
 	isconn = m_dbconn.SetDbPara(dbname,dbuser,dbuserpwd,dbtype);

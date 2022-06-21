@@ -12,12 +12,9 @@
 CMsgThread::CMsgThread()
 {
 	m_pRes = NULL;
-	m_pSockMgr = NULL;
 	m_pMemPool = NULL;
 	m_pPoolData = NULL;
 	m_sThreadName,"CMsgThread";
-	m_nDispatchNum =0;
-	m_nDrebNum = 0;
 }
 
 CMsgThread::~CMsgThread()
@@ -71,24 +68,19 @@ bool CMsgThread::InitThreadInstance()
 {
 	return true;
 }
-bool CMsgThread::SetGlobalVar(CGateResource *res,CPoolData *pooldata,CBF_BufferPool *mempool,CSocketMgr *sockmgr)
+bool CMsgThread::SetGlobalVar(CGateResource *res,CPoolData *pooldata,CBF_BufferPool *mempool,CBF_DrebServer *drebapi)
 {
 	m_pRes = res;
-	m_pSockMgr = sockmgr;
+	m_pDrebApi = drebapi;
 	m_pMemPool = mempool;
 	m_pPoolData = pooldata;
 
-	m_pLog = &(m_pRes->g_pLog);
-	
-	m_nDrebNum = m_pRes->g_vDrebLinkInfo.size();
+	m_pLog =m_pRes->g_pLog;
 	m_pDesZip.SetLogPara(m_pLog);
-
-	m_pDrebLog = &(m_pRes->g_pDrebLog);
 	return true;
 }
 int CMsgThread::Run()
 {
-	m_nDispatchNum = 0;
 	m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"启动消息处理线程");
 	while (!m_pRes->g_bIsExit)
 	{
@@ -96,11 +88,6 @@ int CMsgThread::Run()
 		{
 			//分发数据
 			Dispatch();
-			m_nDispatchNum++;
-			if (m_nDispatchNum >= m_nDrebNum)
-			{
-				m_nDispatchNum = 0; 
-			}
 		}
 	}
 	m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"停止消息处理线程");
@@ -108,67 +95,16 @@ int CMsgThread::Run()
 }
 void CMsgThread::Dispatch()
 {
-	int btime = time(NULL);
-	while (!m_pRes->g_bIsExit)
-	{
-		if (m_pSockMgr->at(m_nDispatchNum)->m_sock != INVALID_SOCKET && m_pSockMgr->at(m_nDispatchNum)->m_bChecked)
-		{
-			m_pDataBuf.totallen = m_pDataBuf.data->head.nLen + DREBHEADLEN;
-			m_pDataBuf.sendlen = m_pDataBuf.totallen;
-			if (m_pDataBuf.nIndex == 0)
-			{
-				m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"将监控请求  发给 dreb-index[%d]",\
-					m_nDispatchNum);
-			}
-			else
-			{
-				m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"将客户端请求 index[%d] 标识[%d] 发给 dreb-index[%d]",\
-				m_pDataBuf.nIndex,m_pDataBuf.serial,m_nDispatchNum);
-			}
-			
-			if (m_pSockMgr->at(m_nDispatchNum)->Send(m_pDataBuf) == 0)
-			{
-				if (m_pDataBuf.nIndex == 0)
-				{
-					m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"完成 监控请求发给 dreb-index[%d] ",\
-						m_nDispatchNum);
-				}
-				else
-				{
-					m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"完成 客户端请求 index[%d] 标识[%d] 发给 dreb-index[%d]",\
-						m_pDataBuf.nIndex,m_pDataBuf.serial,m_nDispatchNum);
-				}
-			}
-			return ;
-		}
-		else
-		{
-			m_nDispatchNum++;
-			if (m_nDispatchNum >= m_nDrebNum)
-			{
-				m_nDispatchNum = 0; 
-			}
-		}
-		if (time(NULL) - btime > m_pRes->g_nDispatchTime)
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"请求分配超时,dreb连接全断开 %d",m_pDataBuf.serial);
-			m_pLog->LogBin(LOG_ERROR_FAULT,__FILE__,__LINE__,"请求分配超时",m_pDataBuf.data->buffer,m_pDataBuf.data->head.nLen);
-			m_pMemPool->PoolFree(m_pDataBuf.data);
-			m_pDataBuf.data = NULL;
-			return;
-		}
-#ifdef _WINDOWS
-		SLEEP(5);
-#else
-		usleep(5);
-#endif
-	}
+	m_pDataBuf.sMsgBuf->sBpcHead.nIndex = 100;
+	LogDrebHead(LOG_DEBUG,m_pDataBuf.sMsgBuf->sDBHead,"发到总线的数据 ",__FILE__,__LINE__);
+	m_pDrebApi->SendMsg(m_pDataBuf);
+	
 	return;
 }
 
 void CMsgThread::LogDrebHead(int loglevel, DREB_HEAD head, const char *msg, const char *filename, int fileline)
 {
-	bzero(m_headMsg,sizeof(m_headMsg));
+	//bzero(m_headMsg,sizeof(m_headMsg));
 	sprintf(m_headMsg,"%s DREBHEAD信息 cZip=%d cCmd=%s cRaflag=%d cNextFlag=%d cDrebAffirm=%d s_nNodeId=%d \
 	   s_cNodePrivateId=%d s_nSvrMainId=%d s_cSvrPrivateId=%d s_nHook=%d s_nSerial=%d \
 	   s_nDrebSerial=%d s_nIndex=%d d_nNodeId=%d d_cNodePrivateId=%d d_nSvrMainId=%d \

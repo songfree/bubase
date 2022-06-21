@@ -50,6 +50,7 @@ int CGetPushThread::Run()
 		ret = m_pGateLink->GetReqData(&data,m_pShareData->m_pServerPara.timeout/1000);
 		if (ret >0 )
 		{
+			m_log->LogBin(LOG_DEBUG, __FILE__, __LINE__, "收到网关过来的推送数据", data.buffer,data.head.nLen);
 			m_pShareData->RunPush(data.head.nLen+CGATEHEADLEN,1);
 		}
 		else if (ret <0)

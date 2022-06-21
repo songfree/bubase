@@ -58,7 +58,8 @@ private:
 	virtual void ExitThreadInstance();
 
 	bool ZipBuf(PSOCKET_POOL_DATA info,PCGATE_COMMSTRU  data,int nZipFlag);
-	
+
+	bool UnzipDrebBuf(S_CGATE_SMSG& data);
 protected:
 	CIErrlog      *m_pLog;
 	CBF_Date_Time m_datetime;
@@ -72,14 +73,15 @@ protected:
 
 	CCgateLog       *m_pGateLog;
 	CDrebEndian    m_pEndian;
-	S_CGATE_SMSG  m_pSmsg;
+	S_CGATE_SMSG    m_pSmsg;
 
 	char          m_sSrcBuffer[CLIENTDATASIZE+2];//针对客户端数据的解密解压缩的源
 	char          m_sDestBuffer[CLIENTDATASIZE+2];//针对客户端数据的解密解压缩的目的
 
-	void SendBCMsg(S_CGATE_SMSG *msg);
-	void SendSingleBcMsg(S_CGATE_SMSG *msg);
-	void SendMsg(S_CGATE_SMSG *msg);
+	void SendBCMsg(S_CGATE_SMSG *msg);	       //发送行情广播
+	void SendSingleBcMsg(S_CGATE_SMSG *msg);   //发送一条
+	void SendMsg(S_CGATE_SMSG *msg);		   //发送应答及推送
+	void SendSubscribeMsg(S_CGATE_SMSG* msg);	 //发送订阅信息
 
 	int  m_nSendQuoteNum;
 	int  m_nSendCustNum;

@@ -30,7 +30,7 @@ public:
 	CEdit	m_edtValue;
 	CEdit	m_edtInitValue;
 	CEdit	m_edtFmt;
-	CMultiColumnComboBox	m_combType;
+	CMultiColumnComboBox 	m_combType;
 	//}}AFX_DATA
 
 	CBF_Xml m_xmlpack;

@@ -74,7 +74,7 @@ class CTest_Index : public CTest_index_base
 {
 public:
 	int aa;
-	string bb;
+    std::string bb;
 	int bbc;
 
 	virtual bool operator<(const CTest_Index& dd) const
@@ -117,7 +117,7 @@ typedef struct S_TEST_INDEX_
 {
 	int rid;
 	int aa;
-	string bb;
+    std::string bb;
 	int bbc;
 	
 	bool operator<(const S_TEST_INDEX_& dd) const
@@ -835,7 +835,7 @@ protected:
     {
         std::size_t operator() (const index_acc_portf_hjcode& f1) const
         {
-            return hash_val(f1.account_id, f1.portfolio_id, (string)f1.hj_code);
+            return hash_val(f1.account_id, f1.portfolio_id, (std::string)f1.hj_code);
         }
     };
 
@@ -1379,8 +1379,8 @@ int testsettle(int argc, char* argv[])
     ///通过读取日志获得结算是否成功
     int i;
     int nfieldcount=0;
-    string sname;
-    string svalue;
+    std::string sname;
+    std::string svalue;
     int rec=0;
 
     dbapi.setCommandText("sp_settle_step1",1);
@@ -1741,7 +1741,7 @@ int testmdb3()
     {
     public:
         int aa;
-        string bb;
+        std::string bb;
         int bbc;
 
 
@@ -1985,7 +1985,7 @@ int teststring()
 	int pos;
 	int offset=str.length()-1;
 	pos=str.rfind(' ', offset);
-	vector<int>deleteList;
+    std::vector<int>deleteList;
 	while (pos != -1 ) 	
 	{
 		if (pos == offset)
@@ -2283,7 +2283,7 @@ int testmdb6()
     {
     public:
         int aa;
-        string bb;
+        std::string bb;
         int bbc;
 
 

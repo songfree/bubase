@@ -411,7 +411,7 @@ public:
 private:
 	char m_buf[1000];
 	char *GetCol(char *src, int index);
-	CNode *CompLayerNode(CNode *pFirst,const string item);
+	CNode *CompLayerNode(CNode *pFirst,const std::string item);
 };
 
 #undef XML_EXPORT

@@ -158,39 +158,29 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\base\cgate\AIO_Work.h" />
-    <ClInclude Include="..\..\..\base\cgate\Bpc_Timer.h" />
     <ClInclude Include="..\..\..\base\cgate\CgateLog.h" />
+    <ClInclude Include="..\..\..\base\cgate\DrebMsgThread.h" />
     <ClInclude Include="..\..\..\base\cgate\GateResource.h" />
     <ClInclude Include="..\..\..\base\cgate\GateWay.h" />
-    <ClInclude Include="..\..\..\base\cgate\HostInfo.h" />
-    <ClInclude Include="..\..\..\base\cgate\LinkThread.h" />
     <ClInclude Include="..\..\..\base\cgate\MdbQuotation.h" />
     <ClInclude Include="..\..\..\base\cgate\MsgThread.h" />
     <ClInclude Include="..\..\..\base\cgate\PoolData.h" />
     <ClInclude Include="..\..\..\base\cgate\SendData.h" />
-    <ClInclude Include="..\..\..\base\cgate\SendQueue.h" />
     <ClInclude Include="..\..\..\base\cgate\SendThread.h" />
-    <ClInclude Include="..\..\..\base\cgate\SocketInfo.h" />
-    <ClInclude Include="..\..\..\base\cgate\SocketMgr.h" />
     <ClInclude Include="..\..\..\base\cgate\SubScribeInfo.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\base\cgate\AIO_Work.cpp" />
-    <ClCompile Include="..\..\..\base\cgate\Bpc_Timer.cpp" />
     <ClCompile Include="..\..\..\base\cgate\cgate.cpp" />
     <ClCompile Include="..\..\..\base\cgate\CgateLog.cpp" />
+    <ClCompile Include="..\..\..\base\cgate\DrebMsgThread.cpp" />
     <ClCompile Include="..\..\..\base\cgate\GateResource.cpp" />
     <ClCompile Include="..\..\..\base\cgate\GateWay.cpp" />
-    <ClCompile Include="..\..\..\base\cgate\HostInfo.cpp" />
-    <ClCompile Include="..\..\..\base\cgate\LinkThread.cpp" />
     <ClCompile Include="..\..\..\base\cgate\MdbQuotation.cpp" />
     <ClCompile Include="..\..\..\base\cgate\MsgThread.cpp" />
     <ClCompile Include="..\..\..\base\cgate\PoolData.cpp" />
     <ClCompile Include="..\..\..\base\cgate\SendData.cpp" />
-    <ClCompile Include="..\..\..\base\cgate\SendQueue.cpp" />
     <ClCompile Include="..\..\..\base\cgate\SendThread.cpp" />
-    <ClCompile Include="..\..\..\base\cgate\SocketInfo.cpp" />
-    <ClCompile Include="..\..\..\base\cgate\SocketMgr.cpp" />
     <ClCompile Include="..\..\..\base\cgate\SubScribeInfo.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

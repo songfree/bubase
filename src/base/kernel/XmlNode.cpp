@@ -402,7 +402,7 @@ bool CXmlNode::DeleteChildNode(std::string nodename, bool isTransSign)
 	{
 		XmlputTransSign(nname);
 	}
-	vector<CXmlNode *>nodelist;
+	std::vector<CXmlNode *>nodelist;
 
 	int ret= GetChildNode(nodename,isTransSign,nodelist);
 	if (ret<1)
@@ -475,7 +475,7 @@ bool CXmlNode::CreateIndex(CXmlNode *childnode)
 	}
 	return false;
 }
-int CXmlNode::GetChildNode(std::string nodename, bool isTransSign, vector<CXmlNode *> &nodelist)
+int CXmlNode::GetChildNode(std::string nodename, bool isTransSign, std::vector<CXmlNode *> &nodelist)
 {
 	std::string sname=nodename;
 	if (isTransSign)
