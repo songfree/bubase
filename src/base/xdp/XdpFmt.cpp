@@ -62,44 +62,44 @@ bool CXdpFmt::Init(const char *xmlfilepathname,char *errmsg)
 	int index=0;
 	while (fieldnode != NULL)
 	{
-		sfield.f_name = fieldnode->GetNodeName(false);
-		if (sfield.f_name.length() > XDP_FIELD_NAMELEN)
+		if (fieldnode->GetNodeName(false).length() > XDP_FIELD_NAMELEN)
 		{
-			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]名称长度大于20",xmlfilepathname,sfield.f_name.c_str());
+			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]名称长度大于20",xmlfilepathname, fieldnode->GetNodeName(false).c_str());
 			return false;
 		}
+		CBF_Tools::StringCopy(sfield.f_name, sizeof(sfield.f_name) - 1, fieldnode->GetNodeName(false).c_str());
 		attr = fieldnode->GetAttribute("index",false);
 		if (NULL == attr )
 		{
-			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无index属性",xmlfilepathname,sfield.f_name.c_str());
+			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无index属性",xmlfilepathname, sfield.f_name);
 			return false;
 		}
 		intvalue = atoi(attr->GetAttrValue(false).c_str());
 		if  (intvalue<0 || intvalue>XDP_BITMAPSIZE*8)
 		{
 			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]的属性index[%s]不符",xmlfilepathname,\
-				sfield.f_name.c_str(),attr->GetAttrValue(false).c_str());
+				sfield.f_name,attr->GetAttrValue(false).c_str());
 			return false;
 		}
 		sfield.f_index = intvalue;
 		if (sfield.f_index != index)
 		{
 			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]的属性index[%s]不是按顺序生成",xmlfilepathname,\
-				sfield.f_name.c_str(),attr->GetAttrValue(false).c_str());
+				sfield.f_name,attr->GetAttrValue(false).c_str());
 			return false;
 		}
 		
 		attr = fieldnode->GetAttribute("type",false);
 		if (NULL == attr )
 		{
-			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无type属性",xmlfilepathname,sfield.f_name.c_str());
+			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无type属性",xmlfilepathname, sfield.f_name);
 			return false;
 		}
 		sfield.f_type = GetType(attr->GetAttrValue(false).c_str());
 		if (XDP_UNKNOW == sfield.f_type)
 		{
 			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]type属性[%s]非法",xmlfilepathname,\
-				sfield.f_name.c_str(),attr->GetAttrValue(false).c_str());
+				sfield.f_name,attr->GetAttrValue(false).c_str());
 			return false;
 		}
 		switch (sfield.f_type)
@@ -124,18 +124,23 @@ bool CXdpFmt::Init(const char *xmlfilepathname,char *errmsg)
 				sfield.f_length = sizeof(double);
 				sfield.f_extlength= 0;
 				break;
+            case  XDP_UINT64:
+			case  XDP_INT64:
+                sfield.f_length = sizeof(INT64_);
+                sfield.f_extlength = 0;
+                break;
 			case  XDP_CHAR:
 				attr = fieldnode->GetAttribute("length",false);
 				if (NULL == attr )
 				{
-					sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无length属性",xmlfilepathname,sfield.f_name.c_str());
+					sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无length属性",xmlfilepathname, sfield.f_name);
 					return false;
 				}
 				intvalue = atoi(attr->GetAttrValue(false).c_str());
 				if (intvalue <1 || intvalue>XDP_FIELD_CHARLEN)
 				{
 					sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]length属性[%s]非法，应小于255",xmlfilepathname,\
-						sfield.f_name.c_str(),attr->GetAttrValue(false).c_str());
+						sfield.f_name,attr->GetAttrValue(false).c_str());
 					return false;
 				}
 				sfield.f_length = intvalue;
@@ -145,14 +150,14 @@ bool CXdpFmt::Init(const char *xmlfilepathname,char *errmsg)
 				attr = fieldnode->GetAttribute("length",false);
 				if (NULL == attr )
 				{
-					sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无length属性",xmlfilepathname,sfield.f_name.c_str());
+					sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无length属性",xmlfilepathname, sfield.f_name);
 					return false;
 				}
 				intvalue = atoi(attr->GetAttrValue(false).c_str());
 				if (intvalue <1 || intvalue>XDP_FIELD_CHARLEN)
 				{
 					sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]length属性[%s]非法，应小于255",xmlfilepathname,\
-						sfield.f_name.c_str(),attr->GetAttrValue(false).c_str());
+						sfield.f_name,attr->GetAttrValue(false).c_str());
 					return false;
 				}
 				sfield.f_length = intvalue;
@@ -162,27 +167,29 @@ bool CXdpFmt::Init(const char *xmlfilepathname,char *errmsg)
 				attr = fieldnode->GetAttribute("length",false);
 				if (NULL == attr )
 				{
-					sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无length属性",xmlfilepathname,sfield.f_name.c_str());
+					sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]无length属性",xmlfilepathname, sfield.f_name);
 					return false;
 				}
 				intvalue = atoi(attr->GetAttrValue(false).c_str());
 				if (intvalue <1 || intvalue >XDP_FIELD_BINLEN)
 				{
 					sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]length属性[%s]非法，应小于4096",xmlfilepathname,\
-						sfield.f_name.c_str(),attr->GetAttrValue(false).c_str());
+						sfield.f_name,attr->GetAttrValue(false).c_str());
 					return false;
 				}
 				sfield.f_length = intvalue;
 				sfield.f_extlength= sizeof(short);
 				break;
 			default:
+                sprintf(errmsg, "配置文件[%s]格式非法，节点[/xdp/%s]未知的字段类型", xmlfilepathname, \
+                    sfield.f_name);
 				return false;
 
 		}
 		if (!AddFmt(sfield))
 		{
 			sprintf(errmsg,"配置文件[%s]格式非法，节点[/xdp/%s]配置项可能和其他的重复",xmlfilepathname,\
-				sfield.f_name.c_str());
+				sfield.f_name);
 			return false;
 		}
 		fieldnode = (CXmlNode *)fieldnode->getNextSibling();
@@ -223,6 +230,14 @@ unsigned short CXdpFmt::GetType(const char *type)
 	{
 		return XDP_INT;
 	}
+    else if (strcmp(tmpchar, "UINT64") == 0)
+    {
+        return XDP_UINT64;
+    }
+    else if (strcmp(tmpchar, "INT64") == 0)
+    {
+        return XDP_INT64;
+    }
 	else if (strcmp(tmpchar,"DOUBLE") == 0)
 	{
 		return XDP_DOUBLE;
@@ -253,13 +268,13 @@ bool CXdpFmt::AddFmt(S_XDP_FIELD_DEFINE field)
 	{
 		return false;
 	}
-	if (m_indexname.Find((char *)field.f_name.c_str()))
+	if (m_indexname.Find(field.f_name ))
 	{
 		return false;
 	}
 	int rowid = m_table.Add(field);
-	m_index.Add(rowid,field.f_index);
-	m_indexname.Add(rowid,(char *)field.f_name.c_str());
+	m_index.Add(rowid, m_table.m_table[rowid].f_index);
+	m_indexname.Add(rowid,m_table.m_table[rowid].f_name);
 	m_nMaxLength+=field.f_extlength;
 	m_nMaxLength+=field.f_length;
 	return true;
@@ -295,13 +310,8 @@ S_XDP_FIELD_DEFINE *CXdpFmt::GetField(unsigned short index)
 
 S_XDP_FIELD_DEFINE *CXdpFmt::GetField(const char *fieldname)
 {
-	CInt  iSet;
-	if (!m_indexname.Select(iSet,(char *)fieldname))
-	{
-		return NULL;
-	}
 	int id;
-	if (!iSet.First(id))
+	if (!m_indexname.Select(id,(char *)fieldname))
 	{
 		return NULL;
 	}

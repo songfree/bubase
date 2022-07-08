@@ -479,12 +479,18 @@ void CMsgProcThread::OnMsgServiceRoute(S_DREB_RSMSG *msg)
 void CMsgProcThread::OnMsgRead(S_DREB_RSMSG *msg)
 {
 	
-	char cmd = msg->message.head.cCmd; 
+	char cmd = msg->message.head.cCmd;
+	int index;
+	unsigned short s_nNodeId;
+	char s_cNodePrivateId;
 	if (m_log->isWrite(LOG_DEBUG))
-	{
+    {
+		index = msg->msghead.index;
+        s_nNodeId = msg->message.head.s_Sinfo.s_nNodeId;
+		s_cNodePrivateId = msg->message.head.s_Sinfo.s_cNodePrivateId;
 		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"数据总线节点命令[%s] index[%d] 来自DREB[%d %d]",\
-			GetDrebCmdType(msg->message.head.cCmd).c_str(),msg->msghead.index,msg->message.head.s_Sinfo.s_nNodeId,\
-			msg->message.head.s_Sinfo.s_cNodePrivateId);
+			GetDrebCmdType(msg->message.head.cCmd).c_str(),s_nNodeId,\
+			s_cNodePrivateId);
 	}
 	
 	switch (msg->message.head.cCmd)
@@ -542,8 +548,10 @@ void CMsgProcThread::OnMsgRead(S_DREB_RSMSG *msg)
 			break;
 		case CMD_SUBSCRIBE:		//服务订阅广播
 			OnCmdSubscribe(msg);
+			break;
         case CMD_UNSUBSCRIBE:		//服务取消订阅广播
             OnCmdUnSubscribe(msg);
+			break;
 		default:
 			m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"数据总线节点命令字不符 %d index[%d] 来自DREB[%d %d]",\
 				msg->message.head.cCmd,msg->msghead.index,msg->message.head.s_Sinfo.s_nNodeId,\
@@ -554,8 +562,8 @@ void CMsgProcThread::OnMsgRead(S_DREB_RSMSG *msg)
 	if (m_log->isWrite(LOG_DEBUG))
 	{
 		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"数据总线节点命令[%s] 处理完成 index[%d] 来自DREB[%d %d ]",\
-			GetDrebCmdType(cmd).c_str(),msg->msghead.index,msg->message.head.s_Sinfo.s_nNodeId,\
-		msg->message.head.s_Sinfo.s_cNodePrivateId);
+			GetDrebCmdType(cmd).c_str(),index,s_nNodeId,\
+			s_cNodePrivateId);
 	}
 	return ;
 }
@@ -2629,8 +2637,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 					GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
 					data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
 					data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
-					msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-		        msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
+					data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId,\
+					data->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
 			}
 			
 			if (m_pSocketMgr->at(sendtlist[i]->nIndex)->SendMsg(data)!=0)
@@ -2673,8 +2681,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 									GetDrebCmdType(data->message.head.cCmd).c_str(), data->message.head.cNextFlag, \
 									data->message.head.cRaflag, data->message.head.d_Dinfo.d_nServiceNo, data->message.head.s_Sinfo.s_nNodeId, \
 									data->message.head.s_Sinfo.s_cNodePrivateId, data->message.head.s_Sinfo.s_nDrebSerial, \
-									msg->message.head.d_Dinfo.d_nNodeId, msg->message.head.d_Dinfo.d_cNodePrivateId, \
-									msg->message.head.d_Dinfo.d_nSvrMainId, msg->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
+									data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId, \
+									data->message.head.d_Dinfo.d_nSvrMainId, data->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
 							 }
 
 							 m_pSocketMgr->at(subcribelist[i].nIndex)->SendMsg(data);
@@ -2713,8 +2721,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
                                     GetDrebCmdType(data->message.head.cCmd).c_str(), data->message.head.cNextFlag, \
                                     data->message.head.cRaflag, data->message.head.d_Dinfo.d_nServiceNo, data->message.head.s_Sinfo.s_nNodeId, \
                                     data->message.head.s_Sinfo.s_cNodePrivateId, data->message.head.s_Sinfo.s_nDrebSerial, \
-                                    msg->message.head.d_Dinfo.d_nNodeId, msg->message.head.d_Dinfo.d_cNodePrivateId, \
-                                    msg->message.head.d_Dinfo.d_nSvrMainId, msg->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
+									data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId, \
+									data->message.head.d_Dinfo.d_nSvrMainId, data->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
                             }
 
                             m_pSocketMgr->at(svrlist[i].nIndex)->SendMsg(data);
@@ -2728,8 +2736,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
                                 data->message.head.cRaflag, data->message.head.d_Dinfo.d_nServiceNo, data->message.head.s_Sinfo.s_nNodeId, \
                                 data->message.head.s_Sinfo.s_cNodePrivateId, msg->message.head.s_Sinfo.s_nDrebSerial, \
                                 svrlist[i].nSvrMainId, svrlist[i].cSvrPrivateId, \
-                                msg->message.head.d_Dinfo.d_nNodeId, msg->message.head.d_Dinfo.d_cNodePrivateId, \
-                                msg->message.head.d_Dinfo.d_nSvrMainId, msg->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
+								data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId, \
+								data->message.head.d_Dinfo.d_nSvrMainId, data->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
                             if (svrlist[i].pSendQueue->PutSendMsg(data) != 0)
                             {
                                 m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "入发送队列失败");
@@ -2768,7 +2776,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 						msg->message.head.cRaflag,msg->message.head.d_Dinfo.d_nServiceNo,msg->message.head.s_Sinfo.s_nNodeId,\
 						msg->message.head.s_Sinfo.s_cNodePrivateId,msg->message.head.s_Sinfo.s_nDrebSerial,\
 						msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-		        msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,msg->message.head.nLen);
+						msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,msg->message.head.nLen);
 					AnsMsg(msg,ERR_SVRNOTREGISTER,"无此服务");
 					return ;
 				}
@@ -2784,7 +2792,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 						msg->message.head.cRaflag,msg->message.head.d_Dinfo.d_nServiceNo,msg->message.head.s_Sinfo.s_nNodeId,\
 						msg->message.head.s_Sinfo.s_cNodePrivateId,msg->message.head.s_Sinfo.s_nDrebSerial,\
 						msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-		        msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,msg->message.head.nLen);
+						msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,msg->message.head.nLen);
 					AnsMsg(msg,ERR_SVRNOTREGISTER,"无此服务");
 					return;
 				}
@@ -2809,8 +2817,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 						GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
 						data->message.head.cRaflag,msg->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
 						data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
-						msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-					msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
+						data->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
+						data->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
 				}
 				
 				m_pSocketMgr->at(svr.nIndex)->SendMsg(data);
@@ -2825,8 +2833,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 						GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
 						data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
 						data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
-						msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-						msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
+						data->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
+						data->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
 				}
 				
 				if (svr.pSendQueue->PutSendMsg(data)!=0)
@@ -2883,8 +2891,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
                                     GetDrebCmdType(data->message.head.cCmd).c_str(), data->message.head.cNextFlag, \
                                     data->message.head.cRaflag, data->message.head.d_Dinfo.d_nServiceNo, data->message.head.s_Sinfo.s_nNodeId, \
                                     data->message.head.s_Sinfo.s_cNodePrivateId, data->message.head.s_Sinfo.s_nDrebSerial, \
-                                    msg->message.head.d_Dinfo.d_nNodeId, msg->message.head.d_Dinfo.d_cNodePrivateId, \
-                                    msg->message.head.d_Dinfo.d_nSvrMainId, msg->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
+									data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId, \
+									data->message.head.d_Dinfo.d_nSvrMainId, data->message.head.d_Dinfo.d_cSvrPrivateId, data->message.head.nLen);
                             }
 
                             m_pSocketMgr->at(subcribelist[i].nIndex)->SendMsg(data);
@@ -2923,8 +2931,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 									GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
 									data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
 									data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
-									msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-									msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
+									data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId,\
+									data->message.head.d_Dinfo.d_nSvrMainId, data->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
 							}
 						
 							m_pSocketMgr->at(svrlist[i].nIndex)->SendMsg(data);
@@ -2938,8 +2946,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 								data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
 								data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
 								svrlist[i].nSvrMainId,svrlist[i].cSvrPrivateId,\
-								msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-								msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
+								data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId,\
+								data->message.head.d_Dinfo.d_nSvrMainId, data->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
 							if (svrlist[i].pSendQueue->PutSendMsg(data)!=0)
 							{
 								m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"入发送队列失败");
@@ -2977,7 +2985,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 						msg->message.head.cRaflag,msg->message.head.d_Dinfo.d_nServiceNo,msg->message.head.s_Sinfo.s_nNodeId,\
 						msg->message.head.s_Sinfo.s_cNodePrivateId,msg->message.head.s_Sinfo.s_nDrebSerial,\
 						msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-		        msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,msg->message.head.nLen);
+						msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,msg->message.head.nLen);
 					m_pMemPool->PoolFree(msg);
 					return ;
 				}
@@ -3018,8 +3026,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 						GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
 						data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
 						data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
-						msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-						msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
+						data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId,\
+						data->message.head.d_Dinfo.d_nSvrMainId, data->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
 				}
 				
 				m_pSocketMgr->at(svr.nIndex)->SendMsg(data);
@@ -3034,8 +3042,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 						GetDrebCmdType(data->message.head.cCmd).c_str(),data->message.head.cNextFlag,\
 						data->message.head.cRaflag,data->message.head.d_Dinfo.d_nServiceNo,data->message.head.s_Sinfo.s_nNodeId,\
 						data->message.head.s_Sinfo.s_cNodePrivateId,data->message.head.s_Sinfo.s_nDrebSerial,\
-						msg->message.head.d_Dinfo.d_nNodeId,msg->message.head.d_Dinfo.d_cNodePrivateId,\
-						msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
+						data->message.head.d_Dinfo.d_nNodeId, data->message.head.d_Dinfo.d_cNodePrivateId,\
+						data->message.head.d_Dinfo.d_nSvrMainId, data->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
 				}
 				
 				if (svr.pSendQueue->PutSendMsg(data)!=0)
@@ -3969,8 +3977,8 @@ void CMsgProcThread::OnCmdSubscribe(S_DREB_RSMSG* msg)
     if (prs->nFuncNum < 1)
     {
         m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "服务[%d %d]广播订阅 广播个数[%d]为0，取消订阅", prs->nSvrMainId, prs->cSvrPrivateId, prs->nFuncNum);
-        m_pMemPool->PoolFree(msg);
-
+		m_pMemDb->m_subscribe.UnSubscribe(msg->msghead.index);
+		m_pMemPool->PoolFree(msg);
         return;
     }
     if (msg->message.head.nLen < sizeof(S_SERVICEREG_MSG) + (prs->nFuncNum - 1) * sizeof(unsigned int))

@@ -918,6 +918,10 @@ std::string CSocketInfo::GetDrebCmdType(int cmdtype)
 		return "CMD_MONITOR_BPC";
 	case  CMD_DPBC_UNREGTX:     //17 //取消服务的交易注册广播
 		return "CMD_DPBC_UNREGTX";
+    case  CMD_SUBSCRIBE:     //18 服务向总线订阅广播
+        return "CMD_SUBSCRIBE";
+    case  CMD_UNSUBSCRIBE:     //19 服务向总线取消订阅广播
+        return "CMD_UNSUBSCRIBE";
 	default:
 		return "";
 	}

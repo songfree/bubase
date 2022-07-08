@@ -105,6 +105,8 @@ public:
 	// ÃèÊö  : È¡µÃ×Ö¶ÎÖµ
 	bool GetFieldData(unsigned short index,char *data, unsigned int &datalen,int &fieldtype,char *errmsg);
 	bool GetFieldData(unsigned short index,int &idata,char *errmsg);
+	bool GetFieldData(unsigned short index, INT64_& idata, char* errmsg);
+	bool GetFieldData(unsigned short index, UINT64_& idata, char* errmsg);
 	bool GetFieldData(unsigned short index,unsigned int &idata,char *errmsg);
 	bool GetFieldData(unsigned short index,short &idata,char *errmsg);
 	bool GetFieldData(unsigned short index,unsigned short &idata,char *errmsg);
@@ -112,6 +114,8 @@ public:
 
 	bool GetFieldData(const char *fieldname,char *data,unsigned int &datalen,int &fieldtype,char *errmsg);
 	bool GetFieldData(const char *fieldname,int &idata,char *errmsg);
+    bool GetFieldData(const char* fieldname, INT64_& idata, char* errmsg);
+    bool GetFieldData(const char* fieldname, UINT64_& idata, char* errmsg);
 	bool GetFieldData(const char *fieldname,unsigned int &idata,char *errmsg);
 	bool GetFieldData(const char *fieldname,short &idata,char *errmsg);
 	bool GetFieldData(const char *fieldname,unsigned short &idata,char *errmsg);
@@ -127,12 +131,16 @@ public:
 	// ÃèÊö  : ÉèÖÃ×Ö¶ÎÖµ
 	bool SetFieldData(unsigned short index,const char *data,unsigned int datalen,char *errmsg);
 	bool SetFieldData(unsigned short index,int idata,char *errmsg);
+	bool SetFieldData(unsigned short index, INT64_ idata, char* errmsg);
+	bool SetFieldData(unsigned short index, UINT64_ idata, char* errmsg);
 	bool SetFieldData(unsigned short index,unsigned int idata,char *errmsg);
 	bool SetFieldData(unsigned short index,short idata,char *errmsg);
 	bool SetFieldData(unsigned short index,unsigned short idata,char *errmsg);
 	bool SetFieldData(unsigned short index,double idata,char *errmsg);
 
 	bool SetFieldData(const char *fieldname,const char *data,unsigned int datalen,char *errmsg);
+	bool SetFieldData(const char* fieldname, INT64_ idata, char* errmsg);
+	bool SetFieldData(const char* fieldname, UINT64_ idata, char* errmsg);
 	bool SetFieldData(const char *fieldname,int idata,char *errmsg);
 	bool SetFieldData(const char *fieldname,unsigned int idata,char *errmsg);
 	bool SetFieldData(const char *fieldname,short idata,char *errmsg);

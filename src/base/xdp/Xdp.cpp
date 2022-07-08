@@ -268,6 +268,50 @@ bool CXdp::GetFieldValue(unsigned short rec,unsigned short index,double &idata,c
 	}
 	return m_vNextRecord[rec-2]->GetFieldData(index,idata,errmsg);
 }
+bool CXdp::GetFieldValue(unsigned short rec, unsigned short index, INT64_& idata, char* errmsg)
+{
+    if (0 == rec)
+    {
+        return false;
+    }
+    if (1 == rec)
+    {
+        return GetFieldValue(index, idata, errmsg);
+    }
+    if (rec > m_nRecCount)
+    {
+        sprintf(errmsg, "没有此记录");
+        return false;
+    }
+    if (rec - 1 > m_vNextRecord.size())
+    {
+        sprintf(errmsg, "没有此记录，m_nRecCount错误，保存多记录结构数目不符");
+        return false;
+    }
+    return m_vNextRecord[rec - 2]->GetFieldData(index, idata, errmsg);
+}
+bool CXdp::GetFieldValue(unsigned short rec, unsigned short index, UINT64_& idata, char* errmsg)
+{
+    if (0 == rec)
+    {
+        return false;
+    }
+    if (1 == rec)
+    {
+        return GetFieldValue(index, idata, errmsg);
+    }
+    if (rec > m_nRecCount)
+    {
+        sprintf(errmsg, "没有此记录");
+        return false;
+    }
+    if (rec - 1 > m_vNextRecord.size())
+    {
+        sprintf(errmsg, "没有此记录，m_nRecCount错误，保存多记录结构数目不符");
+        return false;
+    }
+    return m_vNextRecord[rec - 2]->GetFieldData(index, idata, errmsg);
+}
 bool CXdp::GetFieldValue(unsigned short rec, unsigned short index, char *data, unsigned int &datalen,int &fieldtype, char *errmsg)
 {
 	if (0 == rec)
@@ -401,6 +445,50 @@ bool CXdp::GetFieldValue(unsigned short rec,const char *fieldname,double &idata,
 	return m_vNextRecord[rec-2]->GetFieldData(fieldname,idata,errmsg);
 }
 
+bool CXdp::GetFieldValue(unsigned short rec, const char* fieldname, INT64_& idata, char* errmsg)
+{
+    if (0 == rec)
+    {
+        return false;
+    }
+    if (1 == rec)
+    {
+        return GetFieldValue(fieldname, idata, errmsg);
+    }
+    if (rec > m_nRecCount)
+    {
+        sprintf(errmsg, "没有此记录");
+        return false;
+    }
+    if (rec - 1 > m_vNextRecord.size())
+    {
+        sprintf(errmsg, "没有此记录，m_nRecCount错误，保存多记录结构数目不符");
+        return false;
+    }
+    return m_vNextRecord[rec - 2]->GetFieldData(fieldname, idata, errmsg);
+}
+bool CXdp::GetFieldValue(unsigned short rec, const char* fieldname, UINT64_& idata, char* errmsg)
+{
+    if (0 == rec)
+    {
+        return false;
+    }
+    if (1 == rec)
+    {
+        return GetFieldValue(fieldname, idata, errmsg);
+    }
+    if (rec > m_nRecCount)
+    {
+        sprintf(errmsg, "没有此记录");
+        return false;
+    }
+    if (rec - 1 > m_vNextRecord.size())
+    {
+        sprintf(errmsg, "没有此记录，m_nRecCount错误，保存多记录结构数目不符");
+        return false;
+    }
+    return m_vNextRecord[rec - 2]->GetFieldData(fieldname, idata, errmsg);
+}
 bool CXdp::GetFieldValue(unsigned short rec, const char *fieldname, char *data,unsigned int &datalen,int &fieldtype, char *errmsg)
 {
 	if (0 == rec)
@@ -443,7 +531,14 @@ bool CXdp::GetFieldValue(unsigned short index,double &idata,char *errmsg)
 {
 	return m_pFirstRecord.GetFieldData(index,idata,errmsg);
 }
-
+bool CXdp::GetFieldValue(unsigned short index, INT64_& idata, char* errmsg)
+{
+    return m_pFirstRecord.GetFieldData(index, idata, errmsg);
+}
+bool CXdp::GetFieldValue(unsigned short index, UINT64_& idata, char* errmsg)
+{
+    return m_pFirstRecord.GetFieldData(index, idata, errmsg);
+}
 bool CXdp::GetFieldValue(unsigned short index, char *data,unsigned int &datalen,int &fieldtype, char *errmsg)
 {
 	return m_pFirstRecord.GetFieldData(index,data,datalen,fieldtype,errmsg);
@@ -469,6 +564,14 @@ bool CXdp::GetFieldValue(const char *fieldname,unsigned short &idata,char *errms
 bool CXdp::GetFieldValue(const char *fieldname,double &idata,char *errmsg)
 {
 	return m_pFirstRecord.GetFieldData(fieldname,idata,errmsg);
+}
+bool CXdp::GetFieldValue(const char* fieldname, INT64_& idata, char* errmsg)
+{
+    return m_pFirstRecord.GetFieldData(fieldname, idata, errmsg);
+}
+bool CXdp::GetFieldValue(const char* fieldname, UINT64_& idata, char* errmsg)
+{
+    return m_pFirstRecord.GetFieldData(fieldname, idata, errmsg);
 }
 bool CXdp::GetFieldValue(const char *fieldname, char *data,unsigned int &datalen,int &fieldtype, char *errmsg)
 {
@@ -703,7 +806,88 @@ bool CXdp::SetFieldValueM(unsigned short rec,const char *fieldname,double idata,
 	}
 	return m_vNextRecord[rec-2]->SetFieldData(fieldname,idata,errmsg);
 }
-
+bool CXdp::SetFieldValueM(unsigned short rec, const char* fieldname, INT64_ idata, char* errmsg)
+{
+    if (0 == rec)
+    {
+        return false;
+    }
+    if (1 == rec)
+    {
+        return SetFieldValue(fieldname, idata, errmsg);
+    }
+    if (rec > 255)
+    {
+        sprintf(errmsg, "最多255条记录");
+        return false;
+    }
+    if (rec > m_vNextRecord.size() + 2)
+    {
+        sprintf(errmsg, "增加记录时要按顺序增加");
+        return false;
+    }
+    if (m_vNextRecord.size() < rec - 1)
+    {
+        //增加一条
+        CXdpRecord* record = new CXdpRecord();
+        if (NULL == record)
+        {
+            return false;
+        }
+        if (!record->Init(&m_pXdpFmt))
+        {
+            return false;
+        }
+        m_vNextRecord.push_back(record);
+        m_nRecCount = rec;
+    }
+    if (rec > m_nRecCount)
+    {
+        m_nRecCount = rec;
+    }
+    return m_vNextRecord[rec - 2]->SetFieldData(fieldname, idata, errmsg);
+}
+bool CXdp::SetFieldValueM(unsigned short rec, const char* fieldname, UINT64_ idata, char* errmsg)
+{
+    if (0 == rec)
+    {
+        return false;
+    }
+    if (1 == rec)
+    {
+        return SetFieldValue(fieldname, idata, errmsg);
+    }
+    if (rec > 255)
+    {
+        sprintf(errmsg, "最多255条记录");
+        return false;
+    }
+    if (rec > m_vNextRecord.size() + 2)
+    {
+        sprintf(errmsg, "增加记录时要按顺序增加");
+        return false;
+    }
+    if (m_vNextRecord.size() < rec - 1)
+    {
+        //增加一条
+        CXdpRecord* record = new CXdpRecord();
+        if (NULL == record)
+        {
+            return false;
+        }
+        if (!record->Init(&m_pXdpFmt))
+        {
+            return false;
+        }
+        m_vNextRecord.push_back(record);
+        m_nRecCount = rec;
+    }
+    if (rec > m_nRecCount)
+    {
+        m_nRecCount = rec;
+    }
+    return m_vNextRecord[rec - 2]->SetFieldData(fieldname, idata, errmsg);
+}
 bool CXdp::SetFieldValue(unsigned short rec,const char *fieldname,const char *data,unsigned int datalen,char *errmsg)
 {
 	if (0 == rec)
@@ -956,7 +1140,90 @@ bool CXdp::SetFieldValue(unsigned short rec,unsigned short index,double idata,ch
 	//设置值
 	return m_vNextRecord[rec-2]->SetFieldData(index,idata,errmsg);
 }
-
+bool CXdp::SetFieldValue(unsigned short rec, unsigned short index, INT64_ idata, char* errmsg)
+{
+    if (0 == rec)
+    {
+        return false;
+    }
+    if (1 == rec)
+    {
+        return SetFieldValue(index, idata, errmsg);
+    }
+    if (rec > 255)
+    {
+        sprintf(errmsg, "最多255条记录");
+        return false;
+    }
+    if (rec > m_vNextRecord.size() + 2)
+    {
+        sprintf(errmsg, "增加记录时要按顺序增加");
+        return false;
+    }
+    if (m_vNextRecord.size() < rec - 1)
+    {
+        //增加一条
+        CXdpRecord* record = new CXdpRecord();
+        if (NULL == record)
+        {
+            return false;
+        }
+        if (!record->Init(&m_pXdpFmt))
+        {
+            return false;
+        }
+        m_vNextRecord.push_back(record);
+        m_nRecCount = rec;
+    }
+    if (rec > m_nRecCount)
+    {
+        m_nRecCount = rec;
+    }
+    //设置值
+    return m_vNextRecord[rec - 2]->SetFieldData(index, idata, errmsg);
+}
+bool CXdp::SetFieldValue(unsigned short rec, unsigned short index, UINT64_ idata, char* errmsg)
+{
+    if (0 == rec)
+    {
+        return false;
+    }
+    if (1 == rec)
+    {
+        return SetFieldValue(index, idata, errmsg);
+    }
+    if (rec > 255)
+    {
+        sprintf(errmsg, "最多255条记录");
+        return false;
+    }
+    if (rec > m_vNextRecord.size() + 2)
+    {
+        sprintf(errmsg, "增加记录时要按顺序增加");
+        return false;
+    }
+    if (m_vNextRecord.size() < rec - 1)
+    {
+        //增加一条
+        CXdpRecord* record = new CXdpRecord();
+        if (NULL == record)
+        {
+            return false;
+        }
+        if (!record->Init(&m_pXdpFmt))
+        {
+            return false;
+        }
+        m_vNextRecord.push_back(record);
+        m_nRecCount = rec;
+    }
+    if (rec > m_nRecCount)
+    {
+        m_nRecCount = rec;
+    }
+    //设置值
+    return m_vNextRecord[rec - 2]->SetFieldData(index, idata, errmsg);
+}
 bool CXdp::SetFieldValue(unsigned short rec,unsigned short index,const char *data,unsigned int datalen,char *errmsg)
 {
 	if (0 == rec)
@@ -1020,6 +1287,14 @@ bool CXdp::SetFieldValue(unsigned short index,double idata,char *errmsg)
 {
 	return m_pFirstRecord.SetFieldData(index,idata,errmsg);
 }
+bool CXdp::SetFieldValue(unsigned short index, INT64_ idata, char* errmsg)
+{
+    return m_pFirstRecord.SetFieldData(index, idata, errmsg);
+}
+bool CXdp::SetFieldValue(unsigned short index, UINT64_ idata, char* errmsg)
+{
+    return m_pFirstRecord.SetFieldData(index, idata, errmsg);
+}
 bool CXdp::SetFieldValue(unsigned short index,const char *data,unsigned int datalen,char *errmsg)
 {
 	return m_pFirstRecord.SetFieldData(index,data,datalen,errmsg);
@@ -1044,7 +1319,14 @@ bool CXdp::SetFieldValue(const char *fieldname,double idata,char *errmsg)
 {
 	return m_pFirstRecord.SetFieldData(fieldname,idata,errmsg);
 }
-
+bool CXdp::SetFieldValue(const char* fieldname, INT64_ idata, char* errmsg)
+{
+    return m_pFirstRecord.SetFieldData(fieldname, idata, errmsg);
+}
+bool CXdp::SetFieldValue(const char* fieldname, UINT64_ idata, char* errmsg)
+{
+    return m_pFirstRecord.SetFieldData(fieldname, idata, errmsg);
+}
 bool CXdp::SetFieldValue(const char *fieldname,const char *data,unsigned int datalen,char *errmsg)
 {
 	return m_pFirstRecord.SetFieldData(fieldname,data,datalen,errmsg);

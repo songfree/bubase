@@ -2556,27 +2556,27 @@ public:
             switch (count)
             {
             case 1:
-                return hash_val(f1.p[0]);
+                return hash_val(std::string(f1.p[0]));
             case 2:
-                return hash_val(f1.p[0], f1.p[1]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]));
             case 3:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]));
             case 4:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]));
             case 5:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]));
             case 6:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]));
             case 7:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]));
             case 8:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]), std::string(f1.p[7]));
             case 9:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]), std::string(f1.p[7]), std::string(f1.p[8]));
             case 10:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8], f1.p[9]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]), std::string(f1.p[7]), std::string(f1.p[8]), std::string(f1.p[9]));
             default:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8], f1.p[9]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]), std::string(f1.p[7]), std::string(f1.p[8]), std::string(f1.p[9]));
             }
         }
     };
@@ -3048,27 +3048,27 @@ public:
             switch (count)
             {
             case 1:
-                return hash_val(f1.p[0]);
+                return hash_val(std::string(f1.p[0]));
             case 2:
-                return hash_val(f1.p[0], f1.p[1]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]));
             case 3:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]));
             case 4:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]));
             case 5:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]));
             case 6:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]));
             case 7:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]));
             case 8:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]), std::string(f1.p[7]));
             case 9:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]), std::string(f1.p[7]), std::string(f1.p[8]));
             case 10:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8], f1.p[9]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]), std::string(f1.p[7]), std::string(f1.p[8]), std::string(f1.p[9]));
             default:
-                return hash_val(f1.p[0], f1.p[1], f1.p[2], f1.p[3], f1.p[4], f1.p[5], f1.p[6], f1.p[7], f1.p[8], f1.p[9]);
+                return hash_val(std::string(f1.p[0]), std::string(f1.p[1]), std::string(f1.p[2]), std::string(f1.p[3]), std::string(f1.p[4]), std::string(f1.p[5]), std::string(f1.p[6]), std::string(f1.p[7]), std::string(f1.p[8]), std::string(f1.p[9]));
             }
         }
     };

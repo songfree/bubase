@@ -89,42 +89,43 @@
     <double28 name="浮点型28"  index="87" type="double" />
     <double29 name="浮点型29"  index="88" type="double" />
     <double30 name="浮点型30"  index="89" type="double" />
-    <char1 name="定长字符串1"  index="90" type="char" length="10" />
-    <char2 name="定长字符串2"  index="91" type="char" length="10" />
-    <char3 name="定长字符串3"  index="92" type="char" length="20" />
-    <char4 name="定长字符串4"  index="93" type="char" length="20" />
-    <char5 name="定长字符串5"  index="94" type="char" length="30" />
-    <char6 name="定长字符串6"  index="95" type="char" length="30" />
-    <char7 name="定长字符串6"  index="96" type="char" length="40" />
-    <char8 name="定长字符串6"  index="97" type="char" length="40" />
-    <char9 name="定长字符串6"  index="98" type="char" length="50" />
-    <char10 name="定长字符串6"  index="99" type="char" length="50" />
-    <varchar1 name="变长字符串1"  index="100" type="varchar" length="255" />
-    <varchar2 name="变长字符串2"  index="101" type="varchar" length="255" />
-    <varchar3 name="变长字符串3"  index="102" type="varchar" length="255" />
-    <varchar4 name="变长字符串4"  index="103" type="varchar" length="255" />
-    <varchar5 name="变长字符串5"  index="104" type="varchar" length="255" />
-    <varchar6 name="变长字符串6"  index="105" type="varchar" length="255" />
-    <varchar7 name="变长字符串7"  index="106" type="varchar" length="255" />
-    <varchar8 name="变长字符串8"  index="107" type="varchar" length="255" />
-    <varchar9 name="变长字符串9"  index="108" type="varchar" length="255" />
-    <varchar10 name="变长字符串10"  index="109" type="varchar" length="255" />
-    <varchar11 name="变长字符串11"  index="110" type="varchar" length="255" />
-    <varchar12 name="变长字符串12"  index="111" type="varchar" length="255" />
-    <varchar13 name="变长字符串13"  index="112" type="varchar" length="255" />
-    <varchar14 name="变长字符串14"  index="113" type="varchar" length="255" />
-    <varchar15 name="变长字符串15"  index="114" type="varchar" length="255" />
-    <varchar16 name="变长字符串16"  index="115" type="varchar" length="255" />
-    <varchar17 name="变长字符串17"  index="116" type="varchar" length="255" />
-    <varchar18 name="变长字符串18"  index="117" type="varchar" length="255" />
-    <varchar19 name="变长字符串19"  index="118" type="varchar" length="255" />
-    <varchar20 name="变长字符串20"  index="119" type="varchar" length="255" />
-    <bindata1 name="二进制数据1" index="120" type="bindata" length="4000" />
-    <double31 name="浮点型31"  index="121" type="double" />
-    <double32 name="浮点型32"  index="122" type="double" />
-    <double33 name="浮点型33"  index="123" type="double" />
-    <double34 name="浮点型34"  index="124" type="double" />
-    <double35 name="浮点型35"  index="125" type="double" />
-    <double36 name="浮点型36"  index="126" type="double" />
-    <double37 name="浮点型37"  index="127" type="double" />
+    <double31 name="浮点型31"  index="90" type="double" />
+    <double32 name="浮点型32"  index="91" type="double" />
+    <double33 name="浮点型33"  index="92" type="double" />
+    <double34 name="浮点型34"  index="93" type="double" />
+    <double35 name="浮点型35"  index="94" type="double" />
+    <double36 name="浮点型36"  index="95" type="double" />
+    <double37 name="浮点型37"  index="96" type="double" />
+    <char1 name="定长字符串1"  index="97" type="char" length="10" />
+    <char2 name="定长字符串2"  index="98" type="char" length="10" />
+    <char3 name="定长字符串3"  index="99" type="char" length="20" />
+    <char4 name="定长字符串4"  index="100" type="char" length="20" />
+    <char5 name="定长字符串5"  index="101" type="char" length="30" />
+    <char6 name="定长字符串6"  index="102" type="char" length="30" />
+    <char7 name="定长字符串6"  index="103" type="char" length="40" />
+    <char8 name="定长字符串6"  index="104" type="char" length="40" />
+    <char9 name="定长字符串6"  index="105" type="char" length="50" />
+    <char10 name="定长字符串6"  index="106" type="char" length="50" />
+    <varchar1 name="变长字符串1"  index="107" type="varchar" length="255" />
+    <varchar2 name="变长字符串2"  index="108" type="varchar" length="255" />
+    <varchar3 name="变长字符串3"  index="109" type="varchar" length="255" />
+    <varchar4 name="变长字符串4"  index="110" type="varchar" length="255" />
+    <varchar5 name="变长字符串5"  index="111" type="varchar" length="255" />
+    <varchar6 name="变长字符串6"  index="112" type="varchar" length="255" />
+    <varchar7 name="变长字符串7"  index="113" type="varchar" length="255" />
+    <varchar8 name="变长字符串8"  index="114" type="varchar" length="255" />
+    <varchar9 name="变长字符串9"  index="115" type="varchar" length="255" />
+    <varchar10 name="变长字符串10"  index="116" type="varchar" length="255" />
+    <varchar11 name="变长字符串11"  index="117" type="varchar" length="255" />
+    <varchar12 name="变长字符串12"  index="118" type="varchar" length="255" />
+    <varchar13 name="变长字符串13"  index="119" type="varchar" length="255" />
+    <varchar14 name="变长字符串14"  index="120" type="varchar" length="255" />
+    <varchar15 name="变长字符串15"  index="121" type="varchar" length="255" />
+    <varchar16 name="变长字符串16"  index="122" type="varchar" length="255" />
+    <varchar17 name="变长字符串17"  index="123" type="varchar" length="255" />
+    <varchar18 name="变长字符串18"  index="124" type="varchar" length="255" />
+    <varchar19 name="变长字符串19"  index="125" type="varchar" length="255" />
+    <varchar20 name="变长字符串20"  index="126" type="varchar" length="255" />
+    <bindata1 name="二进制数据1" index="127" type="bindata" length="4000" />
+    
 </xdp>

@@ -34,7 +34,8 @@
 #define  XDP_CHAR      6    //固定长度字符串 最大255
 #define  XDP_VARCHAR   7    //变长字符串 最大255   最前面有一个字节长度  1+data
 #define  XDP_BINDATA   8    //二进制类型 最大4096  最前面有两个字节长度  2+data 
-
+#define  XDP_INT64     9    //64位整型 INT64_
+#define  XDP_UINT64    10    //无符号64位整型	UINT64_
 
 #define      XDP_BITMAPSIZE     16      //位图大小  16字节
 #define      XDP_FIELD_NAMELEN  20       //字段名称长度
@@ -46,7 +47,7 @@
 typedef struct 
 {
 	unsigned short  f_index;      //字段索引  从1开始
-	std::string     f_name ;      //字段名称
+	char     f_name[21] ;      //字段名称
 	char            f_type;       //字段类型
 	unsigned  short f_length;     //字段长度
 	unsigned  short f_extlength;  //扩展长度，针对XDP_VARCHAR和XDP_BINDATA分别为1和2
@@ -154,9 +155,9 @@ protected:
 	unsigned short  m_nMaxLength;      //根据配置算出来的最大报文长度
 	unsigned short  m_nFieldNum;       //字段数
 
-	CMemTable <S_XDP_FIELD_DEFINE> m_table;        //字段配置表
-	CPkeyInt<1>             m_index;              //字段索引
- 	CPkeyCharF<20,1>        m_indexname;          //字段名称索引
+	CMemTableNew <S_XDP_FIELD_DEFINE> m_table;        //字段配置表
+	CPkeyIntUnordered<1>             m_index;              //字段索引
+	CPkeyCharVUnordered<1>        m_indexname;          //字段名称索引
 
 	unsigned  char          m_cVersion;          //XDP版本
 

@@ -673,6 +673,13 @@ void CPoolModule::OnRecv(int conindex)
 			m_log->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"分配消息空间时出错，内存不足");
 			return ;
 		}
+		//int total;
+		//int unused;
+		//m_pMemPool->PoolInfo(total, unused);
+		//if (unused >= total)
+		//{
+		//	printf("出错了，多PoolFree了\n");
+		//}
 		ret = m_pSocketMgr->at(conindex)->GetRecvData(recvmessage);
 		if (ret < 0) 
 		{

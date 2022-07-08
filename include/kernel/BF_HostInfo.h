@@ -23,8 +23,8 @@ typedef struct _MemoryInf
 typedef struct _DiskInf
 {
 	char cIndex[256];
-	int TotalSpace;
-	int UsedSpace;
+	INT64_ TotalSpace;
+	INT64_ UsedSpace;
 	double DiskUseRadio;
 }S_DiskInf;
 

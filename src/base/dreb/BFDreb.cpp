@@ -32,7 +32,7 @@ bool CBFDreb::Init(const char *confile)
 
 	
 
-	g_pMemPool.Init(100,DREBBUFSIZE+sizeof(DREBQUEUEMSG_HEAD)+1);
+	g_pMemPool.Init(100,sizeof(S_DREB_RSMSG)+1);
 
 	g_pMemDb.m_pLog = m_log;
 	g_pMemDb.SetPara(g_Vars.g_nSvrDeleteTime,g_Vars.g_nServiceDeleteTime);

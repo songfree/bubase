@@ -120,7 +120,8 @@ public:
 	bool GetFieldValue(unsigned short rec,const char *fieldname,short &idata,char *errmsg);
 	bool GetFieldValue(unsigned short rec,const char *fieldname,unsigned short &idata,char *errmsg);
 	bool GetFieldValue(unsigned short rec,const char *fieldname,double &idata,char *errmsg);
-	
+	bool GetFieldValue(unsigned short rec, const char* fieldname, INT64_& idata, char* errmsg);
+	bool GetFieldValue(unsigned short rec, const char* fieldname, UINT64_& idata, char* errmsg);
 	
 	bool GetFieldValue(unsigned short rec,unsigned short index,char *data,unsigned int &datalen,int &fieldtype,char *errmsg);
 	bool GetFieldValue(unsigned short rec,unsigned short index,int &idata,char *errmsg);
@@ -128,6 +129,8 @@ public:
 	bool GetFieldValue(unsigned short rec,unsigned short index,short &idata,char *errmsg);
 	bool GetFieldValue(unsigned short rec,unsigned short index,unsigned short &idata,char *errmsg);
 	bool GetFieldValue(unsigned short rec,unsigned short index,double &idata,char *errmsg);
+	bool GetFieldValue(unsigned short rec, unsigned short index, INT64_& idata, char* errmsg);
+	bool GetFieldValue(unsigned short rec, unsigned short index, UINT64_& idata, char* errmsg);
 
 	// 函数名: GetFieldValue
 	// 编程  : 王明松 2014-10-29 11:11:55
@@ -144,6 +147,8 @@ public:
 	bool GetFieldValue(unsigned short index,short &idata,char *errmsg);
 	bool GetFieldValue(unsigned short index,unsigned short &idata,char *errmsg);
 	bool GetFieldValue(unsigned short index,double &idata,char *errmsg);
+	bool GetFieldValue(unsigned short index, INT64_& idata, char* errmsg);
+	bool GetFieldValue(unsigned short index, UINT64_& idata, char* errmsg);
 
 	bool GetFieldValue(const char *fieldname,char *data,unsigned int &datalen,int &fieldtype,char *errmsg);
 	bool GetFieldValue(const char *fieldname,int &idata,char *errmsg);
@@ -151,7 +156,8 @@ public:
 	bool GetFieldValue(const char *fieldname,short &idata,char *errmsg);
 	bool GetFieldValue(const char *fieldname,unsigned short &idata,char *errmsg);
 	bool GetFieldValue(const char *fieldname,double &idata,char *errmsg);
-
+	bool GetFieldValue(const char* fieldname, INT64_& idata, char* errmsg);
+	bool GetFieldValue(const char* fieldname, UINT64_& idata, char* errmsg);
 
 
 
@@ -171,6 +177,8 @@ public:
 	bool SetFieldValueM(unsigned short rec,const char *fieldname,short idata,char *errmsg);
 	bool SetFieldValueM(unsigned short rec,const char *fieldname,unsigned short idata,char *errmsg);
 	bool SetFieldValueM(unsigned short rec,const char *fieldname,double idata,char *errmsg);
+	bool SetFieldValueM(unsigned short rec, const char* fieldname, INT64_ idata, char* errmsg);
+	bool SetFieldValueM(unsigned short rec, const char* fieldname, UINT64_ idata, char* errmsg);
 
 	bool SetFieldValue(unsigned short rec,unsigned short index,const char *data,unsigned int datalen,char *errmsg);
 	bool SetFieldValue(unsigned short rec,unsigned short index,int idata,char *errmsg);
@@ -178,7 +186,8 @@ public:
 	bool SetFieldValue(unsigned short rec,unsigned short index,short idata,char *errmsg);
 	bool SetFieldValue(unsigned short rec,unsigned short index,unsigned short idata,char *errmsg);
 	bool SetFieldValue(unsigned short rec,unsigned short index,double idata,char *errmsg);
-
+	bool SetFieldValue(unsigned short rec, unsigned short index, INT64_ idata, char* errmsg);
+	bool SetFieldValue(unsigned short rec, unsigned short index, UINT64_ idata, char* errmsg);
 
 
 	// 函数名: SetFieldValue
@@ -195,6 +204,8 @@ public:
 	bool SetFieldValue(unsigned short index,short idata,char *errmsg);
 	bool SetFieldValue(unsigned short index,unsigned short idata,char *errmsg);
 	bool SetFieldValue(unsigned short index,double idata,char *errmsg);
+	bool SetFieldValue(unsigned short index, INT64_ idata, char* errmsg);
+	bool SetFieldValue(unsigned short index, UINT64_ idata, char* errmsg);
 
 	bool SetFieldValue(const char *fieldname,const char *data,unsigned int datalen,char *errmsg);
 	bool SetFieldValue(const char *fieldname,int idata,char *errmsg);
@@ -202,6 +213,8 @@ public:
 	bool SetFieldValue(const char *fieldname,short idata,char *errmsg);
 	bool SetFieldValue(const char *fieldname,unsigned short idata,char *errmsg);
 	bool SetFieldValue(const char *fieldname,double idata,char *errmsg);
+	bool SetFieldValue(const char* fieldname, INT64_ idata, char* errmsg);
+	bool SetFieldValue(const char* fieldname, UINT64_ idata, char* errmsg);
 
 
 	// 函数名: SetCurRecCount

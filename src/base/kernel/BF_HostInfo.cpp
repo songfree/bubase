@@ -706,8 +706,8 @@ int CBF_HostInfo::GetDisk(V_DiskInfo &vmDisINFO)
 				//	,sTemp1,sTemp2,sTemp3,sTemp4,sTemp5,sTemp6);
 
 				strcpy(tmp.cIndex, sTemp6);
-				tmp.TotalSpace = atoi(sTemp2);
-				tmp.UsedSpace = atoi(sTemp3);
+				tmp.TotalSpace = atoll(sTemp2);
+				tmp.UsedSpace = atoll(sTemp3);
 
 				int len =strlen(sTemp5);
 				sTemp5[len-1]='\0';
@@ -766,8 +766,8 @@ int CBF_HostInfo::GetDisk(V_DiskInfo &vmDisINFO)
 				CBF_Tools::Ltrim(sWorkBuffer);
 				sscanf(sWorkBuffer,"%s%s%s%s%s%s%s",sTemp1,sTemp2,sTemp3,sTemp4,sTemp5,sTemp6,sTemp7);
 				strcpy(tmp.cIndex, sTemp7);
-				tmp.TotalSpace = atoi(sTemp2);
-				tmp.UsedSpace = tmp.TotalSpace - atoi(sTemp3);
+				tmp.TotalSpace = atoll(sTemp2);
+				tmp.UsedSpace = tmp.TotalSpace - atoll(sTemp3);
 
 				int len =strlen(sTemp4);
 				sTemp4[len-1]='\0';
@@ -833,7 +833,7 @@ int CBF_HostInfo::GetDisk(V_DiskInfo &vmDisINFO)
 				{
 					sscanf(sWorkBuffer,"%s%s%s%s%s",sTemp1,sTemp2,sTemp3,sTemp4,sTemp5);
 					strcpy(tmp.cIndex, sTemp1);
-					tmp.TotalSpace = atoi(sTemp5)/1024;
+					tmp.TotalSpace = atoll(sTemp5)/1024;
 				}
 				else if (iCount == 1) //空闲
 				{
@@ -842,7 +842,7 @@ int CBF_HostInfo::GetDisk(V_DiskInfo &vmDisINFO)
 				else if (iCount == 2) //使用
 				{
 					sscanf(sWorkBuffer,"%s",sTemp1);
-					tmp.UsedSpace = atoi(sTemp1)/1024;
+					tmp.UsedSpace = atoll(sTemp1)/1024;
 				}
 				else //使用率
 				{

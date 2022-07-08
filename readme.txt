@@ -2,7 +2,7 @@
 
 感兴趣可加QQ:738651沟通。
 
-
+202207：版本2.0.2  修改xdp协议，支持INT64,和protobuf性能比较，优于protobuf，可见examples/teestxdppb下的测试代码。同样examples/testboost是框架的内存表和boost的multi_index构建的内存表的比较，在linux下面优于boost的。
 202206：版本2.0.1  总线增加广播订阅模式，总线api增加订阅接口； bpc和cgate改为使用总线api连接总线。
 
 

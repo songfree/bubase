@@ -4,52 +4,52 @@
     <ushort3  name="无符号短整型3"  index="2" type="ushort" />
     <ushort4  name="无符号短整型4"  index="3" type="ushort" />
     <ushort5  name="无符号短整型5"  index="4" type="ushort" />
-    <short1  name="短整型1"  index="5" type="short" />
-    <short2  name="短整型2"  index="6" type="short" />
-    <short3  name="短整型3"  index="7" type="short" />
-    <short4  name="短整型4"  index="8" type="short" />
-    <short5  name="短整型5"  index="9" type="short" />
-    <short6  name="短整型6"  index="10" type="short" />
-    <short7  name="短整型7"  index="11" type="short" />
-    <short8  name="短整型8"  index="12" type="short" />
-    <short9  name="短整型9"  index="13" type="short" />
-    <short10  name="短整型10"  index="14" type="short" />
-    <short11  name="短整型11"  index="15" type="short" />
-    <short12  name="短整型12"  index="16" type="short" />
-    <short13  name="短整型13"  index="17" type="short" />
-    <short14  name="短整型14"  index="18" type="short" />
-    <short15  name="短整型15"  index="19" type="short" />
-    <uint1 name="无符号整型1"  index="20" type="uint" />
-    <uint2 name="无符号整型2"  index="21" type="uint" />
-    <uint3 name="无符号整型3"  index="22" type="uint" />
-    <uint4 name="无符号整型4"  index="23" type="uint" />
-    <uint5 name="无符号整型5"  index="24" type="uint" />
-    <uint6 name="无符号整型6"  index="25" type="uint" />
-    <uint7 name="无符号整型7"  index="26" type="uint" />
-    <uint8 name="无符号整型8"  index="27" type="uint" />
-    <uint9 name="无符号整型9"  index="28" type="uint" />
-    <uint10 name="无符号整型10"  index="29" type="uint" />
-    <uint11 name="无符号整型11"  index="30" type="uint" />
-    <uint12 name="无符号整型12"  index="31" type="uint" />
-    <uint13 name="无符号整型13"  index="32" type="uint" />
-    <uint14 name="无符号整型14"  index="33" type="uint" />
-    <uint15 name="无符号整型15"  index="34" type="uint" />
-    <uint16 name="无符号整型16"  index="35" type="uint" />
-    <uint17 name="无符号整型17"  index="36" type="uint" />
-    <uint18 name="无符号整型18"  index="37" type="uint" />
-    <uint19 name="无符号整型19"  index="38" type="uint" />
-    <uint20 name="无符号整型20"  index="39" type="uint" />
-    <int1 name="整型1"  index="40" type="int" />
-    <int2 name="整型2"  index="41" type="int" />
-    <int3 name="整型3"  index="42" type="int" />
-    <int4 name="整型4"  index="43" type="int" />
-    <int5 name="整型5"  index="44" type="int" />
-    <int6 name="整型6"  index="45" type="int" />
-    <int7 name="整型7"  index="46" type="int" />
-    <int8 name="整型8"  index="47" type="int" />
-    <int9 name="整型9"  index="48" type="int" />
-    <int10 name="整型10"  index="49" type="int" />
-    <double1 name="浮点型1" index="50" type="double" />
+    <ushort6  name="无符号短整型6"  index="5" type="ushort" />
+    <ushort7  name="无符号短整型7"  index="6" type="ushort" />
+    <ushort8  name="无符号短整型8"  index="7" type="ushort" />
+    <ushort9  name="无符号短整型9"  index="8" type="ushort" />
+    <ushort10  name="无符号短整型10"  index="9" type="ushort" />
+    <uint1  name="无符号整型1"  index="10" type="uint" />
+    <uint2  name="无符号整型2"  index="11" type="uint" />
+    <uint3  name="无符号整型3"  index="12" type="uint" />
+    <uint4  name="无符号整型4"  index="13" type="uint" />
+    <uint5  name="无符号整型5"  index="14" type="uint" />
+    <uint6  name="无符号整型6"  index="15" type="uint" />
+    <uint7  name="无符号整型7"  index="16" type="uint" />
+    <uint8  name="无符号整型8"  index="17" type="uint" />
+    <uint9  name="无符号整型9"  index="18" type="uint" />
+    <uint10  name="无符号整型10"  index="19" type="uint" />
+    <int1 name="整型1"  index="20" type="int" />
+    <int2 name="整型2"  index="21" type="int" />
+    <int3 name="整型3"  index="22" type="int" />
+    <int4 name="整型4"  index="23" type="int" />
+    <int5 name="整型5"  index="24" type="int" />
+    <int6 name="整型6"  index="25" type="int" />
+    <int7 name="整型7"  index="26" type="int" />
+    <int8 name="整型8"  index="27" type="int" />
+    <int9 name="整型9"  index="28" type="int" />
+    <int10 name="整型10"  index="29" type="int" />
+    <int641 name="整型64位11"  index="30" type="int64" />
+    <int642 name="整型64位12"  index="31" type="int64" />
+    <int643 name="整型64位13"  index="32" type="int64" />
+    <int644 name="整型64位14"  index="33" type="int64" />
+    <int645 name="整型64位15"  index="34" type="int64" />
+    <int646 name="整型64位16"  index="35" type="int64" />
+    <int647 name="整型64位17"  index="36" type="int64" />
+    <int648 name="整型64位18"  index="37" type="int64" />
+    <int649 name="整型64位19"  index="38" type="int64" />
+    <int6410 name="整型64位20"  index="39" type="int64" />
+    <uint641 name="无符号64位整型1"  index="40" type="uint64" />
+    <uint642 name="无符号64位整型1"  index="41" type="uint64" />
+    <uint643 name="无符号64位整型1"  index="42" type="uint64" />
+    <uint644 name="无符号64位整型1"  index="43" type="uint64" />
+    <uint645 name="无符号64位整型1"  index="44" type="uint64" />
+    <uint646 name="无符号64位整型1"  index="45" type="uint64" />
+    <uint647 name="无符号64位整型1"  index="46" type="uint64" />
+    <uint648 name="无符号64位整型1"  index="47" type="uint64" />
+    <uint649 name="无符号64位整型1"  index="48" type="uint64" />
+    <uint6410 name="无符号64位整型1"  index="49" type="uint64" />
+    <double1 name="浮点型1"  index="50" type="double" />
     <double2 name="浮点型2"  index="51" type="double" />
     <double3 name="浮点型3"  index="52" type="double" />
     <double4 name="浮点型4"  index="53" type="double" />
@@ -59,35 +59,73 @@
     <double8 name="浮点型8"  index="57" type="double" />
     <double9 name="浮点型9"  index="58" type="double" />
     <double10 name="浮点型10"  index="59" type="double" />
-    <char1 name="定长字符串1"  index="60" type="char" length="10" />
-    <char2 name="定长字符串2"  index="61" type="char" length="10" />
-    <char3 name="定长字符串3"  index="62" type="char" length="20" />
-    <char4 name="定长字符串4"  index="63" type="char" length="20" />
-    <char5 name="定长字符串5"  index="64" type="char" length="30" />
-    <char6 name="定长字符串6"  index="65" type="char" length="30" />
-    <char7 name="定长字符串6"  index="66" type="char" length="40" />
-    <char8 name="定长字符串6"  index="67" type="char" length="40" />
-    <char9 name="定长字符串6"  index="68" type="char" length="50" />
-    <char10 name="定长字符串6"  index="69" type="char" length="50" />
-    <varchar1 name="变长字符串1"  index="70" type="varchar" length="255" />
-    <varchar2 name="变长字符串2"  index="71" type="varchar" length="255" />
-    <varchar3 name="变长字符串3"  index="72" type="varchar" length="255" />
-    <varchar4 name="变长字符串4"  index="73" type="varchar" length="255" />
-    <varchar5 name="变长字符串5"  index="74" type="varchar" length="255" />
-    <varchar6 name="变长字符串6"  index="75" type="varchar" length="255" />
-    <varchar7 name="变长字符串7"  index="76" type="varchar" length="255" />
-    <varchar8 name="变长字符串8"  index="77" type="varchar" length="255" />
-    <varchar9 name="变长字符串9"  index="78" type="varchar" length="255" />
-    <varchar10 name="变长字符串10"  index="79" type="varchar" length="255" />
-    <varchar11 name="变长字符串11"  index="80" type="varchar" length="255" />
-    <varchar12 name="变长字符串12"  index="81" type="varchar" length="255" />
-    <varchar13 name="变长字符串13"  index="82" type="varchar" length="255" />
-    <varchar14 name="变长字符串14"  index="83" type="varchar" length="255" />
-    <varchar15 name="变长字符串15"  index="84" type="varchar" length="255" />
-    <varchar16 name="变长字符串16"  index="85" type="varchar" length="255" />
-    <varchar17 name="变长字符串17"  index="86" type="varchar" length="255" />
-    <varchar18 name="变长字符串18"  index="87" type="varchar" length="255" />
-    <varchar19 name="变长字符串19"  index="88" type="varchar" length="255" />
-    <varchar20 name="变长字符串20"  index="89" type="varchar" length="255" />
-    <bindata1 name="二进制数据1" index="90" type="bindata" length="4000" />
+    <double11 name="浮点型11" index="60" type="double" />
+    <double12 name="浮点型12"  index="61" type="double" />
+    <double13 name="浮点型13"  index="62" type="double" />
+    <double14 name="浮点型14"  index="63" type="double" />
+    <double15 name="浮点型15"  index="64" type="double" />
+    <double16 name="浮点型16"  index="65" type="double" />
+    <double17 name="浮点型17"  index="66" type="double" />
+    <double18 name="浮点型18"  index="67" type="double" />
+    <double19 name="浮点型19"  index="68" type="double" />
+    <double20 name="浮点型20"  index="69" type="double" />
+    <double21 name="浮点型21"  index="70" type="double" />
+    <double22 name="浮点型22"  index="71" type="double" />
+    <double23 name="浮点型23"  index="72" type="double" />
+    <double24 name="浮点型24"  index="73" type="double" />
+    <double25 name="浮点型25"  index="74" type="double" />
+    <double26 name="浮点型26"  index="75" type="double" />
+    <double27 name="浮点型27"  index="76" type="double" />
+    <double28 name="浮点型28"  index="77" type="double" />
+    <double29 name="浮点型29"  index="78" type="double" />
+    <double30 name="浮点型30"  index="79" type="double" />
+    <varchar1 name="变长字符串1"  index="80" type="varchar" length="80" />
+    <varchar2 name="变长字符串2"  index="81" type="varchar" length="80" />
+    <varchar3 name="变长字符串3"  index="82" type="varchar" length="80" />
+    <varchar4 name="变长字符串4"  index="83" type="varchar" length="80" />
+    <varchar5 name="变长字符串5"  index="84" type="varchar" length="80" />
+    <varchar6 name="变长字符串6"  index="85" type="varchar" length="80" />
+    <varchar7 name="变长字符串7"  index="86" type="varchar" length="80" />
+    <varchar8 name="变长字符串8"  index="87" type="varchar" length="80" />
+    <varchar9 name="变长字符串9"  index="88" type="varchar" length="80" />
+    <varchar10 name="变长字符串10"  index="89" type="varchar" length="80" />
+    <varchar11 name="变长字符串11"  index="90" type="varchar" length="80" />
+    <varchar12 name="变长字符串12"  index="91" type="varchar" length="80" />
+    <varchar13 name="变长字符串13"  index="92" type="varchar" length="80" />
+    <varchar14 name="变长字符串14"  index="93" type="varchar" length="80" />
+    <varchar15 name="变长字符串15"  index="94" type="varchar" length="80" />
+    <varchar16 name="变长字符串16"  index="95" type="varchar" length="80" />
+    <varchar17 name="变长字符串17"  index="96" type="varchar" length="80" />
+    <varchar18 name="变长字符串18"  index="97" type="varchar" length="80" />
+    <varchar19 name="变长字符串19"  index="98" type="varchar" length="80" />
+    <varchar20 name="变长字符串20"  index="99" type="varchar" length="80" />
+    <varchar21 name="变长字符串21"  index="100" type="varchar" length="80" />
+    <varchar22 name="变长字符串22"  index="101" type="varchar" length="80" />
+    <varchar23 name="变长字符串23"  index="102" type="varchar" length="80" />
+    <varchar24 name="变长字符串24"  index="103" type="varchar" length="80" />
+    <varchar25 name="变长字符串25"  index="104" type="varchar" length="80" />
+    <varchar26 name="变长字符串26"  index="105" type="varchar" length="80" />
+    <varchar27 name="变长字符串27"  index="106" type="varchar" length="80" />
+    <varchar28 name="变长字符串28"  index="107" type="varchar" length="80" />
+    <varchar29 name="变长字符串29"  index="108" type="varchar" length="80" />
+    <varchar30 name="变长字符串30"  index="109" type="varchar" length="100" />
+    <varchar31 name="变长字符串31"  index="110" type="varchar" length="100" />
+    <varchar32 name="变长字符串32"  index="111" type="varchar" length="100" />
+    <varchar33 name="变长字符串33"  index="112" type="varchar" length="100" />
+    <varchar34 name="变长字符串34"  index="113" type="varchar" length="100" />
+    <varchar35 name="变长字符串35"  index="114" type="varchar" length="100" />
+    <varchar36 name="变长字符串36"  index="115" type="varchar" length="100" />
+    <varchar37 name="变长字符串37"  index="116" type="varchar" length="100" />
+    <varchar38 name="变长字符串38"  index="117" type="varchar" length="100" />
+    <varchar39 name="变长字符串39"  index="118" type="varchar" length="100" />
+    <varchar40 name="变长字符串40"  index="119" type="varchar" length="100" />
+    <varchar41 name="变长字符串41"  index="120" type="varchar" length="255" />
+    <varchar42 name="变长字符串42"  index="121" type="varchar" length="255" />
+    <varchar43 name="变长字符串43"  index="122" type="varchar" length="255" />
+    <varchar44 name="变长字符串44"  index="123" type="varchar" length="255" />
+    <varchar45 name="变长字符串45"  index="124" type="varchar" length="255" />
+    <varchar46 name="变长字符串46"  index="125" type="varchar" length="255" />
+    <varchar47 name="变长字符串47"  index="126" type="varchar" length="255" />
+    <bindata1 name="二进制数据1" index="127" type="bindata" length="4000" />
+    
 </xdp>

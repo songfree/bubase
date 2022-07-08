@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 	bzero(xdpdata,sizeof(xdpdata));
 	xdp.PrintXdp(xdpdata);
 	printf("xpddata: %s\n",xdpdata);
-	if (!xdp.SetFieldValue("uint3",(unsigned int)602,errmsg))
+	if (!xdp.SetFieldValue(1,(unsigned short)12,errmsg))
 	{
 		return -1;
 	}
@@ -83,34 +83,7 @@ int main(int argc, char* argv[])
 	{
 		return -1;
 	}
-	if (!xdp.SetFieldValue("uint11",(unsigned int)2,errmsg))
-	{
-		return -1;
-	}
-	if (!xdp.SetFieldValue("uint12",(unsigned int)2,errmsg))
-	{
-		return -1;
-	}
-	if (!xdp.SetFieldValue("uint13",(unsigned int)2,errmsg))
-	{
-		return -1;
-	}
-	if (!xdp.SetFieldValue("uint14",(unsigned int)2,errmsg))
-	{
-		return -1;
-	}
-	if (!xdp.SetFieldValue("uint15",(unsigned int)2,errmsg))
-	{
-		return -1;
-	}
-	if (!xdp.SetFieldValue("uint16",(unsigned int)2,errmsg))
-	{
-		return -1;
-	}
-	if (!xdp.SetFieldValue("uint17",(unsigned int)2,errmsg))
-	{
-		return -1;
-	}
+	
 	if (!xdp.SetFieldValue("int1",(int)2,errmsg))
 	{
 		return -1;
@@ -151,7 +124,34 @@ int main(int argc, char* argv[])
 	{
 		return -1;
 	}
-
+    if (!xdp.SetFieldValue("int641", (UINT64_)2, errmsg))
+    {
+        return -1;
+    }
+    if (!xdp.SetFieldValue("int642", (UINT64_)2, errmsg))
+    {
+        return -1;
+    }
+    if (!xdp.SetFieldValue("int643", (UINT64_)2, errmsg))
+    {
+        return -1;
+    }
+    if (!xdp.SetFieldValue("int644", (UINT64_)2, errmsg))
+    {
+        return -1;
+    }
+    if (!xdp.SetFieldValue("int645", (UINT64_)2, errmsg))
+    {
+        return -1;
+    }
+    if (!xdp.SetFieldValue("int646", (UINT64_)2, errmsg))
+    {
+        return -1;
+    }
+    if (!xdp.SetFieldValue("int647", (UINT64_)2, errmsg))
+    {
+        return -1;
+    }
 
 	unsigned int len = sizeof(databuf);
 	
@@ -216,7 +216,7 @@ int main(int argc, char* argv[])
 	INT64_ tetime=CBF_Date_Time::GetTickUS();
 
 	int totaltime= tetime-tbtime;
-	printf("XDP ToBuffer 字段31，数据长度[%d]  [%d]次耗时[%d]us，平均[%d]us\n",len,loopnum,totaltime,totaltime/loopnum);
+	printf("XDP ToBuffer 字段31，数据长度[%d]  [%d]次耗时[%d]us，平均[%.4f]us\n",len,loopnum,totaltime,1.00*totaltime/loopnum);
 
 
 	SLEEP_SECONDS(5);
@@ -238,41 +238,41 @@ int main(int argc, char* argv[])
 	}
 	tetime=CBF_Date_Time::GetTickUS();
 	totaltime= tetime-tbtime;
-	printf("XDP FromBuffer 字段31，数据长度[%d] [%d]次耗时[%d]us，平均[%d]us\n",len,loopnum,totaltime,totaltime/loopnum);
+	printf("XDP FromBuffer 字段31，数据长度[%d] [%d]次耗时[%d]us，平均[%.4f]us\n",len,loopnum,totaltime, 1.00*totaltime/loopnum);
 
 
-	
-	
-	FILE *fp1 = fopen("arbtest.dat","wb");
-	if (fp1 != NULL)
-	{
-		fwrite(databuf,1,len,fp1);
-		fclose(fp1);
-	}
+	//
+	//
+	//FILE *fp1 = fopen("arbtest.dat","wb");
+	//if (fp1 != NULL)
+	//{
+	//	fwrite(databuf,1,len,fp1);
+	//	fclose(fp1);
+	//}
 
 
-	
-	FILE *fp = fopen("b.txt","rb");
-	if (fp != NULL)
-	{
-		int nr = fread(xdpdata,1,8000,fp);
-		if (nr <1)
-		{
-			return -1;
-		}
-		fclose(fp);
-		xdpdata[nr]=0;
-		unsigned int len = nr;
-		if (!xdp.FromBuffer(xdpdata,len,errmsg))
-		{
-			printf("parse xdp error %s",errmsg);
-			return -1;
-		}
-		xdp.PrintXdp(xdpdata);
-		printf("xpddata: %s",xdpdata);
+	//
+	//FILE *fp = fopen("b.txt","rb");
+	//if (fp != NULL)
+	//{
+	//	int nr = fread(xdpdata,1,8000,fp);
+	//	if (nr <1)
+	//	{
+	//		return -1;
+	//	}
+	//	fclose(fp);
+	//	xdpdata[nr]=0;
+	//	unsigned int len = nr;
+	//	if (!xdp.FromBuffer(xdpdata,len,errmsg))
+	//	{
+	//		printf("parse xdp error %s",errmsg);
+	//		return -1;
+	//	}
+	//	xdp.PrintXdp(xdpdata);
+	//	printf("xpddata: %s",xdpdata);
 
-	}
-	
+	//}
+	//
 
 
 
@@ -307,7 +307,7 @@ int main(int argc, char* argv[])
 	}
 	strcpy(cdata,"88888666");
 	datalen = strlen(cdata);
-	if (!xdp.SetFieldValue("char1",cdata,datalen,errmsg))
+	if (!xdp.SetFieldValue("varchar1",cdata,datalen,errmsg))
 	{
 		printf("设置数值出错\n");
 		return -1;
@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
 
 	strcpy(cdata,"99999999999");
 	datalen = strlen(cdata);
-	if (!xdp.SetFieldValue("varchar1",cdata,datalen,errmsg))
+	if (!xdp.SetFieldValue("varchar2",cdata,datalen,errmsg))
 	{
 		printf("设置数值出错\n");
 		return -1;
@@ -366,7 +366,7 @@ int main(int argc, char* argv[])
 	
 	strcpy(cdata,"288888666");
 	datalen = strlen(cdata);
-	if (!xdp.SetFieldValue(2,"char1",cdata,datalen,errmsg))
+	if (!xdp.SetFieldValue(2,"varchar1",cdata,datalen,errmsg))
 	{
 		printf("设置数值出错\n");
 		return -1;
@@ -375,7 +375,7 @@ int main(int argc, char* argv[])
 	
 	strcpy(cdata,"299999999999");
 	datalen = strlen(cdata);
-	if (!xdp.SetFieldValue(2,"varchar1",cdata,datalen,errmsg))
+	if (!xdp.SetFieldValue(2,"varchar2",cdata,datalen,errmsg))
 	{
 		printf("设置数值出错\n");
 		return -1;
@@ -454,22 +454,22 @@ int main(int argc, char* argv[])
 
 
 	datalen = sizeof(cdata);
-	if (!xdp.GetFieldValue("char1",cdata,datalen,ftype,errmsg))
-	{
-		printf("取字段char1出错 %s\n",errmsg);
-		return false;
-	}
-	cdata[datalen]=0;
-	printf("rec=1 char1=%s\n",cdata);
-
-	datalen = sizeof(cdata);
 	if (!xdp.GetFieldValue("varchar1",cdata,datalen,ftype,errmsg))
 	{
-		printf("取字段char1出错 %s\n",errmsg);
+		printf("取字段varchar1出错 %s\n",errmsg);
 		return false;
 	}
 	cdata[datalen]=0;
 	printf("rec=1 varchar1=%s\n",cdata);
+
+	datalen = sizeof(cdata);
+	if (!xdp.GetFieldValue("varchar2",cdata,datalen,ftype,errmsg))
+	{
+		printf("取字段varchar2出错 %s\n",errmsg);
+		return false;
+	}
+	cdata[datalen]=0;
+	printf("rec=1 varchar2=%s\n",cdata);
 
 	datalen = sizeof(cdata);
 	if (!xdp.GetFieldValue("bindata1",cdata,datalen,ftype,errmsg))
@@ -513,22 +513,22 @@ int main(int argc, char* argv[])
 		
 		
 		datalen = sizeof(cdata);
-		if (!xdp.GetFieldValue(k+1,"char1",cdata,datalen,ftype,errmsg))
-		{
-			printf("取字段char1出错 %s\n",errmsg);
-			return false;
-		}
-		cdata[datalen]=0;
-		printf("rec=%d  char1=%s\n",k+1,cdata);
-		
-		datalen = sizeof(cdata);
 		if (!xdp.GetFieldValue(k+1,"varchar1",cdata,datalen,ftype,errmsg))
 		{
-			printf("取字段char1出错 %s\n",errmsg);
+			printf("取字段varchar1出错 %s\n",errmsg);
 			return false;
 		}
 		cdata[datalen]=0;
 		printf("rec=%d  varchar1=%s\n",k+1,cdata);
+		
+		datalen = sizeof(cdata);
+		if (!xdp.GetFieldValue(k+1,"varchar2",cdata,datalen,ftype,errmsg))
+		{
+			printf("取字段varchar2出错 %s\n",errmsg);
+			return false;
+		}
+		cdata[datalen]=0;
+		printf("rec=%d  varchar2=%s\n",k+1,cdata);
 		
 		datalen = sizeof(cdata);
 		if (!xdp.GetFieldValue(k+1,"bindata1",cdata,datalen,ftype,errmsg))
@@ -610,22 +610,22 @@ int main(int argc, char* argv[])
 	
 	
 	datalen = sizeof(cdata);
-	if (!xdp2.GetFieldValue("char1",cdata,datalen,ftype,errmsg))
-	{
-		printf("取字段char1出错 %s\n",errmsg);
-		return false;
-	}
-	cdata[datalen]=0;
-	printf("char1=%s\n",cdata);
-	
-	datalen = sizeof(cdata);
 	if (!xdp2.GetFieldValue("varchar1",cdata,datalen,ftype,errmsg))
 	{
-		printf("取字段char1出错 %s\n",errmsg);
+		printf("取字段varchar1出错 %s\n",errmsg);
 		return false;
 	}
 	cdata[datalen]=0;
 	printf("varchar1=%s\n",cdata);
+	
+	datalen = sizeof(cdata);
+	if (!xdp2.GetFieldValue("varchar2",cdata,datalen,ftype,errmsg))
+	{
+		printf("取字段varchar2出错 %s\n",errmsg);
+		return false;
+	}
+	cdata[datalen]=0;
+	printf("varchar2=%s\n",cdata);
 	
 	datalen = sizeof(cdata);
 	if (!xdp2.GetFieldValue("bindata1",cdata,datalen,ftype,errmsg))
@@ -648,7 +648,7 @@ int main(int argc, char* argv[])
 	uint = (unsigned int *)cdata;
 	datalen = 4;
 	*uint = 123456789;
-	if (!xdp.SetFieldValue("uint11",cdata,datalen,errmsg))
+	if (!xdp.SetFieldValue("uint10",cdata,datalen,errmsg))
 	{
 		printf("设置数值出错\n");
 		return -1;
