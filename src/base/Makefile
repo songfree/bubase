@@ -1,7 +1,7 @@
 
 #! make -f
 
-DIRS = kernel xml  dbapi dbpub dreb xdp bpc bumodule aio bpu cgate cgateapi fpc fpu drebapi  arb  
+DIRS = kernel xml  dbapi dbpub dreb drebapi xdp bpc bumodule aio bpu cgate cgateapi fpc fpu  arb  
 all:
 	for dir in $(DIRS); do\
 		echo Making all in $$dir... ;\
