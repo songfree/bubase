@@ -3943,6 +3943,26 @@ public:
 		id = aa.id;
 		return true;
 	}
+	bool End(int& rid)
+	{
+        Int64_ aa;
+        if (!m_index.End(aa))
+        {
+            return false;
+        }
+        rid = aa.id;
+        return true;
+	}
+    bool Last(int& id)
+    {
+		Int64_ aa;
+        if (!m_index.Last(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
 	void Clear()
 	{
 		m_index.Clear();
@@ -4125,6 +4145,26 @@ public:
 		id = aa.id;
 		return true;
 	}
+    bool End(int& rid)
+    {
+        Int64_ aa;
+        if (!m_key.End(aa))
+        {
+        return false;
+        }
+        rid = aa.id;
+        return true;
+    }
+    bool Last(int& id)
+    {
+        Int64_ aa;
+        if (!m_key.Last(aa))
+        {
+            return false;
+        }
+        id = aa.id;
+        return true;
+    }
 	void Clear()
 	{
 		m_key.Clear();
@@ -4412,7 +4452,10 @@ public:
 	}
 	void Delete(int id)
 	{
-		m_rowidpool.push_back(id);
+		if (m_inuseid[id] != false)
+		{
+			m_rowidpool.push_back(id);
+		}
 		m_inuseid[id]=false;
 	}
 	bool First(Record& rt)
@@ -4556,7 +4599,10 @@ public:
 	}
 	void Delete(int id)
 	{
-		m_rowidpool.push_back(id);
+		if (m_inuseid[id] != false)
+		{
+			m_rowidpool.push_back(id);
+		}
 		m_inuseid[id]=false;
 	}
 	bool First(Record& rt)
@@ -5635,7 +5681,6 @@ public:
 		return NULL;
 	}
 };
-
 
 
 
