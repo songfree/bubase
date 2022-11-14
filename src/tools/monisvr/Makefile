@@ -10,7 +10,7 @@ INCBASE = $(HOME)/include
 
 INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/dbpub  -I$(INCBASE)/bumodule -I$(INCBASE)/dbapi -I$(INCBASE)/dreb   -I$(INCBASE)/xml
 
-CPPFLAGS =  -g -Wall  -O2 -fpic -m64 
+CPPFLAGS =  -g -Wall  -O2 -fpic -m64 -std=c++11 
 CPPDEFS =   -DLINUX -Wall -D_THREAD_SAFE
 DLLLIB  =   -lbf_kernel -lbf_dbpub -lbf_dbapi -lsqlapi  -lbf_bumodule -lbf_oldxml  -lpthread
 

@@ -66,6 +66,7 @@ bool CBF_BufferPool::Init(int size,int mallocsize,int maxfreesize)
 		{
 			return false;
 		}
+		bzero(m_poolmalloc,m_size);
 		m_total++;
 		m_stack.push(m_poolmalloc);
 //		m_pTotalBuffer.push(m_poolmalloc);

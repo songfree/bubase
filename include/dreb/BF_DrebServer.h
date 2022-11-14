@@ -12,7 +12,7 @@
 #include "public.h"
 #include "BF_Thread.h"
 #include "DrebPubDefine.h"
-#include "BF_Queue.h"
+//#include "BF_Queue.h"
 #include "BpcHead.h"
 #include "BF_BufferPool.h"
 #include "DrebEndian.h"

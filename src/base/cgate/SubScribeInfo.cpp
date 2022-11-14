@@ -15,8 +15,6 @@ CSubScribeInfo::CSubScribeInfo()
 
 CSubScribeInfo::~CSubScribeInfo()
 {
-	m_listVariety.Clear();
-	m_listSubscribeKey.Clear();
 }
 
 bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
@@ -29,7 +27,7 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 	}
 	PS_GATE_SUBSCRIBE sub = (PS_GATE_SUBSCRIBE)data;
 	
-	if (sub->flag <0 || sub->flag >3)
+	if (sub->flag <0 || sub->flag >1)
 	{
 		sprintf(msg,"订阅标志不符 %d",sub->flag);
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"%s",msg);
@@ -38,57 +36,32 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 	switch (sub->flag)
 	{
 		case 0:
-			m_listVariety.Clear();
-			m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "取消行情订阅");
+			Clear();
+		    m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "取消订阅");
 			return true;
-		case 3:
-		    m_listSubscribeKey.Clear();
-			m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "取消回报类订阅");
-			return true;
-        case 1:
-            m_listVariety.Clear();
-            break;
-        case 2:
-            m_listSubscribeKey.Clear();
-            break;
+		case 1:
+			m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "订阅");
+			break;
 		default:
 			return true;
 	}  
 	m_pEndian.Endian2LocalHost((unsigned char *)&(sub->datanum),sizeof(sub->datanum));
-	
-	int nQuoDataNum = sub->datanum;
-	if (datalen != sizeof(S_GATE_SUBSCRIBE)+(nQuoDataNum -1)*sizeof(sub->variety))
+
+	if (datalen != sizeof(S_GATE_SUBSCRIBE)+(sub->datanum -1)*8)
 	{
-		sprintf(msg,"数据长度[%d]不符 合约数为[%d]",datalen, nQuoDataNum);
+		sprintf(msg,"数据长度[%d]不符 合约数为[%d]",datalen, sub->datanum);
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"%s",msg);
 		return false;
 	}
-	m_pEndian.Endian2LocalHost((unsigned char *)&(sub->variety),sizeof(sub->variety));
+	S_SUBSCRIBE_ *subitem= NULL;
 	CBF_PMutex pmutex(&m_mutex);
-    if (sub->flag == 1)
-    {
-		m_listVariety.Add(sub->variety);
-    }
-    else
-    {
-        m_listSubscribeKey.Add(sub->variety);
-    }
-	
-
-	char *pp = (char *)data +sizeof(S_GATE_SUBSCRIBE);
-	for (int i=0 ; i< nQuoDataNum -1 ; i++)
+	for (unsigned int i=0 ; i< sub->datanum; i++)
 	{
-		int *pint = (int *)pp;
-		m_pEndian.Endian2LocalHost((unsigned char *)pint,sizeof(int));
-		if (sub->flag == 1)
-		{
-			m_listVariety.Add(*pint);
-		}
-		else
-		{
-			m_listSubscribeKey.Add(*pint);
-		}
-		pp+=4;
+		subitem = (S_SUBSCRIBE_*)(&sub->subinfo+(sub->datanum-1)*sizeof(S_SUBSCRIBE_));
+        m_pEndian.Endian2LocalHost((unsigned char*)&(subitem->nServiceNo), sizeof(subitem->nServiceNo));
+        m_pEndian.Endian2LocalHost((unsigned char*)&(subitem->nKey), sizeof(subitem->nKey));
+        int rid = m_table.Add(*subitem);
+        m_key.Add(rid, m_table.m_table[rid].nServiceNo, m_table.m_table[rid].nKey);
 	}
 	if (m_pLog->isWrite(LOG_DEBUG+1))
 	{
@@ -97,25 +70,25 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 		bzero(dinfo,sizeof(dinfo));
 		bzero(tmpchar,sizeof(tmpchar));
 		int id;
-		bool bret = m_listVariety.First(id);
+		bool bret = m_key.First(id);
 		while (bret)
 		{
-			sprintf(tmpchar," %d",id);
+			sprintf(tmpchar," %d-%d",m_table.m_table[id].nServiceNo,m_table.m_table[id].nKey);
 			strcat(dinfo,tmpchar);
-			bret = m_listVariety.Next(id);
+			bret = m_key.Next(id);
 		}
-		m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"按合约订阅的合约代码 %s",dinfo);
+		m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"订阅信息: %s",dinfo);
 	}
 	return true;
 }
-
-bool CSubScribeInfo::IsQuoSubscribe(int varietycode)
+void CSubScribeInfo::Clear()
 {
 	CBF_PMutex pp(&m_mutex);
-	return m_listVariety.Find(varietycode);
+	m_table.Clear();
+	m_key.Clear();
 }
-bool CSubScribeInfo::IsSubscribe(int key)
+bool CSubScribeInfo::IsSubscribe(unsigned int funcno, unsigned int key)
 {
 	CBF_PMutex pp(&m_mutex);
-	return m_listSubscribeKey.Find(key);
+	return m_key.Find(funcno,key);
 }

@@ -1148,59 +1148,59 @@ bool CXdpRecord::PrintXdpRec(char *printbuf)
 		{
 			case XDP_USHORT:
 				pushort = (unsigned short *)fielddata;
-				sprintf(fieldprintdata,"\n%s=%d",field->f_name,*pushort);
+				sprintf(fieldprintdata,"\n%d-%s=%d", field->f_index,field->f_name,*pushort);
 				datalen = strlen(fieldprintdata);
 				break;
 			case XDP_SHORT:
 				pshort = (short *)fielddata;
-				sprintf(fieldprintdata,"\n%s=%d",field->f_name,*pshort);
+				sprintf(fieldprintdata,"\n%d-%s=%d", field->f_index, field->f_name,*pshort);
 				datalen = strlen(fieldprintdata);
 				break;
 			case XDP_UINT:
 				puint = (unsigned int *)fielddata;
-				sprintf(fieldprintdata,"\n%s=%d",field->f_name,*puint);
+				sprintf(fieldprintdata,"\n%d-%s=%d", field->f_index, field->f_name,*puint);
 				datalen = strlen(fieldprintdata);
 				break;
 			case XDP_INT:
 				pint = (int *)fielddata;
-				sprintf(fieldprintdata,"\n%s=%d",field->f_name,*pint);
+				sprintf(fieldprintdata,"\n%d-%s=%d", field->f_index, field->f_name,*pint);
 				datalen = strlen(fieldprintdata);
 				break;
             case XDP_INT64:
 				pint64 = (INT64_*)fielddata;
 #ifdef _WINDOWS
-                sprintf(fieldprintdata, "\n%s=%I64d", field->f_name, *pint64);
+                sprintf(fieldprintdata, "\n%d-%s=%I64d", field->f_index, field->f_name, *pint64);
 #else
-				sprintf(fieldprintdata, "\n%s=%lld", field->f_name, *pint64);
+				sprintf(fieldprintdata, "\n%d-%s=%lld", field->f_index, field->f_name, *pint64);
 #endif
                 datalen = strlen(fieldprintdata);
                 break;
             case XDP_UINT64:
                 puint64 = (UINT64_*)fielddata;
 #ifdef _WINDOWS
-                sprintf(fieldprintdata, "\n%s=%I64d", field->f_name, *puint64);
+                sprintf(fieldprintdata, "\n%d-%s=%I64d", field->f_index, field->f_name, *puint64);
 #else
-                sprintf(fieldprintdata, "\n%s=%lld", field->f_name, *puint64);
+                sprintf(fieldprintdata, "\n%d-%s=%lld", field->f_index, field->f_name, *puint64);
 #endif
                 datalen = strlen(fieldprintdata);
                 break;
 			case XDP_DOUBLE:
 				pdvalue = (double *)fielddata;
-				sprintf(fieldprintdata,"\n%s=%f",field->f_name,*pdvalue);
+				sprintf(fieldprintdata,"\n%d-%s=%f", field->f_index, field->f_name,*pdvalue);
 				datalen = strlen(fieldprintdata);
 				break;
 			case XDP_CHAR:
-				sprintf(fieldprintdata,"\n%s=%s",field->f_name,fielddata);
+				sprintf(fieldprintdata,"\n%d-%s=%s", field->f_index, field->f_name,fielddata);
 				datalen = strlen(fieldprintdata);
 				break;
 			case XDP_VARCHAR:
-				sprintf(fieldprintdata,"\n%s=%s",field->f_name,fielddata);
+				sprintf(fieldprintdata,"\n%d-%s=%s", field->f_index, field->f_name,fielddata);
 				datalen = strlen(fieldprintdata);
 				break;
 			case XDP_BINDATA:
 				//转成16进制
 				bzero(fieldprintdata,sizeof(fieldprintdata));
-				sprintf(fieldprintdata,"\n%s=",field->f_name);
+				sprintf(fieldprintdata,"\n%d-%s=", field->f_index, field->f_name);
 				m_pDes.HEX_2_DSP(fielddata,fieldprintdata+strlen(field->f_name)+2,fdatalen);
 				datalen = strlen(fieldprintdata);
 				break;

@@ -63,7 +63,7 @@ int CSendThread::Run()
 			{
 				SendMsg(&m_pSmsg);
 			}
-			else  if (m_pSmsg.isBC == 1)	 //行情广播等公共信息
+			else  if (m_pSmsg.isBC == 1)	 //广播信息
 			{
                 //发送广播
                 SendBCMsg(&m_pSmsg);
@@ -298,22 +298,12 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 //			m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"连接index[%d] 未登录 %d",i,info->s_cCheckFlag );
 			continue;
 		}
-		if (m_pRes->g_nQuoSubScribe == 1) //支持行情订阅
-		{
-			if (msg->nVerietyId != 0) //有合约id，表示是行情，否则是公告类的，直接发
-			{
-                if (NULL == info->ptr)
-                {
-                    continue;
-                }
-                CSubScribeInfo* psub = (CSubScribeInfo*)info->ptr;
-                if (!psub->IsQuoSubscribe(msg->nVerietyId))
-                {
-                    m_pLog->LogMp(LOG_DEBUG + 1,__FILE__,__LINE__,"连接index[%d] 未订阅行情 %d",i,msg->nVerietyId);
-                    continue;
-                }
-			}
-		}
+        CSubScribeInfo* psub = (CSubScribeInfo*)info->ptr;
+        if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey))
+        {
+            m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅%d %d", i, msg->data.head.stDest.nServiceNo, msg->nkey);
+            continue;
+        }
 		memcpy(&senddata,msg,sizeof(S_CGATE_SMSG));	
 		senddata.index = i;
 		senddata.timestamp = 0;
@@ -746,9 +736,9 @@ void CSendThread::SendSubscribeMsg(S_CGATE_SMSG* msg)
             continue;
         }
         CSubScribeInfo* psub = (CSubScribeInfo*)info->ptr;
-        if (!psub->IsSubscribe(msg->data.head.stDest.nSerial))
+        if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey))
         {
-            m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅回报 key[%d]", i, msg->data.head.stDest.nSerial);
+            m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅 func[%d] key[%d]", i, msg->data.head.stDest.nServiceNo, msg->nkey);
             continue;
         }
 

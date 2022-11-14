@@ -238,7 +238,7 @@ int CBF_LogClient::LogMp(int level, const char *filename, int line,const char *f
 	{
 		return -1;
 	} 
-	bzero(data,sizeof(S_LOG_DATA)-1);
+	//bzero(data,sizeof(S_LOG_DATA)-1);
 	data->logus = m_pDate.GetUs();
 	data->fileline = line;
 	data->loglevel = level;

@@ -543,30 +543,30 @@ int CGateLink::SendLogin(PCGATE_COMMSTRU data,unsigned int timeout)
 	}
 }
 
-int CGateLink::Subscribe(int flag, std::vector<int>& keylist)
-{
-	CGATE_COMMSTRU data;
-	bzero(&(data.head),CGATEHEADLEN);
-    S_GATE_SUBSCRIBE* subscribe = (S_GATE_SUBSCRIBE*)(data.buffer);
-    subscribe->flag = flag;
-    subscribe->datanum = keylist.size();
-	if (subscribe->datanum > 0)
-	{
-        subscribe->variety = keylist[0];
-        for (int i = 1; i < subscribe->datanum; i++)
-        {
-            int* key1 = (int*)(data.buffer + sizeof(S_GATE_SUBSCRIBE) + (i - 1) * 4);
-            *key1 = keylist[i];;
-        }
-        data.head.nLen = sizeof(S_GATE_SUBSCRIBE) + (subscribe->datanum - 1) * 4;
-	}
-	else
-	{
-		data.head.nLen = sizeof(S_GATE_SUBSCRIBE);
-	}
-    
-	return Subscribe(&data,0);
-}
+//int CGateLink::Subscribe(int flag, std::vector<int>& keylist)
+//{
+//	CGATE_COMMSTRU data;
+//	bzero(&(data.head),CGATEHEADLEN);
+//    S_GATE_SUBSCRIBE* subscribe = (S_GATE_SUBSCRIBE*)(data.buffer);
+//    subscribe->flag = flag;
+//    subscribe->datanum = keylist.size();
+//	if (subscribe->datanum > 0)
+//	{
+//        subscribe->variety = keylist[0];
+//        for (int i = 1; i < subscribe->datanum; i++)
+//        {
+//            int* key1 = (int*)(data.buffer + sizeof(S_GATE_SUBSCRIBE) + (i - 1) * 4);
+//            *key1 = keylist[i];;
+//        }
+//        data.head.nLen = sizeof(S_GATE_SUBSCRIBE) + (subscribe->datanum - 1) * 4;
+//	}
+//	else
+//	{
+//		data.head.nLen = sizeof(S_GATE_SUBSCRIBE);
+//	}
+//    
+//	return Subscribe(&data,0);
+//}
 // 函数名: SendLogin
 // 编程  : 王明松 2013-5-23 15:12:27
 // 返回  : int -1未连接  -2发送出错  =0 超时未收到应答 1收到应答

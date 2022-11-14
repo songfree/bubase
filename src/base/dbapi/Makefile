@@ -11,7 +11,7 @@ INCBASE = $(HOME)/include
 INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/dbapi 
 
 
-CPPFLAGS = -Wall -g -rdynamic -fPIC -m64
+CPPFLAGS = -Wall -g -rdynamic -fPIC -m64 -std=c++11
 CPPDEFS = -O2 -DUNIX -DLINUX -DNDEBUG -D_THREAD_SAFE -D_MT 
 
 

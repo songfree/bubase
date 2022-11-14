@@ -26,6 +26,7 @@ CBF_Timer::CBF_Timer()
 //	ioctlsocket(m_sock,FIONBIO,(unsigned long*)&blockflag);
 #endif
 	//m_pLog.SetLogPara(LOG_DEBUG,"","timer.log");
+	m_nCpucore=0;
 }
 
 CBF_Timer::~CBF_Timer()
@@ -118,6 +119,25 @@ int	CBF_Timer::Run()
 #if defined(_WINDOWS)
 	fd_set rset;
 #endif
+#ifndef _WINDOWS
+    if (m_nCpucore > 0)
+    {
+        cpu_set_t cpu_set;
+        CPU_ZERO(&cpu_set);
+        CPU_SET(m_nCpucore, &cpu_set);
+        int ret = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set), &cpu_set);
+        //if (ret < 0)
+        //{
+        //    //printf("bind core fail\n");
+        //    m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "bind core %d fail", m_nCpucore);
+        //}
+        //else
+        //{
+        //    //printf("bind core success\n");
+        //    m_pLog->LogMp(LOG_INFO, __FILE__, __LINE__, "bind core %d success", m_nCpucore);
+        //}
+    }
+#endif
 	tv.tv_sec = m_nTimerTick/1000;
 	tv.tv_usec = m_nTimerTick%1000*1000;
 //	printf("tv_sec=%ld tv_usec=%ld\n",tv.tv_sec,tv.tv_usec);
@@ -176,7 +196,7 @@ void CBF_Timer::Stop()
 #endif
 }
 
-void CBF_Timer::Init(unsigned long tick, bool accuracy)
+void CBF_Timer::Init(unsigned long tick, bool accuracy, int cpucores)
 {
 	m_nTimerTick = tick;
 #ifdef _WINDOWS
@@ -186,7 +206,8 @@ void CBF_Timer::Init(unsigned long tick, bool accuracy)
 		m_nTimerTick = 10;
 	}
 #endif
-	m_bTimerAccuracy = accuracy;
+	m_bTimerAccuracy = accuracy;  
+	m_nCpucore = cpucores;
 }
 
 void CBF_Timer::ProcessTimer()

@@ -21,7 +21,7 @@
 #endif
 
 
-template <typename ELEM_T, UINT64_ Q_SIZE>
+template <typename ELEM_T, UINT64_ Q_SIZE,bool onepush=false>
 class CBF_QueueNoLock
 {
 public:
@@ -46,7 +46,7 @@ public:
 	{
 		UINT64_ currentWriteIndex;        // 获取写指针的位置
 		UINT64_ currentReadIndex;
-        int curtms = CBF_Date_Time::GetTickCount();
+ //       int curtms = CBF_Date_Time::GetTickCount();
         // 1. 获取可写入的位置
 		bool bret=false;
         while (!bret)
@@ -74,31 +74,37 @@ public:
         } 
         // 获取写入位置后 currentWriteIndex 是一个临时变量，保存我们写入的位置
         m_thequeue[countToIndex(currentWriteIndex)] = a_data;  // 把数据更新到对应的位置
-
-        // 2. 更新可读的位置，按着m_maximumReadIndex+1的操作
- 		bret = false;
-        while (!bret)
+        if (onepush)
         {
-			UINT64_ res = CAS(&m_maximumReadIndex, currentWriteIndex, (currentWriteIndex + 1));
-#ifdef _WINDOWS
-            if (res == currentWriteIndex)
-            {
-				break;
-            }
-#else
-            if (res == 1)
-            {
-				break;
-            }
-#endif
-			//走到下面是因为后面的在更新，所以要切换线程，等待做完再做
-#ifdef _WINDOWS
-			Sleep(0);//切换到同优先级的线程或高优先级的线程
-#else
-            sched_yield();      //先在当前线程所在的核心上遍历合适的任务线程，如果有的话，就切换到该线程 
-#endif
+            m_maximumReadIndex++;
         }
+        else
+        {
 
+            // 2. 更新可读的位置，按着m_maximumReadIndex+1的操作
+ 		    bret = false;
+            while (!bret)
+            {
+			    UINT64_ res = CAS(&m_maximumReadIndex, currentWriteIndex, (currentWriteIndex + 1));
+#ifdef _WINDOWS
+                if (res == currentWriteIndex)
+                {
+				    break;
+                }
+#else
+                if (res == 1)
+                {
+				    break;
+                }
+#endif
+			    //走到下面是因为后面的在更新，所以要切换线程，等待做完再做
+#ifdef _WINDOWS
+			    Sleep(0);//切换到同优先级的线程或高优先级的线程
+#else
+                sched_yield();      //先在当前线程所在的核心上遍历合适的任务线程，如果有的话，就切换到该线程 
+#endif
+            }
+        }
 		m_count++;
         return true;
 	}

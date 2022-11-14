@@ -93,7 +93,7 @@ public:
 	// 参数  : unsigned long tick 定时间隔ms  即select的ms windows下最小为10
 	// 参数  : bool accuracy=false   是否精确定时
 	// 描述  : 初始化定时器的精确性及定时间隔
-	void Init(unsigned long tick,bool accuracy=false);
+	void Init(unsigned long tick,bool accuracy=false, int cpucores = 0);
 
 	// 函数名: Stop
 	// 编程  : 王明松 2012-4-16 11:46:07
@@ -180,12 +180,14 @@ protected:
 	unsigned long   m_nTimerTick;  //定时器select 的时间 ms
 	bool            m_bTimerAccuracy;//是否精确的定时 精确的定时需要耗cpu资源
 	bool            m_bIsExit;//定时器停止标志
+	
 	CBF_Mutex       m_mutex;  //互斥
 	CBF_Date_Time   m_pDateTime;
 #ifdef _WINDOWS
 	typedef SOCKET SOCKET_HANDLE;
 	SOCKET_HANDLE m_sock;
 #endif
+	int             m_nCpucore;
 };
 
 

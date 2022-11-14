@@ -12,7 +12,7 @@ INCBASE = $(HOME)/include
 BU_INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/dbapi -I$(INCBASE)/xml -I$(INCBASE)/bumodule -I$(INCBASE)/dbpub 
 
 
-CPPFLAGS = -Wall -g -rdynamic -fPIC -m64 
+CPPFLAGS = -Wall -g -rdynamic -fPIC -m64 -std=c++11
 CPPDEFS = -O2 -DUNIX -DLINUX -DNDEBUG -D_THREAD_SAFE 
 
 .cpp.o:

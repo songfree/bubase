@@ -10,7 +10,7 @@ INCBASE = $(HOME)/include
 
 KERNEL_INC= -I$(INCBASE) -I$(INCBASE)/kernel 
 
-CPPFLAGS = -Wall -g -rdynamic -DLOGCURPATH -fPIC -m64 -O2
+CPPFLAGS = -Wall -g -rdynamic -DLOGCURPATH -fPIC -m64 -O2 -std=c++11
 CPPDEFS =  -DLINUX -DNDEBUG -D_THREAD_SAFE -D_MT -DSA_USE_PTHREAD -D_REENTRANT  -D_ENGLISH_
 
 .cpp.o:

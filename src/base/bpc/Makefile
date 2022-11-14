@@ -12,7 +12,7 @@ INCBASE = $(HOME)/include
 INC= -I$(INCBASE) -I$(INCBASE)/kernel  -I$(INCBASE)/dreb -I$(INCBASE)/dbpub
 
 
-CPPFLAGS = -m64 -g -Wall  -O2 -fpic 
+CPPFLAGS = -m64 -g -Wall  -O2 -fpic -std=c++11 
 CPPDEFS =  -DLINUX -DUNIX  -D_THREAD_SAFE 
 
 .cpp.o:

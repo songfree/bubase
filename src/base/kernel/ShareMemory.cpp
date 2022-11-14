@@ -165,7 +165,28 @@ key_t CShareMemory::myftok(const char *path, int ID)
 //	return ftok(path,ID);
 #endif
 }
-
+int GetName(char* filename, char** pfn)
+{
+    int filelen;
+    int i;
+    int offset = -1;
+    filelen = strlen(filename);
+    if (filelen < 1)
+    {
+        *pfn = filename;
+        return filelen;
+    }
+    for (i = filelen - 1; i >= 0; i--)
+    {
+        if (filename[i] == '\\' || filename[i] == '/')
+        {
+            offset = i;
+            break;
+        }
+    }
+    *pfn = filename + offset + 1;
+    return filelen - offset;
+}
 void * CShareMemory::Open(const char *name, int shmsize)
 {
 	char buf[256];
@@ -184,13 +205,16 @@ void * CShareMemory::Open(const char *name, int shmsize)
 	}
 	bool isNewOpen=false;
 #ifdef _WINDOWS
+	
+	char *smname=NULL;
+	GetName((char *)name,&smname);
 	if (shmsize>0)
 	{
-		m_shmid = CreateFileMapping(INVALID_HANDLE_VALUE,NULL,PAGE_READWRITE,0,shmsize,name);
+		m_shmid = CreateFileMapping(INVALID_HANDLE_VALUE,NULL,PAGE_READWRITE,0,shmsize, smname);
 		if (m_shmid == NULL)
 		{
 			// 共享内存创建错误：
-			sprintf(m_szmsg,"Cannot open share memory for SHM(%s) size=%d -errno:%u!",name,shmsize,GetLastError());
+			sprintf(m_szmsg,"Cannot open share memory for SHM(%s) size=%d -errno:%u!", smname,shmsize,GetLastError());
 			Close();
 			return(NULL);
 		}
@@ -207,10 +231,10 @@ void * CShareMemory::Open(const char *name, int shmsize)
 	}
 	else
 	{
-		m_shmid = OpenFileMapping(FILE_MAP_WRITE|FILE_MAP_READ,FALSE,name);
+		m_shmid = OpenFileMapping(FILE_MAP_WRITE|FILE_MAP_READ,FALSE, smname);
 		if (m_shmid == NULL)
 		{
-			sprintf(m_szmsg,"Cannot open share memory for SHM(%s) - errno:%u!",name,GetLastError());
+			sprintf(m_szmsg,"Cannot open share memory for SHM(%s) - errno:%u!", smname,GetLastError());
 			Close();
 			return(NULL);
 		}
@@ -218,7 +242,7 @@ void * CShareMemory::Open(const char *name, int shmsize)
 	m_address = MapViewOfFile(m_shmid,FILE_MAP_WRITE|FILE_MAP_READ,0,0,0);
 	if (m_address == NULL)
 	{
-		sprintf(m_szmsg,"MapViewOfFile fail [SHM(%s) size=%d] - errno:%u!",name,shmsize,GetLastError());
+		sprintf(m_szmsg,"MapViewOfFile fail [SHM(%s) size=%d] - errno:%u!", smname,shmsize,GetLastError());
 		Close();
 		return(NULL);
 	}

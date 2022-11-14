@@ -10,7 +10,7 @@ INCBASE = $(HOME)/include
 
 INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/xml  -I$(INCBASE)/dptool 
 
-CPPDEFS = -O2 -DUNIX -D_MT -DLINUX  -Wall -D_THREAD_SAFE -fPIC -m64
+CPPDEFS = -O2 -DUNIX -D_MT -DLINUX  -Wall -D_THREAD_SAFE -fPIC -m64 -std=c++11
 
 .cpp.o:
 	$(CPP) -c   $(CPPDEFS) -g -rdynamic $(INC)  $< -o $@

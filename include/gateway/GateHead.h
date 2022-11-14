@@ -92,7 +92,7 @@ typedef struct
 	int             timestamp;        //时间戳
 	int             txcode;           //交易码
 	int             prio;             //优先级
-	int             nVerietyId;        //合约编号    s_nHook
+	int             nkey;             //  	 广播的key，对应总线的s_nHook字段
 	CGATE_COMMSTRU  data;               //消息内容
 }__PACKED__ S_CGATE_SMSG;               //发送数据的结构
 
@@ -139,12 +139,16 @@ typedef struct
 
 
 
-
+typedef struct _S_SUBSCRIBE_
+{
+    unsigned int nServiceNo;   //要订阅的功能号 交易码
+    unsigned int nKey;		   //功能信息的key    key根据业务情况定义，如行情为证券代码，委托回报成交回报为账户id
+}S_SUBSCRIBE_;
 typedef struct 
 {
-	char            flag;             //0 取消行情订阅   1 按行情合约编号订阅   2 按回报信息的key订阅 3 取消回报信息的订阅
-	unsigned int    datanum;          //合约编号或key的数量
-	unsigned int    variety;          //合约编号或回报信息的key    若有多个则一直在后面
+	char            flag;             //0 取消订阅   1 按功能号+key订阅
+	unsigned int    datanum;          //订阅数量
+	S_SUBSCRIBE_    subinfo;          //订阅信息
 }__PACKED__ S_GATE_SUBSCRIBE,*PS_GATE_SUBSCRIBE;   //向网关订阅的报文结构
 
 	//取消字节对齐

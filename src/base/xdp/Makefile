@@ -10,7 +10,7 @@ INCBASE = $(HOME)/include
 
 KERNEL_INC= -I$(INCBASE) -I$(INCBASE)/kernel -I$(INCBASE)/dbpub -I$(INCBASE)/xdp
 
-CPPFLAGS = -Wall -g -rdynamic -DLOGCURPATH -fPIC -m64
+CPPFLAGS = -Wall -g -rdynamic -DLOGCURPATH -fPIC -m64 -std=c++11
 CPPDEFS = -O2 -DLINUX -DNDEBUG -D_THREAD_SAFE -D_MT -DSA_USE_PTHREAD -D_REENTRANT 
 
 .cpp.o:

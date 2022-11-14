@@ -13,7 +13,7 @@ INC= -I$(INCBASE) -I$(INCBASE)/xml -I$(INCBASE)/kernel -I$(INCBASE)/dbpub -I$(IN
 
 
 
-CPPFLAGS = -Wall -g -m64 
+CPPFLAGS = -Wall -g -m64 -std=c++11 
 CPPDEFS = -O2 -DUNIX  -DLINUX -DNDEBUG -D_THREAD_SAFE 
 
 .cpp.o:

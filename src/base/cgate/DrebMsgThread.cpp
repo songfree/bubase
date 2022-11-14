@@ -203,26 +203,32 @@ void CDrebMsgThread::OnMsgRequest(S_BPC_RSMSG& rcvdata)
     // #define  CMD_DPPOST      13 //数据总线节点投递，要求接收到的数据总线节点应答		
     if (rcvdata.sMsgBuf->sDBHead.cCmd == CMD_DPBC || rcvdata.sMsgBuf->sDBHead.cCmd == CMD_DPABC) //广播公共流 订阅信息
     {
-         //查找行情是否是最新的，若不是直接丢弃，若是直更新行情表，将数据丢入队列
-        if (data.data.head.stDest.nSerial <= 0)  //公共的行情广播等
-        {
-            data.isBC = 1;
-            data.index = 0;
-            data.timestamp = 0;
-            //第三级别为行情信息     不再判断行情是否最新，api已经去重了
-            data.nVerietyId = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
-            m_pSendData->PushData(data, 2);
-            
-        }
-        else
-        {
-            data.isBC = 2;    //表示订阅的消息  发送线程要判断是否订阅
-            data.index = 0;
-            data.timestamp = 0;
-            //第三级别为行情信息     不再判断行情是否最新，api已经去重了
-            data.nVerietyId = 0;
-            m_pSendData->PushData(data, 1);
-        }
+        //20221114改成不管是什么信息，都需要订阅
+        data.nkey = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
+        data.isBC = 1;
+        data.index = 0;
+        data.timestamp = 0;
+        m_pSendData->PushData(data, 2);
+        // //查找行情是否是最新的，若不是直接丢弃，若是直更新行情表，将数据丢入队列
+        //if (data.data.head.stDest.nSerial <= 0)  //公共的行情广播等
+        //{
+        //    data.isBC = 1;
+        //    data.index = 0;
+        //    data.timestamp = 0;
+        //    //第三级别为行情信息     不再判断行情是否最新，api已经去重了
+        //    data.nkey = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
+        //    m_pSendData->PushData(data, 2);
+        //    
+        //}
+        //else
+        //{
+        //    data.isBC = 2;    //表示订阅的消息  发送线程要判断是否订阅
+        //    data.index = 0;
+        //    data.timestamp = 0;
+        //    //第三级别为行情信息     不再判断行情是否最新，api已经去重了
+        //    data.nkey = 0;
+        //    m_pSendData->PushData(data, 1);
+        //}
         m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
         rcvdata.sMsgBuf = NULL;
         return;

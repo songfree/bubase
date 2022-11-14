@@ -12,7 +12,7 @@ INCBASE = $(HOME)/include
 BU_INC= -I$(INCBASE) -I$(INCBASE)/kernel  -I$(INCBASE)/kvdata 
 
 
-CPPFLAGS = -Wall -g -rdynamic -fPIC -m64 
+CPPFLAGS = -Wall -g -rdynamic -fPIC -m64 -std=c++11 
 CPPDEFS = -DUNIX -DLINUX -DNDEBUG -D_THREAD_SAFE 
 
 .cpp.o:
@@ -21,7 +21,7 @@ CPPDEFS = -DUNIX -DLINUX -DNDEBUG -D_THREAD_SAFE
 OBJL =   KvData.o  KVNode.o  
 OBJL2 =  main.o 
 
-ALL:  libbf_kvdata.so libbf_kvdata.a testkvdata clean
+ALL:  libbf_kvdata.so libbf_kvdata.a  clean
 
 BCCLIB = -L$(HOME)/lib   -lbf_kernel -lpthread -ldl -lbf_kvdata
 
