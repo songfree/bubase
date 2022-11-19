@@ -494,29 +494,29 @@ int main(int argc, char* argv[])
 			if (data.head.stComm.cNextFlag == 0)
 			{
 				printf("无后续包\n");
-				//向网关订阅	 key为9021 9022 9023的数据，9021可以为后台回报类的交易账户 
+				//向网关订阅	 
                 CGATE_COMMSTRU data;
 				bzero(&data.head,CGATEHEADLEN);
                 S_GATE_SUBSCRIBE* subscribe = (S_GATE_SUBSCRIBE*)(data.buffer);
-                subscribe->flag = 2;
-                subscribe->datanum = 3;
-                subscribe->variety = 9021;
-				int *key1 = (int *)(data.buffer+ sizeof(S_GATE_SUBSCRIBE));
-				*key1 = 9022;
-				key1 = (int*)(data.buffer + sizeof(S_GATE_SUBSCRIBE)+4);
-				*key1 = 9023;
-				data.head.nLen = sizeof(S_GATE_SUBSCRIBE)+4+4;
+                subscribe->flag = 1;
+                subscribe->datanum = 1;
+                subscribe->subinfo.nServiceNo = 990001;//行情
+				subscribe->subinfo.nKey = 12811102;  //128111票 02深圳交易所
+				data.head.nLen = sizeof(S_GATE_SUBSCRIBE);
                 BFCGATE_Subscribe(&data, timeout);
 				//向网关订阅行情 10011 20012 10013合约的行情
                 subscribe = (S_GATE_SUBSCRIBE*)(data.buffer);
                 subscribe->flag = 1;
                 subscribe->datanum = 3;
-                subscribe->variety = 10011;
-                key1 = (int*)(data.buffer + sizeof(S_GATE_SUBSCRIBE));
-                *key1 = 10012;
-                key1 = (int*)(data.buffer + sizeof(S_GATE_SUBSCRIBE) + 4);
-                *key1 = 10013;
-                data.head.nLen = sizeof(S_GATE_SUBSCRIBE) + 4 + 4;
+                subscribe->subinfo.nServiceNo = 990001;//行情
+                subscribe->subinfo.nKey = 12310402;  //123104票 02深圳交易所
+				S_SUBSCRIBE_ *sub = (S_SUBSCRIBE_*)(data.buffer + sizeof(S_GATE_SUBSCRIBE));
+				sub->nServiceNo = 990001;//行情
+				sub->nKey = 12310402;  //123104票 02深圳交易所
+				sub = (S_SUBSCRIBE_*)(data.buffer + sizeof(S_GATE_SUBSCRIBE)+sizeof(S_SUBSCRIBE_));
+				sub->nServiceNo = 990001;//行情
+				sub->nKey = 12310402;  //123104票 02深圳交易所
+                data.head.nLen = sizeof(S_GATE_SUBSCRIBE) + 2* sizeof(S_SUBSCRIBE_);
                 BFCGATE_Subscribe(&data, timeout);
 				SLEEP(sendtime);
 				continue;
