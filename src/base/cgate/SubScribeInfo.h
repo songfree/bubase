@@ -64,6 +64,10 @@ public:
 	// ÃèÊö  : ĞĞÇé¶©ÔÄ
 	bool Subscribe(const char *data,int datalen,char *msg);
 
+
+	int Select(std::vector<S_SUBSCRIBE_*>& reslist);
+	int Subscribe(unsigned int funcno, unsigned int key);
+	int UnSubscribe(unsigned int funcno, unsigned int key);
 	CSubScribeInfo();
 	virtual ~CSubScribeInfo();
 	

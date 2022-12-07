@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
 {
 
 	memset(g_VERSION,0,sizeof(g_VERSION));
-	sprintf(g_VERSION,"2.0.2 %s",__DATE__);
+	sprintf(g_VERSION,"2.0.5 %s",__DATE__);
 	
 	CBF_Tools::GetModuleNamePath(argv,g_pDreb.g_Vars.g_curentpath,g_pDreb.g_Vars.g_modulepath,g_pDreb.g_Vars.g_modulename);
 

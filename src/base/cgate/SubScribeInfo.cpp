@@ -33,12 +33,12 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"%s",msg);
 		return false;
 	}
+	m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "¶©ÔÄ±êÖ¾:%d ¶©ÔÄÊý:%d",sub->flag,sub->datanum);
 	switch (sub->flag)
 	{
 		case 0:
-			Clear();
 		    m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ");
-			return true;
+			break;;
 		case 1:
 			m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "¶©ÔÄ");
 			break;
@@ -46,38 +46,60 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 			return true;
 	}  
 	m_pEndian.Endian2LocalHost((unsigned char *)&(sub->datanum),sizeof(sub->datanum));
-
-	if (datalen != sizeof(S_GATE_SUBSCRIBE)+(sub->datanum -1)*8)
+	if (datalen != sizeof(S_GATE_SUBSCRIBE)+(sub->datanum -1)*sizeof(S_SUBSCRIBE_))
 	{
 		sprintf(msg,"Êý¾Ý³¤¶È[%d]²»·û ºÏÔ¼ÊýÎª[%d]",datalen, sub->datanum);
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"%s",msg);
 		return false;
 	}
 	S_SUBSCRIBE_ *subitem= NULL;
-	CBF_PMutex pmutex(&m_mutex);
-	for (unsigned int i=0 ; i< sub->datanum; i++)
+	subitem = &sub->subinfo;
+    m_pEndian.Endian2LocalHost((unsigned char*)&(subitem->nServiceNo), sizeof(subitem->nServiceNo));
+    m_pEndian.Endian2LocalHost((unsigned char*)&(subitem->nKey), sizeof(subitem->nKey));
+	if (sub->flag == 0)
 	{
-		subitem = (S_SUBSCRIBE_*)(&sub->subinfo+(sub->datanum-1)*sizeof(S_SUBSCRIBE_));
+		if (UnSubscribe(subitem->nServiceNo,subitem->nKey)<0)
+        {
+			m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ [%d %d]Ê§°Ü£¬Î´¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+        }
+	}
+	else
+	{
+        if (Subscribe(subitem->nServiceNo, subitem->nKey) < 0)
+        {
+            m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "¶©ÔÄ [%d %d]Ê§°Ü£¬ÒÑ¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+        }
+	}
+	for (unsigned int i=1 ; i< sub->datanum; i++)
+	{
+		subitem = (S_SUBSCRIBE_*)(data+sizeof(S_GATE_SUBSCRIBE)+(i-1)*sizeof(S_SUBSCRIBE_));
         m_pEndian.Endian2LocalHost((unsigned char*)&(subitem->nServiceNo), sizeof(subitem->nServiceNo));
         m_pEndian.Endian2LocalHost((unsigned char*)&(subitem->nKey), sizeof(subitem->nKey));
-        int rid = m_table.Add(*subitem);
-        m_key.Add(rid, m_table.m_table[rid].nServiceNo, m_table.m_table[rid].nKey);
+        if (sub->flag == 0)
+        {
+            if (UnSubscribe(subitem->nServiceNo, subitem->nKey) < 0)
+            {
+                m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ [%d %d]Ê§°Ü£¬Î´¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+            }
+        }
+        else
+        {
+            if (Subscribe(subitem->nServiceNo, subitem->nKey) < 0)
+            {
+                m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "¶©ÔÄ [%d %d]Ê§°Ü£¬ÒÑ¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+            }
+        }
 	}
 	if (m_pLog->isWrite(LOG_DEBUG+1))
 	{
-		char dinfo[8192];
-		char tmpchar[20];
-		bzero(dinfo,sizeof(dinfo));
-		bzero(tmpchar,sizeof(tmpchar));
-		int id;
-		bool bret = m_key.First(id);
-		while (bret)
+		std::string info;
+		std::vector<S_SUBSCRIBE_ *>reslist;
+		Select(reslist);
+		for (unsigned int i = 0; i < reslist.size(); i++)
 		{
-			sprintf(tmpchar," %d-%d",m_table.m_table[id].nServiceNo,m_table.m_table[id].nKey);
-			strcat(dinfo,tmpchar);
-			bret = m_key.Next(id);
+			info = info +std::to_string(reslist[i]->nServiceNo)+"-"+ std::to_string(reslist[i]->nKey)+" ";
 		}
-		m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"¶©ÔÄÐÅÏ¢: %s",dinfo);
+		m_pLog->LogBin(LOG_DEBUG+1,__FILE__,__LINE__,"¶©ÔÄÐÅÏ¢", (char *)info.c_str(),info.length());
 	}
 	return true;
 }
@@ -91,4 +113,43 @@ bool CSubScribeInfo::IsSubscribe(unsigned int funcno, unsigned int key)
 {
 	CBF_PMutex pp(&m_mutex);
 	return m_key.Find(funcno,key);
+}
+int CSubScribeInfo::Subscribe(unsigned int funcno, unsigned int key)
+{
+	S_SUBSCRIBE_  sub;
+	sub.nServiceNo = funcno;
+	sub.nKey = key;
+	CBF_PMutex pp(&m_mutex);
+	if (!m_key.Find(funcno, key))
+	{
+	   int rid = m_table.Add(sub);
+	   m_key.Add(rid,m_table.m_table[rid].nServiceNo, m_table.m_table[rid].nKey);
+	   return rid;
+	}
+	return -1;
+
+}
+int CSubScribeInfo::UnSubscribe(unsigned int funcno, unsigned int key)
+{
+    CBF_PMutex pp(&m_mutex);
+	int rid;
+    if (!m_key.Select(rid,funcno, key))
+    {
+        return -1;
+    }
+	m_key.Delete(funcno, key);
+	m_table.Delete(rid);
+	return rid;
+}
+int  CSubScribeInfo::Select(std::vector<S_SUBSCRIBE_*>&reslist)
+{
+	CBF_PMutex pp(&m_mutex);
+    int id;
+    bool bret = m_key.First(id);
+    while (bret)
+    {
+        reslist.push_back(&m_table.m_table[id]);
+        bret = m_key.Next(id);
+    }
+	return reslist.size();
 }

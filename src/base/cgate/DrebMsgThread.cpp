@@ -282,3 +282,116 @@ void CDrebMsgThread::Stop()
 	m_bIsRunning = false;
 	Join();
 }
+
+// 函数名: OnMsgReportBpc
+    // 编程  : 王明松 2015-4-23 16:01:43
+    // 返回  : virtual void 
+    // 参数  : S_BPC_RSMSG &rcvdata
+    // 描述  : 主动上报监控信息，发给总线
+void CDrebMsgThread::OnMsgReportBpc(S_BPC_RSMSG& rcvdata)
+{
+    //监控信息
+    CBF_Xml        pXml;
+
+    if (!pXml.FromBuffer(rcvdata.sMsgBuf->sBuffer))
+    {
+        m_pDrebApi->GetLogPoint()->LogMp(LOG_ERROR, __FILE__, __LINE__, "API过来的非xml格式");
+        m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+        rcvdata.sMsgBuf = NULL;
+        return;
+    }
+    //监控信息
+    int i;
+    pXml.SetNodeValueByPath("Monitor/公共节点", false, (int)m_pRes->g_nSvrMainId);
+    pXml.SetNodeValueByPath("Monitor/私有节点", false, (int)m_pRes->g_nSvrPrivateId);
+    pXml.SetNodeValueByPath("Monitor/节点类型", false, 2);//类bpc
+    pXml.SetNodeValueByPath("Monitor/报告类型", false, 0);//正常
+    pXml.SetNodeValueByPath("Monitor/启动时间", false, m_pRes->g_sStartDateTime, false);
+
+    int nConntotal = 0;
+    int bufsize=0;
+    int nConnnum = m_pAio->GetConnectPoolInfo(nConntotal);
+
+    pXml.SetNodeAttribute("Monitor/连接池", false, "最大连接数", false, nConntotal);
+    pXml.SetNodeAttribute("Monitor/连接池", false, "空闲连接数", false, nConnnum);
+    pXml.SetNodeAttribute("Monitor/连接池", false, "客户连接数", false, nConntotal - nConnnum - 1);
+    char extdata[300];
+    sprintf(extdata, "连接池最大连接数:%d 空闲连接数%d 客户连接数%d", nConntotal, nConnnum, nConntotal - nConnnum - 1);
+    m_pDrebApi->GetBufferPoolInfo(nConntotal, nConnnum, bufsize);
+    pXml.SetNodeAttribute("Monitor/内存缓冲池", false, "总分配", false, nConntotal);
+    pXml.SetNodeAttribute("Monitor/内存缓冲池", false, "未使用", false, nConnnum);
+    pXml.SetNodeAttribute("Monitor/内存缓冲池", false, "每块大小", false, bufsize);
+
+    if (m_pRes->g_nMonitorHost == 1)
+    {
+        S_MONITOR_HOST hostinfo;
+        std::vector<S_MONITOR_DISK>  diskinfo;
+        m_pDrebApi->GetHostInfo(hostinfo, diskinfo);
+        pXml.SetNodeValueByPath("Monitor/主机资源/CPU", false, (int)hostinfo.nCpuRate);
+        pXml.SetNodeAttribute("Monitor/主机资源/内存", false, "total", false, (int)hostinfo.nTotalMemory);
+        pXml.SetNodeAttribute("Monitor/主机资源/内存", false, "used", false, (int)hostinfo.nUsedMemory);
+        for (i = 0; i < diskinfo.size(); i++)
+        {
+            CXmlNode* disknode = pXml.AddNodeByPath("Monitor/主机资源/磁盘", false, "磁盘", false, "");
+            if (disknode != NULL)
+            {
+                disknode->SetAttribute("drive", false, diskinfo[i].sDiskName, true);
+                disknode->SetAttribute("total", false, (int)diskinfo[i].nTotalSpace);
+                disknode->SetAttribute("used", false, (int)diskinfo[i].nUsedSpace);
+            }
+        }
+    }
+   
+    //连接信息
+    char sip[30];
+    int port;
+    int drebid;
+    int drebpid;
+    char status[10];
+
+    for (i = 0; i < m_pRes->g_vDrebLinkInfo.size(); i++)
+    {
+        CXmlNode* connnode = pXml.AddNodeByPath("Monitor/连接信息", false, "连接", false, "");
+        if (connnode == NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "AddNodeByPath 出错");
+            continue;
+        }
+        if (m_pDrebApi->GetDrebInfo(i, sip, port, drebid, drebpid, status))
+        {
+            connnode->SetAttribute("ip", false,sip);
+            connnode->SetAttribute("port", false, port);
+            connnode->SetAttribute("index", false, i);
+            connnode->SetAttribute("公共节点", false, drebid);
+            connnode->SetAttribute("私有节点", false, drebpid);
+            connnode->SetAttribute("status", false, status);
+        }
+    }
+    pXml.SetNodeValueByPath("Monitor/扩展信息/cgate", false, extdata, false);
+    pXml.SetNodeAttribute("Monitor/扩展信息/cgate", false, "status", false, 0);
+    int len = BPUDATASIZE;
+    if (!pXml.ToBuffer(rcvdata.sMsgBuf->sBuffer, len))
+    {
+        m_pDrebApi->GetLogPoint()->LogMp(LOG_ERROR, __FILE__, __LINE__, "ToBuffer出错");
+        m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+        rcvdata.sMsgBuf = NULL;
+        return;
+    }
+    rcvdata.sMsgBuf->sDBHead.cCmd = CMD_DPPUSH;
+    rcvdata.sMsgBuf->sDBHead.cZip = 0;
+    rcvdata.sMsgBuf->sDBHead.cDrebAffirm = 0;
+    rcvdata.sMsgBuf->sDBHead.cNextFlag = 0; //是否是取后续包
+    rcvdata.sMsgBuf->sDBHead.cRaflag = 0;//请求应答标志
+
+    rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_cNodePrivateId = m_pRes->g_nMonitorDrebPrivateId;
+    rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_cSvrPrivateId = m_pRes->g_nMonitorSvrPrivateId;
+    rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nNodeId = m_pRes->g_nMonitorDrebId;
+    rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo = m_pRes->g_nMonitorTxCode;
+    rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nSvrMainId = m_pRes->g_nMonitorSvrId;
+    rcvdata.sMsgBuf->sDBHead.nLen = len;
+    m_pDrebApi->GetLogPoint()->LogBin(LOG_DEBUG + 1, __FILE__, __LINE__, "监控通知", rcvdata.sMsgBuf->sBuffer, rcvdata.sMsgBuf->sDBHead.nLen);
+    //发给总线	
+    rcvdata.sMsgBuf->sBpcHead.nIndex = 100;
+    m_pDrebApi->SendMsg(rcvdata);
+    return;
+}

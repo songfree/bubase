@@ -164,6 +164,8 @@ protected:
 	// 描述  : 广播信息
 	void TransBroadCast(S_DREB_RSMSG *msg,bool isaffirm=true);
 
+	//转发固定的广播
+	void TransDestBc(S_DREB_RSMSG* msg);
 
 	// 函数名: TransMsgAns
 	// 编程  : 王明松 2010-9-7 14:25:19

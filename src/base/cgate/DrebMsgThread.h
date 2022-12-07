@@ -40,6 +40,7 @@ public:
 	virtual void Stop();
 
 	
+
 	std::vector<int> *m_lBcRegister;//要向总线订阅的广播功能号
 protected:
 	CSendData* m_pSendData;//交易队列   总线过来的，要发给客户端的消息，放入此队列
@@ -67,6 +68,8 @@ protected:
     // 参数  : S_BPC_RSMSG &rcvdata
     // 描述  : 处理总线过来的数据，广播，推送等
 	virtual void OnMsgRequest(S_BPC_RSMSG& rcvdata);
+
+	virtual void OnMsgReportBpc(S_BPC_RSMSG& rcvdata);
 
 };
 

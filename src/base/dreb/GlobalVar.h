@@ -156,6 +156,8 @@ public:
 	
 	void PutTime();
 
+	std::vector<S_MONITOR_INFO> m_vBcDest;//将本节点的广播转发给指定总线节点的
+
 protected:
 	
 	std::vector<INT64_> m_vTime;

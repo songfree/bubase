@@ -489,7 +489,7 @@ void CMsgProcThread::OnMsgRead(S_DREB_RSMSG *msg)
         s_nNodeId = msg->message.head.s_Sinfo.s_nNodeId;
 		s_cNodePrivateId = msg->message.head.s_Sinfo.s_cNodePrivateId;
 		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"数据总线节点命令[%s] index[%d] 来自DREB[%d %d]",\
-			GetDrebCmdType(msg->message.head.cCmd).c_str(),s_nNodeId,\
+			GetDrebCmdType(msg->message.head.cCmd).c_str(),msg->msghead.index,s_nNodeId,\
 			s_cNodePrivateId);
 	}
 	
@@ -562,7 +562,7 @@ void CMsgProcThread::OnMsgRead(S_DREB_RSMSG *msg)
 	if (m_log->isWrite(LOG_DEBUG))
 	{
 		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"数据总线节点命令[%s] 处理完成 index[%d] 来自DREB[%d %d ]",\
-			GetDrebCmdType(cmd).c_str(),index,s_nNodeId,\
+			GetDrebCmdType(cmd).c_str(),msg->msghead.index,s_nNodeId,\
 			s_cNodePrivateId);
 	}
 	return ;
@@ -971,6 +971,7 @@ void CMsgProcThread::OnCmdDpBc(S_DREB_RSMSG *msg)
 {
 	if (msg->message.head.cRaflag == 0)
 	{
+		TransDestBc(msg);
 		TransBroadCast(msg,true);
 	}
 	else
@@ -983,6 +984,7 @@ void CMsgProcThread::OnCmdDpABc(S_DREB_RSMSG *msg)
 {
 	if (msg->message.head.cRaflag == 0)
 	{
+		TransDestBc(msg);
 		TransBroadCast(msg,false);
 	}
 	else
@@ -4017,4 +4019,50 @@ void CMsgProcThread::OnCmdUnSubscribe(S_DREB_RSMSG* msg)
     m_pMemDb->m_subscribe.UnSubscribe(msg->msghead.index);
     m_pMemPool->PoolFree(msg);
     return;
+}
+
+void CMsgProcThread::TransDestBc(S_DREB_RSMSG* msg)
+{
+	//m_log->LogMp(LOG_DEBUG, __FILE__, __LINE__, "TransDestBc 开始 m_vBcDest size[%d] dest[%d %d %d %d] local[%d %d]", m_pRes->m_vBcDest.size(),\
+	//	msg->message.head.d_Dinfo.d_nNodeId, msg->message.head.d_Dinfo.d_cNodePrivateId, msg->message.head.d_Dinfo.d_nSvrMainId, msg->message.head.d_Dinfo.d_cSvrPrivateId, \
+	//	m_pRes->g_nDrebId,m_pRes->g_nDrebPrivateId);
+	if (m_pRes->m_vBcDest.size()>0 && \
+		msg->message.head.d_Dinfo.d_nNodeId == m_pRes->g_nDrebId && \
+		msg->message.head.d_Dinfo.d_cNodePrivateId == m_pRes->g_nDrebPrivateId && \
+		msg->message.head.d_Dinfo.d_nSvrMainId == 0 && \
+		msg->message.head.d_Dinfo.d_cSvrPrivateId == 0)
+	{
+		S_DREB_RSMSG* data = NULL;
+		S_DREB_ROUTE dreb;
+		//为发给本节点的广播，查看是否有配置，若有则转发出去
+		for (unsigned int i = 0; i < m_pRes->m_vBcDest.size(); i++)
+		{
+			if (m_pMemDb->SelectRoute(m_pRes->m_vBcDest[i].nNodeId, m_pRes->m_vBcDest[i].cNodePrivateId, dreb))
+			{
+                data = (S_DREB_RSMSG*)m_pMemPool->PoolMalloc();
+                if (data == NULL)
+                {
+                    m_log->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "TransDestBc 内存分配出错");
+                    return;
+                }
+                memcpy(&(data->msghead), &(msg->msghead), sizeof(DREBQUEUEMSG_HEAD));
+                memcpy(&(data->message), &(msg->message), sizeof(COMMSTRU)); 
+                data->message.head.d_Dinfo.d_nNodeId = m_pRes->m_vBcDest[i].nNodeId;
+                data->message.head.d_Dinfo.d_cNodePrivateId = m_pRes->m_vBcDest[i].cNodePrivateId;
+                if (m_pSocketMgr->at(dreb.nIndex)->SendMsg(data) != 0)
+                {
+                    m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "TransDestBc 发送失败");
+                }
+				//else
+				//{
+				//	m_log->LogMp(LOG_DEBUG, __FILE__, __LINE__, "广播转发总线节点[%d %d]完成", m_pRes->m_vBcDest[i].nNodeId, m_pRes->m_vBcDest[i].cNodePrivateId);
+				//}
+			}
+			//else
+			//{
+			//	m_log->LogMp(LOG_WARNNING, __FILE__, __LINE__, "无广播转发的总线节点[%d %d]路由", m_pRes->m_vBcDest[i].nNodeId, m_pRes->m_vBcDest[i].cNodePrivateId);
+			//}
+		}
+	}
+	return;
 }

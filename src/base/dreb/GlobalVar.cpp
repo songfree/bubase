@@ -349,7 +349,40 @@ bool CGlobalVar::Init(const char *confile)
 			return false;
 		}
 	}
+	CXmlNode *bcnode = xmlconf.GetNodeByPath("package/bcnode", false);
+    if (bcnode != NULL)
+    {
+		bcnode = (CXmlNode*)bcnode->GetFirstChild();
+        S_MONITOR_INFO bcinfo;
+        std::string stemp;
+        while (bcnode != NULL)
+        {
+            if (bcnode->GetAttribute("drebid", false, stemp) == NULL)
+            {
+                sprintf(m_errMsg, "%s 的drebid没有配置", bcnode->GetNodeName().c_str());
+                g_pLog.LogMp(LOG_ERROR, __FILE__, __LINE__, m_errMsg);
+				bcnode = (CXmlNode*)bcnode->getNextSibling();
+                continue;
+            }
+            bcinfo.nNodeId = atoi(stemp.c_str());
+            if (bcnode->GetAttribute("drebpid", false, stemp) == NULL)
+            {
+                sprintf(m_errMsg, "%s 的drebpid没有配置", bcnode->GetNodeName().c_str());
+                g_pLog.LogMp(LOG_ERROR, __FILE__, __LINE__, m_errMsg);
+				bcnode = (CXmlNode*)bcnode->getNextSibling();
+                continue;
+            }
+            bcinfo.cNodePrivateId = atoi(stemp.c_str());
 
+            m_vBcDest.push_back(bcinfo);
+			bcnode = (CXmlNode*)bcnode->getNextSibling();
+        }
+        g_pLog.LogMp(LOG_INFO, __FILE__, __LINE__, "广播转发配置数:%d", m_vBcDest.size());
+    }
+    else
+    {
+        g_pLog.LogMp(LOG_WARNNING, __FILE__, __LINE__, "广播转发未配置 [package/bcnode]");
+    }
 // 	if (xmlconf.GetNodeValueByPath("package/head/接收发送线程数",false,g_nModuleThreadNum) == NULL)
 // 	{
 // 		sprintf(m_errMsg,"节点[package/head/接收发送线程数]没有配置");
