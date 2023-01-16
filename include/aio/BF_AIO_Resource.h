@@ -180,10 +180,6 @@ public:
             g_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "xml配置文件节点[/package/head/public/sendwindow]未配置 默认16个，最大20个");
             g_nSendOnceNum = 16;
         }
-        if (g_nSendOnceNum > 20)
-        {
-            g_nSendOnceNum = 20;
-        }
         if (pXml.GetNodeValueByPath("/package/head/public/dispatchtime", false, g_nDispatchTime) == NULL)
         {
             g_nDispatchTime = 30;

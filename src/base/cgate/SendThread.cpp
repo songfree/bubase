@@ -73,12 +73,12 @@ int CSendThread::Run()
 				SendSubscribeMsg(&m_pSmsg);
 			}
 			
-			etime = time(NULL);
-			if ((etime - rtime) > 20)
-			{
-				rtime = etime;
-				m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"发送队列数[%d]",m_pSendData->GetSize());
-			}
+			//etime = time(NULL);
+			//if ((etime - rtime) > 20)
+			//{
+			//	rtime = etime;
+			//	m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"发送队列数[%d]",m_pSendData->GetSize());
+			//}
 		}
 	}
 	m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"停止客户发送线程");
@@ -299,6 +299,10 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 			continue;
 		}
         CSubScribeInfo* psub = (CSubScribeInfo*)info->ptr;
+		if (psub == NULL)
+		{
+			continue;
+		}
         if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey))
         {
             m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅%d %d", i, msg->data.head.stDest.nServiceNo, msg->nkey);
@@ -311,8 +315,9 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 
 	}
 	m_nSendQuoteNum++;
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送广播数[%d],成功发给客户广播数[%d]",m_nSendQuoteNum,m_nSendCustNum);
+	m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"发送广播数[%d],成功发给客户广播数[%d]",m_nSendQuoteNum,m_nSendCustNum);
 	m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"发送广播完成 标识[%d %d %d] ",msg->d_nNodeId,msg->d_cNodePrivateId,msg->s_nDrebSerial);
+	return;
 }
 
 std::string CSendThread::GetMsgType(int type)
@@ -340,6 +345,8 @@ std::string CSendThread::GetMsgType(int type)
 		return "MSG_GATEPKISTEP2";
 	case MSG_GATEPKISTEP3:
 		return "MSG_GATEPKISTEP3";
+    case MSG_GATESUBSCRIBE:
+        return "MSG_GATESUBSCRIBE";
 	default:
 		return "";
 	}
@@ -736,6 +743,10 @@ void CSendThread::SendSubscribeMsg(S_CGATE_SMSG* msg)
             continue;
         }
         CSubScribeInfo* psub = (CSubScribeInfo*)info->ptr;
+		if (psub == NULL)
+		{
+			continue;
+		}
         if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey))
         {
             m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅 func[%d] key[%d]", i, msg->data.head.stDest.nServiceNo, msg->nkey);

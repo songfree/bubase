@@ -15,25 +15,25 @@ CDrebTbl::CDrebTbl()
 
 CDrebTbl::~CDrebTbl()
 {
-	int id;
-	bool bRet;
-	bRet = m_pkey.First(id);
-	while (bRet)
-	{
-		if (m_table.m_table[id].pSendQueue != NULL)
-		{
-			delete m_table.m_table[id].pSendQueue;
-			m_table.m_table[id].pSendQueue = NULL;
-		}
-		bRet = m_pkey.Next(id);
-	}
+	//int id;
+	//bool bRet;
+	//bRet = m_pkey.First(id);
+	//while (bRet)
+	//{
+	//	if (m_table.m_table[id].pSendQueue != NULL)
+	//	{
+	//		delete m_table.m_table[id].pSendQueue;
+	//		m_table.m_table[id].pSendQueue = NULL;
+	//	}
+	//	bRet = m_pkey.Next(id);
+	//}
 }
 bool CDrebTbl::Insert(S_DREB_ROUTE dreb)
 {
 	int id;
 	CBF_PMutex pp(&m_mutex);
 	//通过主键查找，不存在则增加
-	if (!m_pkey.Find(id,dreb.nNodeId,dreb.cNodePrivateId))
+	if (!m_pkey.Find(dreb.nNodeId,dreb.cNodePrivateId))
 	{
 		id = m_table.Add(dreb);//增加到表
 		m_pkey.Add(id,dreb.nNodeId,dreb.cNodePrivateId);//增加主键
@@ -113,40 +113,37 @@ bool CDrebTbl::SelectByNode(int nodeid, std::vector<S_DREB_ROUTE *> &dreb)
 }
 bool CDrebTbl::SelectPrivateid(int nodeid, int privateid, S_DREB_ROUTE &dreb)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,nodeid,privateid))
+	if (!m_pkey.Select(id,nodeid,privateid))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
 	dreb = m_table.m_table[id];
 	return true;
 }
 S_DREB_ROUTE * CDrebTbl::SelectPrivateid(int nodeid, int privateid)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,nodeid,privateid))
+	if (!m_pkey.Select(id,nodeid,privateid))
 	{
 		return NULL;
 	}
-	int id;
-	iset.First(id);
 	return  &(m_table.m_table[id]);
 }
 bool CDrebTbl::Delete(int nodeid, int privateid)
 {
-	CInt iset;
+	int id;
+	
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,nodeid,privateid))
+	if (!m_pkey.Select(id,nodeid,privateid))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
-	m_pkey.Delete(iset,nodeid,privateid);
+	CInt iset;
+	iset.Add(id);
+	m_pkey.Delete(nodeid,privateid);
 	m_index_node.Delete(iset,nodeid);
 	m_index_index.Delete(iset,m_table.m_table[id].nIndex);
 	m_table.Delete(id);
@@ -155,14 +152,12 @@ bool CDrebTbl::Delete(int nodeid, int privateid)
 
 bool CDrebTbl::Update(S_DREB_ROUTE dreb)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,dreb.nNodeId,dreb.cNodePrivateId))
+	if (!m_pkey.Select(id,dreb.nNodeId,dreb.cNodePrivateId))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
 	if (m_table.m_table[id].nStep >= dreb.nStep) //
 	{
 		m_table.m_table[id].nStep = dreb.nStep;
@@ -181,14 +176,12 @@ bool CDrebTbl::Update(S_DREB_ROUTE dreb)
 
 bool CDrebTbl::OnClose(int nodeid, int privateid)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,nodeid,privateid))
+	if (!m_pkey.Select(id,nodeid,privateid))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
 	m_table.m_table[id].bIsClose = true;
 	m_table.m_table[id].nStep = 100;
 	m_table.m_table[id].nIndex = 0;

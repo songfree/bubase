@@ -63,6 +63,8 @@ public:
 
 	int           g_nCrcFlag; //crc校验标志  0不校验不生成  1校验 生成
 
+	int           g_nQueueSize; //发送队列大小，当总线缓冲区满时，放入队列，此队列的大小，当队列满再发送时，会丢弃
+
 	unsigned int  g_nEndianFlag; //针对调用方字节序处理标志,0不做处理，适合C/C++.  1使用网络序(SNEDMSG和getmsg)时使用网络序传输数据 适合JAVA调用(java不用处理字节序)
 
 	//心跳连接配置
@@ -170,6 +172,11 @@ public:
 		{
 			g_nMaxLogSize = ret;
 		}
+        if (m_pXml.GetNodeValueByPath("package/head/public/queuesize", false, g_nQueueSize) == NULL)
+        {
+            m_errMsg = "file error,no [package/head/public/queuesize] node";
+			g_nQueueSize = 1000;
+        }
 
 		if (m_pXml.GetNodeValueByPath("package/head/public/endian",false,ret) == NULL)
 		{

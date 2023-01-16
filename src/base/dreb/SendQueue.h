@@ -59,7 +59,7 @@ public:
 
 	CBF_BufferPool *m_pMemPool;
 	
-
+	int  m_nMaxQueue;//队列最大报文数
 protected:
 
 	

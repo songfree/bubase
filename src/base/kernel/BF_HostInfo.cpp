@@ -464,8 +464,8 @@ int CBF_HostInfo::GetEms(S_MemoryInf &smInfo)
 				
 				//20151230 modi 改为可用=free +buffer +cache
 				//smInfo.EmsUse = atoi(sTemp3)/1024;
-				smInfo.EmsUse = smInfo.EmsTotal - atoi(sTemp4)/1024 - atoi(sTemp6)/1024 -atoi(sTemp7)/1024;
-				
+				//smInfo.EmsUse = smInfo.EmsTotal - atoi(sTemp4)/1024 - atoi(sTemp6)/1024 -atoi(sTemp7)/1024;
+				smInfo.EmsUse = smInfo.EmsTotal - atoi(sTemp7) / 1024;
 
 				smInfo.EmsUseRadio = 100*(smInfo.EmsUse)/(smInfo.EmsTotal);
 //				printf("总内存=%dM 使用内存=%dM 内存使用率%d%s\n",smInfo.EmsTotal,smInfo.EmsUse,smInfo.EmsUseRadio,"%");

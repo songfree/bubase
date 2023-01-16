@@ -157,7 +157,14 @@ bool CGateResource::Init(const char *confile, CIErrlog* log)
 		g_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,m_sErrMsg);
 		return false;
 	}
-	g_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"压缩标志为%d",g_nZipFlag);
+	g_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "压缩标志为%d", g_nZipFlag);
+    if (g_pXml.GetNodeValueByPath("/package/head/public/filterquo", false, g_nFilterQuo) == NULL)
+    {
+        sprintf(m_sErrMsg, "xml配置文件节点[/package/head/public/filterquo]未配置");
+        g_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, m_sErrMsg);
+        return false;
+    }
+	g_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"过滤行情标志为%d", g_nFilterQuo);
 	if (g_pXml.GetNodeValueByPath("/package/head/public/uncompress",false,g_nUnCommpress) == NULL) 
 	{
 		sprintf(m_sErrMsg,"xml配置文件节点[/package/head/public/uncompress]未配置");
@@ -301,10 +308,25 @@ bool CGateResource::Init(const char *confile, CIErrlog* log)
 	CXmlNode *bcnode = g_pXml.GetNodeByPath("package/head/broadcast",false);
 	if (bcnode != NULL)
 	{
+		S_BC_INFO bcinfo;
 		CXmlNode *bcfuncnode = (CXmlNode *)bcnode->GetFirstChild();
 		while (bcfuncnode != NULL)
 		{
-			g_lBCFuncList.push_back(atoi(bcfuncnode->GetNodeValue().c_str()));
+			bcinfo.nServiceNo = atoi(bcfuncnode->GetNodeValue().c_str());
+			CXmlAttribute* attr = bcfuncnode->GetAttribute("level");
+			if (attr == NULL)
+			{
+				bcinfo.nLevel =2;//默认是行情广播
+			}
+			else
+			{
+				bcinfo.nLevel = atoi(attr->GetAttrValue().c_str());
+				if (bcinfo.nLevel != 1 && bcinfo.nLevel != 2)
+				{
+					bcinfo.nLevel =2;
+				}
+			}
+			g_lBCFuncList.Insert(bcinfo);
 			bcfuncnode = (CXmlNode *)bcfuncnode->getNextSibling();
 		}
 	}

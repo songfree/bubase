@@ -12,7 +12,7 @@
 #include "BF_DrebResource.h"
 
 //此为DREBAPI使用的一个例子，可继承来实现
-//此线程从api队列里取数据进行处理
+//此线程从api队列里取数据进行处理	也可以不用线程，直接类似CTP那种，直接注册回调
 
 class CDrebMsgProcBase : public CBF_Thread  
 {
@@ -169,11 +169,12 @@ public:
     {
         if (rcvdata.sMsgBuf->sDBHead.cZip != 0)
         {
+		    //这里解成明文了，如果是cgate等，继承此方法，解成压缩即可。
             if (!m_pDrebApi->UnzipBuf(*rcvdata.sMsgBuf))
             {
                 sprintf(rcvdata.sMsgBuf->sBuffer, "数据解压缩出错");
                 rcvdata.sMsgBuf->sDBHead.nLen = strlen(rcvdata.sMsgBuf->sBuffer);
-                rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_BPU_MONITORDATA;
+                rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_DATA_ENCRYPTZIP;
                 rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
                 rcvdata.sMsgBuf->sDBHead.cZip = 0;
                 m_pDrebApi->SendMsg(rcvdata);

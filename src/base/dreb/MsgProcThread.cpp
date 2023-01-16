@@ -269,7 +269,7 @@ void CMsgProcThread::OnMsgRoute(S_DREB_RSMSG *msg)
 		m_log->LogMp(LOG_PROMPT,__FILE__,__LINE__,"无额外的总线连接");
 		return;
 	}
-	m_log->LogMp(LOG_INFO,__FILE__,__LINE__,"主动发送ROUTE");
+	m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"主动发送ROUTE");
 	S_DREB_RSMSG *rsmsg = NULL;
 	for (unsigned int i=0;i<dp.size();i++)
 	{
@@ -352,7 +352,7 @@ void CMsgProcThread::OnMsgRoute(S_DREB_RSMSG *msg)
 					m_log->LogMp(LOG_DEBUG+2,__FILE__,__LINE__,"发送给index=%d nNodeId=%d cNodePrivateId=%d的路由nNodeId=%d cNodePrivateId=%d nStep=%d",\
 						data->nIndex,data->nNodeId,data->cNodePrivateId,tbl->nNodeId,tbl->cNodePrivateId,tbl->nStep);
 				}
-				if (m_pSocketMgr->at(data->nIndex)->SendMsg(rsmsg)!=0)
+				if (m_pSocketMgr->at(data->nIndex)->SendMsg(rsmsg) == 100)
 				{
 					m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送CMD_ROUTER出错 %d",data->nIndex);
 				}
@@ -378,7 +378,7 @@ void CMsgProcThread::OnMsgRoute(S_DREB_RSMSG *msg)
 				rsmsg->message.head.s_Sinfo.s_cNodePrivateId = m_pRes->g_nDrebPrivateId;	
 				rsmsg->message.head.s_Sinfo.s_nNodeId = m_pRes->g_nDrebId;
 				rsmsg->message.head.s_Sinfo.s_nTimestamp = m_pSocketMgr->at(data->nIndex)->m_nConntime;
-				if (m_pSocketMgr->at(data->nIndex)->SendMsg(rsmsg)!=0)
+				if (m_pSocketMgr->at(data->nIndex)->SendMsg(rsmsg)==100)
 				{
 					m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送CMD_ROUTER出错 %d",data->nIndex);
 				}
@@ -469,7 +469,7 @@ void CMsgProcThread::OnMsgServiceRoute(S_DREB_RSMSG *msg)
 				msginfo = msginfo + "\n";
 				m_pRes->g_pRouteLog.LogBin(LOG_INFO,__FILE__,__LINE__,msghead,(char *)msginfo.c_str(),msginfo.length());
 			}
-			m_log->LogMp(LOG_INFO,__FILE__,__LINE__,"主动发送SERVICE ROUTE index[%d] 交易数[%d]",dp[i]->nIndex,rtlist.size());
+			m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"主动发送SERVICE ROUTE index[%d] 交易数[%d]",dp[i]->nIndex,rtlist.size());
 			SendService(dp[i]->nIndex,rtlist);
 		}
 	}
@@ -892,7 +892,7 @@ bool CMsgProcThread::AnsMsg(S_DREB_RSMSG *msg, unsigned short errcode,const char
 
 	m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"应答 %d",msg->msghead.index);
 
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -1039,7 +1039,7 @@ bool CMsgProcThread::AnsConnect(S_DREB_RSMSG *msg, unsigned short errcode,const 
 	msg->message.head.s_Sinfo.s_nSvrMainId = 0;
 	msg->message.head.s_Sinfo.s_cSvrPrivateId = 0;
 
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg,true)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg,true)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 		return false;
@@ -1071,7 +1071,7 @@ void CMsgProcThread::SendService(int index, std::vector<S_SERVICE_ROUTE *> rtlis
 		rsmsg->message.head.s_Sinfo.s_nNodeId = m_pRes->g_nDrebId;
 		rsmsg->message.head.s_Sinfo.s_nTimestamp = m_pSocketMgr->at(index)->m_nConntime;
 		rsmsg->message.head.nLen = 0;
-		if (m_pSocketMgr->at(index)->SendMsg(rsmsg)!=0)
+		if (m_pSocketMgr->at(index)->SendMsg(rsmsg)==100)
 		{
 			if (m_pSocketMgr->at(index)->m_nType == SOCK_DREB)
 			{
@@ -1193,7 +1193,7 @@ void CMsgProcThread::SendService(int index, std::vector<S_SERVICE_ROUTE *> rtlis
 			
 			m_log->LogMp(LOG_DEBUG+2,__FILE__,__LINE__,"index=%d 发送service路由数目%d 数据长度%d",index,allfuncnum,len);
 			m_pDrebEndian.Endian2Comm((unsigned char *)&(prs->nFuncNum),sizeof(prs->nFuncNum));
-			if (m_pSocketMgr->at(index)->SendMsg(rsmsg)!=0)
+			if (m_pSocketMgr->at(index)->SendMsg(rsmsg)==100)
 			{
 				if (m_pSocketMgr->at(index)->m_nType == SOCK_DREB)
 				{
@@ -1214,7 +1214,7 @@ void CMsgProcThread::SendService(int index, std::vector<S_SERVICE_ROUTE *> rtlis
 			isnext = true;
 			m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"分数据包发送交易路由 index=%d 发送service路由数目%d 数据长度%d",index,allfuncnum,len);
 			m_pDrebEndian.Endian2Comm((unsigned char *)&(prs->nFuncNum),sizeof(prs->nFuncNum));
-			if (m_pSocketMgr->at(index)->SendMsg(rsmsg)!=0)
+			if (m_pSocketMgr->at(index)->SendMsg(rsmsg) ==100)
 			{
 				if (m_pSocketMgr->at(index)->m_nType == SOCK_DREB)
 				{
@@ -1483,7 +1483,7 @@ void CMsgProcThread::TransMsgAns(S_DREB_RSMSG *msg)
 			}
 
 			
-			if (m_pSocketMgr->at(msg->message.head.s_Sinfo.s_nIndex)->SendMsg(msg)!=0)
+			if (m_pSocketMgr->at(msg->message.head.s_Sinfo.s_nIndex)->SendMsg(msg)==100)
 			{
 				m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送失败[%d %s] DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]",\
 					msg->message.head.s_Sinfo.s_nIndex,GetIndexFlag(msg->message.head.s_Sinfo.s_nIndex).c_str(),\
@@ -1524,7 +1524,7 @@ void CMsgProcThread::TransMsgAns(S_DREB_RSMSG *msg)
 			
 			//转发至服务
 
-			if (m_pSocketMgr->at(msg->message.head.s_Sinfo.s_nIndex)->SendMsg(msg)!=0)
+			if (m_pSocketMgr->at(msg->message.head.s_Sinfo.s_nIndex)->SendMsg(msg)==100)
 			{
 				m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送失败");
 				return;
@@ -1574,7 +1574,7 @@ void CMsgProcThread::TransMsgAns(S_DREB_RSMSG *msg)
 	
 	}
 	
-	if (m_pSocketMgr->at(dreb.nIndex)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(dreb.nIndex)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送失败");
 		return;
@@ -2003,7 +2003,7 @@ void CMsgProcThread::Monitor_info(S_DREB_RSMSG *msg)
 	}
 
 	
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -2069,7 +2069,7 @@ void CMsgProcThread::Monitor_Host(S_DREB_RSMSG *msg)
 		msg->message.head.nLen = len;
 	}
 
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -2140,7 +2140,7 @@ void CMsgProcThread::Monitor_CurTxList(S_DREB_RSMSG *msg)
 	{
 		msg->message.head.nLen = ret;
 	}
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -2202,7 +2202,7 @@ void CMsgProcThread::Monitor_RouteDreb(S_DREB_RSMSG *msg)
 	{
 		msg->message.head.nLen = ret;
 	}
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -2288,7 +2288,7 @@ void CMsgProcThread::Monitor_RouteService(S_DREB_RSMSG *msg)
 	{
 		msg->message.head.nLen = ret;
 	}
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -2404,7 +2404,7 @@ void CMsgProcThread::Monitor_Report(S_DREB_RSMSG *msg)
 	{
 		msg->message.head.nLen = ret;
 	}
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -2489,7 +2489,7 @@ void CMsgProcThread::Monitor_ConnInfo(S_DREB_RSMSG *msg)
 	{
 		msg->message.head.nLen = ret;
 	}
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -2532,7 +2532,7 @@ void CMsgProcThread::Monitor_ReportStart(S_DREB_RSMSG *msg)
 		msg->message.head.nLen = strlen(msg->message.buffer);
 	}
 	
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -2575,7 +2575,7 @@ void CMsgProcThread::Monitor_ReportStop(S_DREB_RSMSG *msg)
 		}
 	}
 	
-	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)!=0)
+	if (m_pSocketMgr->at(msg->msghead.index)->SendMsg(msg)==100)
 	{
 		m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"发送应答出错");
 	}
@@ -2643,7 +2643,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 					data->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,data->message.head.nLen);
 			}
 			
-			if (m_pSocketMgr->at(sendtlist[i]->nIndex)->SendMsg(data)!=0)
+			if (m_pSocketMgr->at(sendtlist[i]->nIndex)->SendMsg(data)==100)
 			{
 				m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"TransBroadCast 发送失败");
 				m_pMemPool->PoolFree(msg);
@@ -3357,7 +3357,7 @@ void CMsgProcThread::OnCmdUnReqTx(S_DREB_RSMSG *msg)
 			memcpy(data,msg,sizeof(S_DREB_RSMSG));
 			data->message.head.d_Dinfo.d_nNodeId = sendtlist[i]->nNodeId;
 			data->message.head.d_Dinfo.d_cNodePrivateId = sendtlist[i]->cNodePrivateId;
-			if (m_pSocketMgr->at(sendtlist[i]->nIndex)->SendMsg(data)!=0)
+			if (m_pSocketMgr->at(sendtlist[i]->nIndex)->SendMsg(data)==100)
 			{
 				m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"OnCmdUnReqTx 发送失败");
 				m_pMemPool->PoolFree(msg);
@@ -4049,9 +4049,9 @@ void CMsgProcThread::TransDestBc(S_DREB_RSMSG* msg)
                 memcpy(&(data->message), &(msg->message), sizeof(COMMSTRU)); 
                 data->message.head.d_Dinfo.d_nNodeId = m_pRes->m_vBcDest[i].nNodeId;
                 data->message.head.d_Dinfo.d_cNodePrivateId = m_pRes->m_vBcDest[i].cNodePrivateId;
-                if (m_pSocketMgr->at(dreb.nIndex)->SendMsg(data) != 0)
+                if (m_pSocketMgr->at(dreb.nIndex)->SendMsg(data) == 100)
                 {
-                    m_log->LogMp(LOG_ERROR, __FILE__, __LINE__, "TransDestBc 发送失败");
+                    m_log->LogMp(LOG_DEBUG, __FILE__, __LINE__, "TransDestBc 发送失败 队列满");
                 }
 				//else
 				//{

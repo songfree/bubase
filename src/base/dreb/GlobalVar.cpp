@@ -238,7 +238,10 @@ bool CGlobalVar::Init(const char *confile)
 			g_nRegOtherDreb = 1;
 		}
 	}
-	
+    if (xmlconf.GetNodeValueByPath("package/head/maxqueue", false, g_nMaxQueue) == NULL)
+    {
+		g_nMaxQueue=20000;
+    }
 	if (xmlconf.GetNodeValueByPath("package/head/svrroutetime",false,g_nServiceRouteTime) == NULL)
 	{
 		sprintf(m_errMsg,"节点[package/head/svrroutetime]没有配置,默认为15秒");

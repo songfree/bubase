@@ -23,7 +23,7 @@ bool CRouteTbl::Insert(S_DREB_ROUTE rt)
 	int id;
 	//通过主键查找，不存在则增加
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Find(id,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep))
+	if (!m_pkey.Find(rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep))
 	{
 		id = m_table.Add(rt);//增加到表
 		m_pkey.Add(id,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep);//增加主键
@@ -37,29 +37,28 @@ bool CRouteTbl::Insert(S_DREB_ROUTE rt)
 
 bool CRouteTbl::Update(S_DREB_ROUTE rt)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep))
+	if (!m_pkey.Select(id,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
 	m_table.m_table[id] = rt;
-	return false;
+	return true;
 }
 
 bool CRouteTbl::DeleteByPk(S_DREB_ROUTE rt)
 {
-	CInt iset;
+	int id;
+	
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep))
+	if (!m_pkey.Select(id,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
-	m_pkey.Delete(iset,rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep);
+	CInt iset;
+	iset.Add(id);
+	m_pkey.Delete(rt.nNodeId,rt.cNodePrivateId,rt.nIndex,rt.nStep);
 	m_index_node.Delete(iset,rt.nNodeId);
 	m_index_index.Delete(iset,rt.nIndex);
 	m_index_private.Delete(iset,rt.nNodeId,rt.cNodePrivateId);
@@ -81,7 +80,7 @@ bool CRouteTbl::DeleteByIndex(int index)
 	bret = iset.First(id);
 	while (bret)
 	{
-		m_pkey.Delete(iset,m_table.m_table[id].nNodeId,m_table.m_table[id].cNodePrivateId,m_table.m_table[id].nIndex,m_table.m_table[id].nStep);
+		m_pkey.Delete(m_table.m_table[id].nNodeId,m_table.m_table[id].cNodePrivateId,m_table.m_table[id].nIndex,m_table.m_table[id].nStep);
 		m_index_node.Delete(iset,m_table.m_table[id].nNodeId);
 		m_index_private.Delete(iset,m_table.m_table[id].nNodeId,m_table.m_table[id].cNodePrivateId);
 		m_table.Delete(id);

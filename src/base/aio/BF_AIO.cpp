@@ -257,9 +257,13 @@ void CBF_AIO::ScanPool()
 	m_pAioPool.PoolInfo(nSize,nUse);
 	PSOCKET_POOL_DATA data ;
 	m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"开始扫描连接池");
+	int  nSendQueueNum=0;
+	int  nQuoSendQueueNum = 0;
 	for (int i=1; i<nSize ;i++)
 	{
 		data = m_pAioPool.GetDataByIndex(i);
+		//nSendQueueNum += data->s_pSendQueue.size();
+		//nQuoSendQueueNum+=data->s_pQuoteSendQueue.size();
 		if (data->s_hSocket != INVALID_SOCKET && (data->s_cSocketType != SOCK_LISTEN && data->s_cSocketType != OP_ACCEPT)) 
 		{
 			//iocp不用检查acceptex的连接情况，它在等客户连接上来
@@ -301,7 +305,7 @@ void CBF_AIO::ScanPool()
 			}
 		}
 	}
-	m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"扫描连接池完成");
+	//m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"扫描连接池完成 sendqueue:%d quoqueue:%d",nSendQueueNum,nQuoSendQueueNum);
 }
 
 bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate)
@@ -368,7 +372,7 @@ bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate)
 			{
 				senddata.s_nTime = time(NULL);
 				info->s_pSendQueue.push_back(senddata);
-				m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"放入队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d] 交易队列数[%d] 行情队列数[%d]",\
+				m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"放入队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d] 交易队列数[%d] 行情队列数[%d]",\
 					info->s_nIndex,senddata.s_nHook,senddata.s_serial,senddata.s_nTxCode,ret,senddata.s_nTotalLen-senddata.s_nSendLen,info->s_pSendQueue.size(),info->s_pQuoteSendQueue.size());
 				//根据不同的模型进行处理
 				if (m_pAioRes->g_nRunMode == MODESELECT ) //select模型，socket是读写都要检查
@@ -430,13 +434,13 @@ bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate)
 		if (senddata.s_nTimestamp != 0)
 		{
 			info->s_pSendQueue.push_back(senddata);
-			m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"放入队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d]  交易队列大小[%d] 行情队列大小[%d]",\
+			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"放入队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d]  交易队列大小[%d] 行情队列大小[%d]",\
 				info->s_nIndex,senddata.s_nHook,senddata.s_serial,senddata.s_nTxCode,0,senddata.s_nTotalLen-senddata.s_nSendLen,info->s_pSendQueue.size(),info->s_pQuoteSendQueue.size());
 		}
 		else
 		{
 			info->s_pQuoteSendQueue.push_back(senddata);
-			m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"放入行情队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d]，交易队列大小[%d] 行情队列大小[%d]",\
+			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"放入行情队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d]，交易队列大小[%d] 行情队列大小[%d]",\
 				info->s_nIndex,senddata.s_nHook,senddata.s_serial,senddata.s_nTxCode,0,senddata.s_nTotalLen-senddata.s_nSendLen,info->s_pSendQueue.size(),info->s_pQuoteSendQueue.size());
 			//移除过期的行情数据
 			SOCKSENDQUEUE::iterator prq,prn;
@@ -472,7 +476,7 @@ bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate)
 			}
 			if (delaynum >0 || deletenum >0)
 			{
-				m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"来自[%s]的连接index[%d] 标识[%d] socket[%d] 发送行情队列  移除数据数目[%d] 过期数目[%d] 过期时间[%d]  交易队列大小[%d] 行情队列大小[%d] ",\
+				m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"来自[%s]的连接index[%d] 标识[%d] socket[%d] 发送行情队列  移除数据数目[%d] 过期数目[%d] 过期时间[%d]  交易队列大小[%d] 行情队列大小[%d] ",\
 					inet_ntoa(info->s_pSocketAddr.sin_addr),info->s_nIndex,prq->s_nHook,\
 					info->s_hSocket,deletenum,delaynum,m_pAioRes->g_nQuoteQueueDeleteTime,\
 					info->s_pSendQueue.size(),info->s_pQuoteSendQueue.size());
@@ -550,7 +554,7 @@ bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate)
 			if (senddata.s_nTimestamp != 0)
 			{				
 				info->s_pSendQueue.push_back(senddata);
-				m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"放入队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d] 交易队列大小[%d] 行情队列大小[%d]",\
+				m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"放入队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d] 交易队列大小[%d] 行情队列大小[%d]",\
 					info->s_nIndex,senddata.s_nHook,senddata.s_serial,senddata.s_nTxCode,ret,\
 					senddata.s_nTotalLen-senddata.s_nSendLen,info->s_pSendQueue.size(),\
 					info->s_pQuoteSendQueue.size());
@@ -562,7 +566,7 @@ bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate)
 			else
 			{
 				info->s_pQuoteSendQueue.push_back(senddata);
-				m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"放入行情队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d] 交易队列大小[%d] 行情队列大小[%d]",\
+				m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"放入行情队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d] 交易队列大小[%d] 行情队列大小[%d]",\
 					info->s_nIndex,senddata.s_nHook,senddata.s_serial,senddata.s_nTxCode,ret,senddata.s_nTotalLen-senddata.s_nSendLen,info->s_pSendQueue.size(),info->s_pQuoteSendQueue.size());
 				if (senddata.s_nSendLen>0)
 				{

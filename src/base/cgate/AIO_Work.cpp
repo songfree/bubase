@@ -143,7 +143,7 @@ void CAIO_Work::OnRecvBack(PSOCKET_POOL_DATA info)
 		if (!Endian2HostCrc(msg.head))
 		{
 			m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"CRC错误");
-			CloseClient(info);
+			OnClose(info,"错误");
 			return ;
 		}
 		if (info->s_nRealBufferLen < msg.head.nLen + CGATEHEADLEN)
@@ -187,7 +187,10 @@ void CAIO_Work::OnRecvBack(PSOCKET_POOL_DATA info)
 
 		if (msg.head.stComm.cRaflag == 1) //客户端的应答
 		{
-			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"客户端的应答 丢弃");
+			if (msg.head.stComm.cMsgType != MSG_GATEPING)
+			{
+				m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "客户端index[%d] cMsgType[%s]应答 丢弃", info->s_nIndex, GetMsgType(msg.head.stComm.cMsgType).c_str());
+			}
 			continue;
 		}
 		if (msg.head.nLen >0)
@@ -960,7 +963,7 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 			data.head.nLen = 0;
 			//确定不加密
 			SendData(&data,info->s_nIndex);
-			CloseClient(info);//关闭连接
+			OnClose(info,"消息非法");//关闭连接
 			return;
 		}
 	}
@@ -1010,7 +1013,7 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				data.head.stComm.cZip = 0;
 				//确定不加密
 				SendData(&data,info->s_nIndex);
-				CloseClient(info);//关闭连接
+				OnClose(info,"验证签名失败");//关闭连接
 				return ;	
 			}
 			pkidata->sSignPubKey[pkidata->nSignPubKeyLen]=0;
@@ -1027,7 +1030,7 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				data.head.stComm.cZip = 0;
 				//确定不加密
 				SendData(&data,info->s_nIndex);
-				CloseClient(info);//关闭连接
+				OnClose(info,"验证签名失败");//关闭连接
 				return ;
 			}
 			//取对端证书序列号
@@ -1041,7 +1044,7 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				data.head.stComm.cZip = 0;
 				//确定不加密
 				SendData(&data,info->s_nIndex);
-				CloseClient(info);//关闭连接
+				OnClose(info,"取对端证书序列号失败");//关闭连接
 				return ;
 			}
 			//若对端送过来的证书序列号和公钥里的不一致，报错
@@ -1074,7 +1077,7 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				data.head.stComm.cZip = 0;
 				//确定不加密
 				SendData(&data,info->s_nIndex);
-				CloseClient(info);//关闭连接
+				OnClose(info,"签名失败");//关闭连接
 				return ;
 			}
 			pkidata->nSignBufferLen = nSignBufferLen ;
@@ -1090,7 +1093,7 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				data.head.stComm.cZip = 0;
 				//确定不加密
 				SendData(&data,info->s_nIndex);
-				CloseClient(info);//关闭连接
+				OnClose(info,"取本地公钥失败");//关闭连接
 				return ;
 			}
 			pkidata->nRsaPubKeyLen = nRsaPubKeyLen;
@@ -1119,7 +1122,7 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				data.head.stComm.cZip = 0;
 				//确定不加密
 				SendData(&data,info->s_nIndex);
-				CloseClient(info);//关闭连接
+				OnClose(info,"取本地证书序列号失败");//关闭连接
 				return ;
 			}
 			pkidata->nKeySerialLen = keyseriallen;
@@ -1188,6 +1191,7 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				drebdata.sMsgBuf = NULL;
 				return ;
 			}
+			bzero(&(drebdata.sMsgBuf->sDBHead), DREBHEADLEN);
 			drebdata.nTotalLen = BPCHEADLEN+DREBHEADLEN + data.head.nLen;
 			//报文头
 			drebdata.sMsgBuf->sDBHead.nLen = data.head.nLen;
@@ -1246,6 +1250,10 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 				return ;
 			}
 			psub = (CSubScribeInfo *)info->ptr;
+			if (psub == NULL)
+			{
+				return;
+			}
 			if (!psub->Subscribe(data.buffer,data.head.nLen,errmsg))
 			{
 				data.head.nRetCode = 111;

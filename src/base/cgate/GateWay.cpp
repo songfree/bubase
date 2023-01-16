@@ -34,10 +34,10 @@ bool CGateWay::Init(const char *confile)
     m_pSendData.m_pRes = &g_pRes;
 	//drebapi初始化
 	m_pDrebSpi.SetGlobalVar(&m_pPoolData, &m_pSendData, &g_pAioWork);//设置参数
-	m_pDrebSpi.Init(&m_pDrebapi, &g_pRes.g_pDrebRes);  //回调的参数
-	
 
-	m_pDrebSpi.m_lBcRegister = &(g_pRes.g_lBCFuncList);//要订阅的广播信息
+	m_pDrebSpi.Init(&m_pDrebapi, &g_pRes.g_pDrebRes);  //回调的参数
+	m_pDrebSpi.g_pGateRes = &g_pRes;
+	
 	m_pDrebapi.Init(&g_pRes.g_pDrebRes,&m_pDrebSpi);   //总线api初始，传入回调类
 
 	//设置IO参数
@@ -135,5 +135,10 @@ void CGateWay::Monitor()
 			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"重启发送客户端处理线程 %d",i);
 		}
 	}
+	int total;
+	int used;
+	int size;
+	m_pDrebapi.GetBufferPoolInfo(total,used,size);
+	m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "总线api缓存使用总共:%d 使用:%d 大小:%d] 发送队列数:%d 请求队列数:%d", total,used,size, m_pSendData.GetSize(), m_pPoolData.GetSize());
 
 }

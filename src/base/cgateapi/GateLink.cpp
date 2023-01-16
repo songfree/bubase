@@ -80,9 +80,13 @@ int CGateLink::Run()
 		FD_ZERO(&m_wset);
 #if defined(_WINDOWS)
 		FD_ZERO(&m_eset);
-#endif
+
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
+#else
+        tv.tv_sec = 0;
+        tv.tv_usec = 50;
+#endif
 		SOCKET_HANDLE tmpscoket = m_pApiSocket.GetSocket(); 
 		if ( m_bIsRunThread &&  tmpscoket != INVALID_SOCKET)
 		{

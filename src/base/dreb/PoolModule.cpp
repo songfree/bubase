@@ -100,7 +100,7 @@ int CPoolModule::Run()
 		FD_ZERO(&m_eset);
 #endif
 		tv.tv_sec = 0;
-		tv.tv_usec = 50;
+		tv.tv_usec = 10;
 		//取得最大的socket并将socket加入到fd_set集合
 		GetMaxfdAddSelect(maxfd);
 		if (maxfd  <=0)

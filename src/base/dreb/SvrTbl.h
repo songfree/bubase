@@ -96,7 +96,7 @@ public:
 	// 参数  : unsigned int svrid
 	// 参数  : vector<S_SVR_ROUTE *> &svr
 	// 描述  : 通过服务ID取服务信息，去掉连接关闭的
-	bool SelectBySvr(unsigned int svrid, std::vector<S_SVR_ROUTE *> &svr);
+	bool SelectBySvr2(unsigned int svrid, std::vector<S_SVR_ROUTE *> &svr);
 
 	/// 函数名: Insert
 	/// 编程  : 王明松 2009-10-27 14:25:26
@@ -113,7 +113,7 @@ protected:
 	CMemTableNew <S_SVR_ROUTE> m_table;        //通讯平台内存表
 	
 	CIndexInt<1>             m_index_node;   //服务id索引
-	CIndexInt<2>             m_pkey;         //服务id+私有id索引，唯一索引
+	CPkeyInt<2>             m_pkey;         //服务id+私有id索引，唯一索引
 
 
 	CBF_Mutex m_mutex;	

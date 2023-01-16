@@ -73,6 +73,7 @@ public:
 	
 	RQUEUEDATA       m_qSendData;  //发送队列
 	
+	int  m_nQueueSize;
 protected:
 	
 	bool m_bIsNeedSend;     //是否需要发送数据

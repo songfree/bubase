@@ -121,7 +121,7 @@ protected:
 	CMemTableNew <S_DREB_ROUTE> m_table;        //数据总线节点内存表
 
  	CIndexInt<1>             m_index_node;   //数据总线节点id索引
- 	CIndexInt<2>             m_pkey;         //数据总线节点id+私有id索引，唯一索引
+ 	CPkeyInt<2>             m_pkey;         //数据总线节点id+私有id索引，唯一索引
 	CIndexInt<1>             m_index_index;   //数据总线节点连接索引
 	CBF_Mutex m_mutex;
 };

@@ -105,6 +105,8 @@ public:
 	
 	int g_nServiceRouteTime;   //发送服务路由功能的时间间隔
 	int g_nDrebRouteTime;      //DREB节点的路由时间
+
+	int g_nMaxQueue;  //发送缓冲满时，队列里的最大报文个数
 //	int g_nModuleThreadNum;    //处理线程的个数
 
 	int g_nLogLevel;           //日志级别

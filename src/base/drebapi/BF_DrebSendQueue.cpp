@@ -13,6 +13,7 @@ CBF_DrebSendQueue::CBF_DrebSendQueue()
 	m_bIsNeedSend = false;
 	m_nNeedSendNum = 0;
 	m_sendNum = 10;
+	m_nQueueSize =1000;
 }
 
 CBF_DrebSendQueue::~CBF_DrebSendQueue()
@@ -25,7 +26,7 @@ int CBF_DrebSendQueue::PutSendMsg(S_BPC_RSMSG msg)
 	msg.sMsgBuf->sBpcHead.nRtime = time(NULL);
 	msg.nRtime = time(NULL);
 	m_qSendData.m_pEvent.Lock();
-	if (m_qSendData.datas.size()<1000) //队列最大数为1000
+	if (m_qSendData.datas.size()<= m_nQueueSize) //队列最大数
 	{
 		m_qSendData.datas.push_back(msg);
 		m_qSendData.m_pEvent.SetEvent();

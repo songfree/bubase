@@ -327,7 +327,12 @@ int CSocketInfo::OnSend()
 			// 处理成功,停止
 			m_pSendQueue->DeleteSend(prq);	
 			m_nSendtime = time(NULL);
-			
+			sendNum++;
+			//发送窗口
+			if (m_pRes->g_nBufferLimit > 0 && sendNum > m_pRes->g_nBufferLimit)
+			{
+				break;
+			}
 		}
 		else 
 		{
@@ -346,8 +351,6 @@ int CSocketInfo::OnSend()
 			return sendNum;
 		}
 	}
-	
-
 	return sendNum;
 }
 int CSocketInfo::SendMsg(S_DREB_RSMSG *msg,bool sendimmediate)
@@ -356,7 +359,7 @@ int CSocketInfo::SendMsg(S_DREB_RSMSG *msg,bool sendimmediate)
 	if (m_sock == INVALID_SOCKET)
 	{
 		m_pMemPool->PoolFree(msg);
-		m_log->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"连接 [%d] 已关闭",m_index);
+		//m_log->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"连接 [%d] 已关闭",m_index);
 		return -1;
 	}
 	if (m_nType == SOCK_CLI || m_nType == SOCK_UNKNOW)
@@ -462,6 +465,7 @@ int CSocketInfo::SendMsg(S_DREB_RSMSG *msg,bool sendimmediate)
 			// 处理成功,停止
 			m_nSendtime = time(NULL);
 			m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送s_nDrebSerial[%d]完成",msg->msghead.serial);
+			return 0;
 		}
 		else 
 		{
@@ -480,7 +484,11 @@ int CSocketInfo::SendMsg(S_DREB_RSMSG *msg,bool sendimmediate)
 			//如果队列里有数据可能就会有问题
 			if (!NeedSend())
 			{
-				PutSendMsg(msg);
+				if (PutSendMsg(msg)<0)
+				{
+				    return 100;
+				}
+				return 1;
 			}
 			else
 			{
@@ -494,7 +502,11 @@ int CSocketInfo::SendMsg(S_DREB_RSMSG *msg,bool sendimmediate)
 		if (NeedSend())
 		{
 			m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送队列已有数据，放入队列 数据长度[%d]",msg->msghead.nTotalLen);
-			PutSendMsg(msg);
+            if (PutSendMsg(msg) < 0)
+            {
+                return 100;
+            }
+			return 1;
 		}
 		else  //直接发送
 		{
@@ -509,7 +521,7 @@ int CSocketInfo::SendMsg(S_DREB_RSMSG *msg,bool sendimmediate)
 				// 处理成功,停止
 				m_nSendtime = time(NULL);
 				m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送s_nDrebSerial[%d]完成",msg->msghead.serial);
-				
+				return 0;
 			}
 			else 
 			{
@@ -517,10 +529,18 @@ int CSocketInfo::SendMsg(S_DREB_RSMSG *msg,bool sendimmediate)
 				{
 					msg->msghead.nSendLen = msg->msghead.nTotalLen - ret;
 				}
-				m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"发送 index[%d] type[%s]的消息 s_nDrebSerial[%d]  数据长度[%d]",\
+				m_log->LogMp(LOG_PROMPT,__FILE__,__LINE__,"发送部分数据 index[%d] type[%s]的消息 s_nDrebSerial[%d]  数据长度[%d]",\
 					m_index,GetSockType(m_nType).c_str(),msg->msghead.serial,msg->msghead.nTotalLen);
 				msg->msghead.sendnum = 0;
-				PutSendMsg(msg);
+                if (PutSendMsg(msg) < 0)
+                {
+                    return 100;
+                }
+				if (ret > 0)
+				{
+					return 2;
+				}
+				return 1;
 			}
 			
 // 			if (msg->message.head.cRaflag == 0)
@@ -537,13 +557,15 @@ int CSocketInfo::PutSendMsg(S_DREB_RSMSG *msg)
 {
 	if (m_pSendQueue == NULL)
 	{
+        m_pMemPool->PoolFree(msg);
+        msg = NULL;
 		return -2;
 	}
 	int ret;
 	ret = m_pSendQueue->PutSendMsg(msg);
 	if (ret<0)
 	{
-		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"队列满丢弃 index[%d] type[%s]的消息 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] cZip[%d] 业务数据长度[%d]",\
+		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"队列满丢弃 index[%d] type[%s]的消息 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] cZip[%d] 业务数据长度[%d]",\
 			m_index,GetSockType(m_nType).c_str(),\
 			GetDrebCmdType(msg->message.head.cCmd).c_str(),msg->message.head.cNextFlag,\
 			msg->message.head.cRaflag,msg->message.head.d_Dinfo.d_nServiceNo,msg->message.head.s_Sinfo.s_nNodeId,\

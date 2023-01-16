@@ -430,28 +430,33 @@ bool CBF_DrebServerApi::MonitorHost(S_BPC_RSMSG &rcvdata)
 	xmlpack.SetNodeAttribute("Monitor/内存缓冲池",false,"总分配",false,total );
 	xmlpack.SetNodeAttribute("Monitor/内存缓冲池",false,"未使用",false,unused );
 	xmlpack.SetNodeAttribute("Monitor/内存缓冲池",false,"每块大小",false,bufsize );
-	//取主机信息
-	S_MONITOR_HOST hf;
-	std::vector<S_MONITOR_DISK> di;
-	m_pDrebApi.GetHostInfo(hf,di);
-	
-	xmlpack.SetNodeValueByPath("Monitor/主机资源/CPU",false,(int)hf.nCpuRate);
-	
-	
-	xmlpack.SetNodeValueByPath("Monitor/主机资源/内存",false,"",false);
-	xmlpack.SetNodeAttribute("Monitor/主机资源/内存",false,"总大小M",false,(int)hf.nTotalMemory);
-	xmlpack.SetNodeAttribute("Monitor/主机资源/内存",false,"使用M",false,(int)hf.nUsedMemory);
-	
-	for (int i=0 ; i<di.size() ; i++)
+
+	if (m_pRes.g_nMonitorHost == 1)
 	{
-		CXmlNode *disknode = xmlpack.AddNodeByPath("Monitor/主机资源/磁盘列表",false,"磁盘",false,"");
-		if (disknode != NULL)
-		{
-			disknode->SetAttribute("名称",false,di[i].sDiskName);
-			disknode->SetAttribute("总大小M",false,(int)di[i].nTotalSpace);
-			disknode->SetAttribute("使用大小M",false,(int)di[i].nUsedSpace);
-		}
+        //取主机信息
+        S_MONITOR_HOST hf;
+        std::vector<S_MONITOR_DISK> di;
+        m_pDrebApi.GetHostInfo(hf, di);
+
+        xmlpack.SetNodeValueByPath("Monitor/主机资源/CPU", false, (int)hf.nCpuRate);
+
+
+        xmlpack.SetNodeValueByPath("Monitor/主机资源/内存", false, "", false);
+        xmlpack.SetNodeAttribute("Monitor/主机资源/内存", false, "总大小M", false, (int)hf.nTotalMemory);
+        xmlpack.SetNodeAttribute("Monitor/主机资源/内存", false, "使用M", false, (int)hf.nUsedMemory);
+
+        for (int i = 0; i < di.size(); i++)
+        {
+            CXmlNode* disknode = xmlpack.AddNodeByPath("Monitor/主机资源/磁盘列表", false, "磁盘", false, "");
+            if (disknode != NULL)
+            {
+                disknode->SetAttribute("名称", false, di[i].sDiskName);
+                disknode->SetAttribute("总大小M", false, (int)di[i].nTotalSpace);
+                disknode->SetAttribute("使用大小M", false, (int)di[i].nUsedSpace);
+            }
+        }
 	}
+	
 	
 	int len = DREBDATASIZE;
 	if (!xmlpack.ToBuffer(rcvdata.sMsgBuf->sBuffer,len))

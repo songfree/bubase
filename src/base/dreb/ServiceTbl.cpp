@@ -135,14 +135,12 @@ bool CServiceTbl::SelectByFunc(unsigned int func, std::vector<S_SERVICE_ROUTE *>
 }
 bool CServiceTbl::Update(S_SERVICE_ROUTE rt)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,rt.nIndex,rt.nNodeId,rt.cNodePrivateId,rt.nSvrMainId,rt.cSvrPrivateId,rt.nFuncNo))
+	if (!m_pkey.Select(id,rt.nIndex,rt.nNodeId,rt.cNodePrivateId,rt.nSvrMainId,rt.cSvrPrivateId,rt.nFuncNo))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
 //	CBF_PMutex pp(&m_mutex);
 //	m_table.m_table[id].nNodeId = rt.nNodeId;
 //	m_table.m_table[id].cSvrPrivateId = rt.cSvrPrivateId;
@@ -157,14 +155,14 @@ bool CServiceTbl::Update(S_SERVICE_ROUTE rt)
 
 bool CServiceTbl::Delete(int index,int nodeid,int nodeprivated,int svrid, int privateid,unsigned int func)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,index,nodeid,nodeprivated,svrid,privateid,func))
+	if (!m_pkey.Select(id,index,nodeid,nodeprivated,svrid,privateid,func))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
+	CInt iset;
+	iset.Add(id);
 	m_pkey.Delete(index,nodeid,nodeprivated,svrid,privateid,func);
 	m_index_func.Delete(iset,func);
 	m_index_drebindex.Delete(iset,m_table.m_table[id].nIndex);
@@ -180,27 +178,23 @@ bool CServiceTbl::Delete(int index,int nodeid,int nodeprivated,int svrid, int pr
 
 bool CServiceTbl::SelectByPk(int index,int nodeid,int nodeprivated,int svrid, int privateid,unsigned int func, S_SERVICE_ROUTE &rt)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,index,nodeid,nodeprivated,svrid,privateid,func))
+	if (!m_pkey.Select(id,index,nodeid,nodeprivated,svrid,privateid,func))
 	{
 		return false;
 	}
-	int id;
-	iset.First(id);
 	rt = m_table.m_table[id];
 	return true;
 }
 S_SERVICE_ROUTE * CServiceTbl::SelectByPk(int index,int nodeid,int nodeprivated,int svrid, int privateid,unsigned int func)
 {
-	CInt iset;
+	int id;
 	CBF_PMutex pp(&m_mutex);
-	if (!m_pkey.Select(iset,index,nodeid,nodeprivated,svrid,privateid,func))
+	if (!m_pkey.Select(id,index,nodeid,nodeprivated,svrid,privateid,func))
 	{
 		return NULL;
 	}
-	int id;
-	iset.First(id);
 	return &(m_table.m_table[id]);
 }
 bool CServiceTbl::Select(std::vector<S_SERVICE_ROUTE*>& rtlist)

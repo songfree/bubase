@@ -45,6 +45,7 @@ bool CMemDB::RegisterSvr(int svrid, int privateid, int index,CSendQueue **pque)
 		svr.nIndex = index;
 		svr.nSvrMainId = svrid;
 		svr.pSendQueue = new CSendQueue();
+		svr.pSendQueue->m_nMaxQueue = m_pRes->g_nMaxQueue;
 		*pque = svr.pSendQueue;
 		return m_svrTbl.Insert(svr);
 	}
@@ -79,6 +80,7 @@ bool CMemDB::RegisterSvr(int svrid, int privateid, int index,CSendQueue **pque)
 	svr.nIndex = index;
 	svr.nSvrMainId = svrid;
 	svr.pSendQueue = new CSendQueue();
+	svr.pSendQueue->m_nMaxQueue = m_pRes->g_nMaxQueue;
 	*pque = svr.pSendQueue;
 	m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"新注册后服务[%d %d]对应的队列地址[%d]",svrid,privateid,svr.pSendQueue);
 	return m_svrTbl.Insert(svr);
@@ -196,6 +198,7 @@ bool CMemDB::RegisterDreb(int nodeid, int privateid, int index,int bdrate, CSend
 		dreb.nNodeId = nodeid;
 		dreb.nbandwidth =  bdrate;
 		dreb.pSendQueue = new CSendQueue();
+		dreb.pSendQueue->m_nMaxQueue = m_pRes->g_nMaxQueue;
 		*psque = dreb.pSendQueue;
 		m_routeTbl.DeleteByIndex(index);//删除该index所有的总线路由
 		return m_drebTbl.Insert(dreb);
@@ -226,6 +229,7 @@ bool CMemDB::RegisterDreb(int nodeid, int privateid, int index,int bdrate, CSend
 	dreb.nNodeId = nodeid;
 	dreb.nbandwidth =  bdrate;
 	dreb.pSendQueue = new CSendQueue();
+	dreb.pSendQueue->m_nMaxQueue = m_pRes->g_nMaxQueue;
 	*psque = dreb.pSendQueue;
 
 	return m_drebTbl.Insert(dreb);
@@ -290,13 +294,13 @@ bool CMemDB::SelectRoute(int nodeid, int privateid, S_DREB_ROUTE &dreb)
 				dreb.nNodeId,dreb.cNodePrivateId,dreb.nStep,dreb.nIndex);
 			return true;
 		}
-		m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"指定的总线节点[%d %d] 已断开 nStep[%d] 尝试从路由表里查找路由",nodeid,privateid,dr->nStep);
+		//m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"指定的总线节点[%d %d] 已断开 nStep[%d] 尝试从路由表里查找路由",nodeid,privateid,dr->nStep);
 		//尝试从路由表里找找看吧
 	}
 	std::vector<S_DREB_ROUTE *>rt;
 	if (!m_routeTbl.SelectByPrivateNode(nodeid,privateid,rt))
 	{
-		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"指定的总线节点[%d %d] 在总线路由表里查找不存在",nodeid,privateid);
+		//m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"指定的总线节点[%d %d] 在总线路由表里查找不存在",nodeid,privateid);
 		return false;
 	}
 	if (1 == rt.size())
@@ -863,7 +867,7 @@ bool CMemDB::SelectLocalByFunc(unsigned int func,S_SERVICE_ROUTE &fc)
 bool CMemDB::SelectLocalBySvr(unsigned int svr, S_SERVICE_ROUTE &srt)
 {
 	std::vector<S_SVR_ROUTE *> svrlist;
-	if (!m_svrTbl.SelectBySvr(svr,svrlist))
+	if (!m_svrTbl.SelectBySvr2(svr,svrlist))
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"本地无[%d]服务或此服务已断开",svr);
 		return false;

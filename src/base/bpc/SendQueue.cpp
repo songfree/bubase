@@ -24,7 +24,7 @@ int CSendQueue::PutSendMsg(S_BPC_RSMSG msg)
 {
 	msg.sMsgBuf->sBpcHead.nRtime = time(NULL);
 	m_qSendData.m_pEvent.Lock();
-	if (m_qSendData.datas.size()<1000) //队列最大数为1000
+	if (m_qSendData.datas.size()<100000) //队列最大数为1000
 	{
 		m_qSendData.datas.push_back(msg);
 		m_qSendData.m_pEvent.SetEvent();

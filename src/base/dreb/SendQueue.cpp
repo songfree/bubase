@@ -11,6 +11,7 @@
 CSendQueue::CSendQueue()
 {
 	m_pMemPool = NULL;
+	m_nMaxQueue = 20000;
 }
 
 CSendQueue::~CSendQueue()
@@ -32,7 +33,7 @@ int CSendQueue::PutSendMsg(S_DREB_RSMSG *msg)
 	msg->msghead.sendnum =0;
 	msg->msghead.rtime = time(NULL);
 //	CBF_PMutex pp(&m_qSendData.m_mutex);
-	if (m_qSendData.datas.size()<3000) //队列最大数为3000
+	if (m_qSendData.datas.size()< m_nMaxQueue) //队列最大数为3000
 	{
 		m_qSendData.datas.push_back(msg);
 		return 0;

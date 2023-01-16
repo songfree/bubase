@@ -129,7 +129,7 @@ void CBF_DrebSocketInfo::Init(CBF_DrebResource *res,CBF_BufferPool *pool,CIErrlo
 	m_log = perrlog;
 	m_pDreb2BpcDataLog = pdreb2bpclog;
 	m_pBpc2DrebDataLog = pbpc2dreblog;
-	
+	m_pSendQueue.m_nQueueSize = m_gRes->g_nQueueSize;
 	ResetInfo();
 	m_nCloseTime = 0;
 	m_pDrebEndian.SetCommEndian(true);//使用主机序
@@ -317,10 +317,10 @@ int CBF_DrebSocketInfo::OnSend()
 			//统计数据
 			m_gRes->ReportSend(prq->nSendLen);
 #ifdef _ENGLISH_
-			m_log->LogMp(LOG_PROMPT,__FILE__,__LINE__,"index[%d] DREB[%d %d] src[%d %d %d] send msg success datalen[%d]",\
+			m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"index[%d] DREB[%d %d] src[%d %d %d] send msg success datalen[%d]",\
 				m_index,m_nDrebId,m_nDrebPrivateId,prq->s_nNodeId,prq->s_cNodePrivateId,prq->s_nDrebSerial,ret);
 #else
-			m_log->LogMp(LOG_PROMPT,__FILE__,__LINE__,"从队列里发送给index[%d] DREB[%d %d] 源[%d %d %d] 的消息成功 数据长度[%d]",\
+			m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"从队列里发送给index[%d] DREB[%d %d] 源[%d %d %d] 的消息成功 数据长度[%d]",\
 				m_index,m_nDrebId,m_nDrebPrivateId,prq->s_nNodeId,prq->s_cNodePrivateId,prq->s_nDrebSerial,ret);
 #endif
 			m_pMemPool->PoolFree(prq->sMsgBuf);
@@ -474,7 +474,10 @@ int CBF_DrebSocketInfo::SendMsg(S_BPC_RSMSG &msg,bool sendimmediate)
 			//只要发送出错就放到队列，如果队列里有数据可能就会有问题
 			if (!m_pSendQueue.NeedSend())
 			{
-				PutSendMsg(msg);
+				if (PutSendMsg(msg) < 0)
+				{
+					return 100;
+				}
 				return 1;
 			}
 			else
@@ -502,7 +505,10 @@ int CBF_DrebSocketInfo::SendMsg(S_BPC_RSMSG &msg,bool sendimmediate)
 				m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送队列已有数据，放入DREB队列 index[%d] 数据长度[%d] 标识[%d %d %d] cMsgType[%d] txcode[%d]",\
 					m_index,msg.nTotalLen,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial,msg.sMsgBuf->sBpcHead.cMsgType,msg.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo);
 #endif
-				PutSendMsg(msg);
+                if (PutSendMsg(msg) < 0)
+                {
+                    return 100;
+                }
 				return 1;
 			}
 		}
@@ -517,7 +523,10 @@ int CBF_DrebSocketInfo::SendMsg(S_BPC_RSMSG &msg,bool sendimmediate)
 				m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"连接已断开，放入DREB队列 index[%d] 数据长度[%d] 标识[%d %d %d] ",\
 					m_index,msg.nTotalLen,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial);
 #endif
-				PutSendMsg(msg);
+                if (PutSendMsg(msg) < 0)
+                {
+                    return 100;
+                }
 				return 1;
 			}
 			if (!m_bChecked)
@@ -529,7 +538,10 @@ int CBF_DrebSocketInfo::SendMsg(S_BPC_RSMSG &msg,bool sendimmediate)
 				m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"连接未验证通过，放入DREB队列 index[%d] 数据长度[%d] 标识[%d %d %d] ",\
 					m_index,msg.nTotalLen,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial);
 #endif
-				PutSendMsg(msg);
+                if (PutSendMsg(msg) < 0)
+                {
+                    return 100;
+                }
 				return 1;
 			}
 			ret = m_tcpSocket.Send((char *)&(msg.sMsgBuf->sDBHead),msg.nTotalLen);
@@ -564,7 +576,10 @@ int CBF_DrebSocketInfo::SendMsg(S_BPC_RSMSG &msg,bool sendimmediate)
 					m_index,ret,m_tcpSocket.GetErrorMsg().c_str(),msg.nSendLen,msg.nTotalLen,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial);
 #endif
 				//只要发送出错就放入队列
-				PutSendMsg(msg);
+                if (PutSendMsg(msg) < 0)
+                {
+                    return 100;
+                }
 				return 2;
 			}
 		}
@@ -580,11 +595,11 @@ int CBF_DrebSocketInfo::PutSendMsg(S_BPC_RSMSG msg)
 	if (ret <0 )
 	{
 #ifdef _ENGLISH_
-		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"queue already full,discard, index[%d] flag[%d %d %d] ",\
-				m_index,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial);
+		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"queue already full,discard, index[%d] flag[%d %d %d] queuesize[%d]",\
+				m_index,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial, m_pSendQueue.m_nQueueSize);
 #else
-		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"队列已满，丢弃 index[%d] 标识[%d %d %d] ",\
-				m_index,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial);
+		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"队列已满，丢弃 index[%d] 标识[%d %d %d]  队列大小[%d]",\
+				m_index,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial, m_pSendQueue.m_nQueueSize);
 #endif
 		m_pMemPool->PoolFree(msg.sMsgBuf);
 		msg.sMsgBuf = NULL;
@@ -720,10 +735,10 @@ int CBF_DrebSocketInfo::GetRecvData(S_BPC_RSMSG *msg)
 	else if (m_nRcvBufLen>0)
 	{
 #ifdef _ENGLISH_
-		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"warn, index[%d] DREB[%d %d] type[%s] receive part data %d",\
+		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"warn, index[%d] DREB[%d %d] type[%s] receive part data %d",\
 			m_index,m_nDrebId,m_nDrebPrivateId,"BPCSOCK_DREB",m_nRcvBufLen);
 #else
-		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"警告 index[%d] DREB[%d %d] type[%s] 收到数据%d,但不完整",\
+		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"警告 index[%d] DREB[%d %d] type[%s] 收到数据%d,但不完整",\
 			m_index,m_nDrebId,m_nDrebPrivateId,"BPCSOCK_DREB",m_nRcvBufLen);
 #endif
 	}

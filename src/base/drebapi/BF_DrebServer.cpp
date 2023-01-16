@@ -128,10 +128,14 @@ int CBF_DrebServer::Run()
 		FD_ZERO(&m_rset);
 		FD_ZERO(&m_wset);
 #if defined(_WINDOWS)
-		FD_ZERO(&m_eset);
+		FD_ZERO(&m_eset);  
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+#else
+        tv.tv_sec = 0;
+        tv.tv_usec = 10;
 #endif
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
+		
 		
 		//取得最大的socket并将socket加入到fd_set集合
 		ret = GetMaxfdAddSelect(maxfd);
@@ -1011,17 +1015,21 @@ void CBF_DrebServer::ComputeStat()
 
 void CBF_DrebServer::GetHostInfo()
 {
-	CBF_PMutex pp(&m_pHostMutex);
-	m_sHostInfo.nCpuRate = m_pHostInfo.GetCpu();
-	S_MemoryInf smInfo;
-	m_pHostInfo.GetEms(smInfo);
-	m_sHostInfo.nTotalMemory = smInfo.EmsTotal;
-	m_sHostInfo.nUsedMemory = smInfo.EmsUse;
-	m_vdinfo.clear();
-	m_pHostInfo.GetDisk(m_vdinfo);
-	m_sHostInfo.nDiskNum = m_vdinfo.size();
+	if (m_pRes->g_nMonitorHost == 1)
+	{
+        CBF_PMutex pp(&m_pHostMutex);
+        m_sHostInfo.nCpuRate = m_pHostInfo.GetCpu();
+        S_MemoryInf smInfo;
+        m_pHostInfo.GetEms(smInfo);
+        m_sHostInfo.nTotalMemory = smInfo.EmsTotal;
+        m_sHostInfo.nUsedMemory = smInfo.EmsUse;
+        m_vdinfo.clear();
+        m_pHostInfo.GetDisk(m_vdinfo);
+        m_sHostInfo.nDiskNum = m_vdinfo.size();
+	}
 	//删除过期的广播信息
 	m_bcSerial.Delete();
+	m_pLog.LogMp(LOG_PROMPT, __FILE__, __LINE__, "队列消息数:%d",m_qRcvQueue.GetDataCount());
 }
 
 bool CBF_DrebServer::Start()

@@ -110,16 +110,17 @@ public:
         bool bret = m_keyId.First(rid);
         while (bret)
         {
-            if (m_table.m_table[rid].timestamp - time(NULL) > 3600) //1–° ±
+            if (time(NULL) - m_table.m_table[rid].timestamp > 300) //5∑÷÷”
             {
                 iset.Add(rid);
             }
             bret = m_keyId.Next(rid);
         }
-        m_keyId.Delete(iset);
+        //m_keyId.Delete(iset);
         bret = iset.First(rid);
         while (bret)
         {
+			m_keyId.Delete(m_table.m_table[rid].node_id, m_table.m_table[rid].node_pid, m_table.m_table[rid].serial);
             m_table.Delete(rid);
             bret = iset.Next(rid);
         }

@@ -33,14 +33,14 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"%s",msg);
 		return false;
 	}
-	m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "¶©ÔÄ±êÖ¾:%d ¶©ÔÄÊý:%d",sub->flag,sub->datanum);
+	//m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "¶©ÔÄ±êÖ¾:%d ¶©ÔÄÊý:%d",sub->flag,sub->datanum);
 	switch (sub->flag)
 	{
 		case 0:
-		    m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ");
+		    //m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ");
 			break;;
 		case 1:
-			m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "¶©ÔÄ");
+			//m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "¶©ÔÄ");
 			break;
 		default:
 			return true;
@@ -60,14 +60,22 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 	{
 		if (UnSubscribe(subitem->nServiceNo,subitem->nKey)<0)
         {
-			m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ [%d %d]Ê§°Ü£¬Î´¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+			//m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ [%d %d]Ê§°Ü£¬Î´¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+        }
+        else
+        {
+            //m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ [%d %d]Íê³É", subitem->nServiceNo, subitem->nKey);
         }
 	}
 	else
 	{
         if (Subscribe(subitem->nServiceNo, subitem->nKey) < 0)
         {
-            m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "¶©ÔÄ [%d %d]Ê§°Ü£¬ÒÑ¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+            //m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "¶©ÔÄ [%d %d]Ê§°Ü£¬ÒÑ¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+        }
+        else
+        {
+            //m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "¶©ÔÄ [%d %d]Íê³É", subitem->nServiceNo, subitem->nKey);
         }
 	}
 	for (unsigned int i=1 ; i< sub->datanum; i++)
@@ -79,15 +87,24 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
         {
             if (UnSubscribe(subitem->nServiceNo, subitem->nKey) < 0)
             {
-                m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ [%d %d]Ê§°Ü£¬Î´¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+                //m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ [%d %d]Ê§°Ü£¬Î´¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+            }
+            else
+            {
+                //m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "È¡Ïû¶©ÔÄ [%d %d]Íê³É", subitem->nServiceNo, subitem->nKey);
             }
         }
         else
         {
             if (Subscribe(subitem->nServiceNo, subitem->nKey) < 0)
             {
-                m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "¶©ÔÄ [%d %d]Ê§°Ü£¬ÒÑ¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
+                //m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "¶©ÔÄ [%d %d]Ê§°Ü£¬ÒÑ¶©ÔÄ", subitem->nServiceNo, subitem->nKey);
             }
+			else
+			{
+				//m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "¶©ÔÄ [%d %d]Íê³É", subitem->nServiceNo, subitem->nKey);
+			}
+			
         }
 	}
 	if (m_pLog->isWrite(LOG_DEBUG+1))

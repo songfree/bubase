@@ -70,7 +70,7 @@ public:
 
 	// 函数名: SendMsg
 	// 编程  : 王明松 2014-12-10 14:47:56
-	// 返回  : int 
+	// 返回  : int 	0成功 1放入队列 2部分发送放入队列 100放入队列失败
 	// 参数  : S_BPC_RSMSG &msg
 	// 参数  : bool sendimmediate=false
 	// 描述  : 发送数据

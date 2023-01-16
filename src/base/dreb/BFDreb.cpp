@@ -32,7 +32,7 @@ bool CBFDreb::Init(const char *confile)
 
 	
 
-	g_pMemPool.Init(100,sizeof(S_DREB_RSMSG)+1);
+	g_pMemPool.Init(g_Vars.g_nMaxQueue/2,sizeof(S_DREB_RSMSG)+1, g_Vars.g_nMaxQueue);
 
 	g_pMemDb.m_pLog = m_log;
 	g_pMemDb.SetPara(g_Vars.g_nSvrDeleteTime,g_Vars.g_nServiceDeleteTime);
@@ -72,6 +72,7 @@ bool CBFDreb::Init(const char *confile)
 	tbl.nbandwidth=102400000;
 	//将本dreb加入路由
 	g_pMemDb.SetLocalDrebInfo(tbl);
+	g_pMemDb.m_pRes = &g_Vars;
 
 	//启动接收处理线程
 	if (!g_pPoolModule.SetGlobalVar(&g_Vars,&g_connInfoList,&g_pMemDb,&g_pMemPool,&g_pMsgQueue))
@@ -101,6 +102,7 @@ bool CBFDreb::Init(const char *confile)
 	{
 		for (int i = 0; i < g_Vars.g_nMsgProcThread; i++)
 		{
+			g_pProcThread[i].m_nIndex = i;
             g_pProcThread[i].SetGlobalVar(&g_Vars, &g_connInfoList, &g_pMemDb, &g_pMemPool, &g_pMsgQueue);
             g_pProcThread[i].CreateThread();
             if (g_pProcThread[i].IsStoped())
@@ -185,5 +187,9 @@ void CBFDreb::Monitor()
 			g_Vars.g_pRouteLog.StartLog();
 		}
 	}
+	int total=0;
+	int unused=0;
+	g_pMemPool.PoolInfo(total, unused);
+	m_log->LogMp(LOG_PROMPT, __FILE__, __LINE__, "队列数目[%d] 缓存数:%d 使用缓存数:%d", g_pMsgQueue.GetSize(), total, total- unused);
 	
 }

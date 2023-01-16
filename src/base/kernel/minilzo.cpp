@@ -980,7 +980,9 @@ static lzo_bool basic_ptr_check(void)
     r &= __lzo_assert(sizeof(lzo_voidp) >= sizeof(lzo_uint));
 	//int len = sizeof(lzo_voidp);
 	//len = sizeof(lzo_ptr_t);
-    r &= __lzo_assert(sizeof(lzo_ptr_t) == sizeof(lzo_voidp)); //win64 false   
+#ifndef WIN64
+    r &= __lzo_assert(sizeof(lzo_ptr_t) == sizeof(lzo_voidp)); //win64 false
+#endif
     r &= __lzo_assert(sizeof(lzo_ptr_t) >= sizeof(lzo_uint));
 
     r &= __lzo_assert(sizeof(lzo_ptrdiff_t) >= 4);

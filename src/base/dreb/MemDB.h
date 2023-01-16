@@ -18,6 +18,7 @@
 #include "BF_Mutex.h"
 #include "IErrLog.h"
 #include "BF_Date_Time.h"
+#include "GlobalVar.h"
 
 
 typedef struct 
@@ -340,6 +341,8 @@ public:
 
 	CSubscribeTbl m_subscribe;//广播订阅表
 	CIErrlog    *m_pLog;
+
+	CGlobalVar  *m_pRes;
 protected:
 	
 	int   m_nDeleteTime;        //服务过期时间

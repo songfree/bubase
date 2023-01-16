@@ -10,9 +10,13 @@
 //////////////////////////////////////////////////////////////////////
 extern int   g_pRunFlag;
 
+#define  DESENCRYPTKEY    "rd402wms"
+#define  DESENCRYPTKEY3   "wms13711songfree"
+
 CDrebMsgThread::CDrebMsgThread()
 {
 	m_pLog = NULL;
+    g_pGateRes = NULL;
 }
 
 CDrebMsgThread::~CDrebMsgThread()
@@ -82,7 +86,9 @@ void CDrebMsgThread::OnMsgConnectBack(S_BPC_RSMSG &rcvdata)
 #else
 	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"收到DREB连接成功的响应 向总线订阅广播");
 #endif
-	m_pDrebApi->Subscribe(rcvdata.index,m_lBcRegister);
+    std::vector<int> lBcRegister;
+    g_pGateRes->g_lBCFuncList.Select(lBcRegister);
+	m_pDrebApi->Subscribe(rcvdata.index, &lBcRegister);
 	
 }
 
@@ -192,7 +198,7 @@ void CDrebMsgThread::OnMsgRequest(S_BPC_RSMSG& rcvdata)
 
     data.data.head.stDest.nSerial = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial; //订阅模式下，填写交易账户的id (限定交易账户为整型数字)
     data.index = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex;
-    data.timestamp = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
+    data.timestamp = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook; 
 
 
     // #define  CMD_DPCALL      8  //数据总线节点同步调用 要求最终处理完成后应答
@@ -203,34 +209,49 @@ void CDrebMsgThread::OnMsgRequest(S_BPC_RSMSG& rcvdata)
     // #define  CMD_DPPOST      13 //数据总线节点投递，要求接收到的数据总线节点应答		
     if (rcvdata.sMsgBuf->sDBHead.cCmd == CMD_DPBC || rcvdata.sMsgBuf->sDBHead.cCmd == CMD_DPABC) //广播公共流 订阅信息
     {
-        //20221114改成不管是什么信息，都需要订阅
-        data.nkey = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
-        data.isBC = 1;
-        data.index = 0;
-        data.timestamp = 0;
-        m_pSendData->PushData(data, 2);
-        // //查找行情是否是最新的，若不是直接丢弃，若是直更新行情表，将数据丢入队列
-        //if (data.data.head.stDest.nSerial <= 0)  //公共的行情广播等
-        //{
-        //    data.isBC = 1;
-        //    data.index = 0;
-        //    data.timestamp = 0;
-        //    //第三级别为行情信息     不再判断行情是否最新，api已经去重了
-        //    data.nkey = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
-        //    m_pSendData->PushData(data, 2);
-        //    
-        //}
-        //else
-        //{
-        //    data.isBC = 2;    //表示订阅的消息  发送线程要判断是否订阅
-        //    data.index = 0;
-        //    data.timestamp = 0;
-        //    //第三级别为行情信息     不再判断行情是否最新，api已经去重了
-        //    data.nkey = 0;
-        //    m_pSendData->PushData(data, 1);
-        //}
-        m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
-        rcvdata.sMsgBuf = NULL;
+        //行情时s_nSerial为行情日期，s_nHook为key(合约或证券id) s_nGateIndex为行情时间或序号
+        //20221211 根据配置的广播级别，放入对应的发送队列，成交回报、报单回报等为1  行情等为2
+        int level = 2;
+
+        S_BC_INFO* bcinfo = g_pGateRes->g_lBCFuncList.Select(rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo);
+        if (bcinfo != NULL)
+        {
+            level = bcinfo->nLevel;
+        }
+        //控制行情的发送，按交易时间或行情序号，后到的不发
+        if (level == 2 && g_pGateRes->g_nFilterQuo == 1)
+        {
+            if (m_pQuotation.IsNewQuotation(rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex) > 0)
+            {
+                //放入队列，待发送
+                data.nkey = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
+                data.isBC = 1;
+                data.index = 0;
+                data.timestamp = 0;
+                m_pSendData->PushData(data, level);
+                m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+                rcvdata.sMsgBuf = NULL;
+            }
+            else
+            {
+                m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "行情[%d %d %d]不是最新，丢弃", rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex);
+                m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+                rcvdata.sMsgBuf = NULL;
+            }
+            return;
+        }
+        else
+        {
+            //放入队列，待发送
+            data.nkey = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
+            data.isBC = 1;
+            data.index = 0;
+            data.timestamp = 0;
+            m_pSendData->PushData(data, level);
+            m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+            return;
+        }
         return;
     }
     else  if (rcvdata.sMsgBuf->sDBHead.cCmd == CMD_DPCALL || rcvdata.sMsgBuf->sDBHead.cCmd == CMD_DPACALL || \
@@ -394,4 +415,60 @@ void CDrebMsgThread::OnMsgReportBpc(S_BPC_RSMSG& rcvdata)
     rcvdata.sMsgBuf->sBpcHead.nIndex = 100;
     m_pDrebApi->SendMsg(rcvdata);
     return;
+}
+bool CDrebMsgThread::UnzipBuf(BPCCOMMSTRU& data)
+{
+    //0明文 1des加密密钥长度16 2压缩 3DES加密 4DES加密并压缩
+    if (data.sDBHead.nLen == 0)
+    {
+        data.sDBHead.cZip = 0;
+        return true;
+    }
+    if (data.sDBHead.cZip > 0 && data.sDBHead.cZip <= 4)
+    {
+        char zipDataBuf[BPUDATASIZE];
+        bzero(zipDataBuf, sizeof(zipDataBuf));
+        unsigned int dlen = BPUDATASIZE;
+        int ddlen;
+        switch (data.sDBHead.cZip)
+        {
+        case 1:
+            ddlen = data.sDBHead.nLen;
+            if (m_pDes.UncryptString(data.sBuffer, ddlen, DESENCRYPTKEY) <= 0)
+            {
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "解密出错");
+                return false;
+            }
+            data.sDBHead.nLen = ddlen;
+            data.sDBHead.cZip = 0;
+            break;
+        case 2:
+            break;
+        case 3:
+            ddlen = data.sDBHead.nLen;
+            if (m_pDes.UncryptString(data.sBuffer, ddlen, DESENCRYPTKEY3) <= 0)
+            {
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "解密出错");
+                return false;
+            }
+            data.sDBHead.nLen = ddlen;
+            data.sDBHead.cZip = 0;
+            break;
+        case 4:
+            ddlen = data.sDBHead.nLen;
+            m_pLog->LogBin(LOG_DEBUG + 1, __FILE__, __LINE__, "解密前数据", data.sBuffer, data.sDBHead.nLen);
+            if (m_pDes.UncryptString(data.sBuffer, ddlen, DESENCRYPTKEY) <= 0)
+            {
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "解密出错");
+                return false;
+            }
+            data.sDBHead.nLen = ddlen;
+            data.sDBHead.cZip = 2;
+            break;
+        default:
+            return false;
+        }
+    }
+
+    return true;
 }
