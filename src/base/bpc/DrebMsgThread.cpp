@@ -357,6 +357,10 @@ void CDrebMsgThread::MonitorBpu(S_BPC_RSMSG& rcvdata)
     rcvdata.sMsgBuf->sDBHead.cZip = 0;
     m_pDrebApi->SendMsg(rcvdata);
 }
+void CDrebMsgThread::OnMsgReportBpc(S_BPC_RSMSG& rcvdata)
+{
+    MonitorReport(rcvdata);
+}
 void CDrebMsgThread::MonitorReport(S_BPC_RSMSG& rcvdata)
 {
     if (m_pRes->g_nUseMonitor != 1)

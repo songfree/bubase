@@ -110,7 +110,7 @@ public:
         bool bret = m_keyId.First(rid);
         while (bret)
         {
-            if (time(NULL) - m_table.m_table[rid].timestamp > 300) //5分钟
+            if (time(NULL) - m_table.m_table[rid].timestamp > 60) //大于1分钟的，删除
             {
                 iset.Add(rid);
             }
@@ -129,6 +129,7 @@ public:
     }
     int Size()
     {
+		CBF_PMutex pp(&m_mutex);
         return m_keyId.Size();
     }
 };
@@ -234,6 +235,8 @@ public:
 	//          注意在本方法里会主动释放sdata空间
 	//          a_cNodePrivateId来标识是否转移交易，当总线收到判断此标识为100时，不对s_info进行重置
 	virtual int SendMsg(S_BPC_RSMSG &sdata);
+
+	int GetIndex();
 
 	// 函数名: Stop
 	// 编程  : 王明松 2014-12-10 14:15:10
@@ -419,6 +422,7 @@ private:
 	unsigned int m_nBegin; //socket开始序号
 	unsigned int m_nEnd;   //socket结束序号
 
+	//std::atomic<unsigned int> m_nCurIndex;  //发送时的一个连接索引选择变量
 	unsigned int m_nCurIndex;  //发送时的一个连接索引选择变量
 protected: 
 
@@ -460,7 +464,7 @@ private:
 #endif
 
 	CBF_Mutex  m_pHostMutex;
-
+	CBF_Mutex  m_pindexmutex;
 };
 
 #endif // !defined(AFX_BF_DREBSERVER_H__8810FE91_B2B1_4312_9C27_4C97F9219A30__INCLUDED_)

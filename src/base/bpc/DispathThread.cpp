@@ -204,7 +204,10 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 //					m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"发给连接[%d]的BPU处理",m_nCurBpuIndex);
 					//发送成功，置状态为忙
 					m_pSockMgr->at(m_nCurBpuIndex)->SetBpuFreeFlag(false);
-
+					if (rcvdata.sMsgBuf->sBpcHead.cMsgType == MSG_BPCMONITOR) //monitor
+					{
+						rcvdata.sMsgBuf->sBpcHead.cMsgType = MSG_REQ;
+					}
 					nRet = m_pSockMgr->at(m_nCurBpuIndex)->SendMsg(rcvdata);
 					if (nRet == -101) //数据解密解压缩出错
 					{

@@ -1029,7 +1029,7 @@ void CBF_DrebServer::GetHostInfo()
 	}
 	//删除过期的广播信息
 	m_bcSerial.Delete();
-	m_pLog.LogMp(LOG_PROMPT, __FILE__, __LINE__, "队列消息数:%d",m_qRcvQueue.GetDataCount());
+	m_pLog.LogMp(LOG_PROMPT, __FILE__, __LINE__, "队列消息数:%d 广播信息数[%d]",m_qRcvQueue.GetDataCount(), m_bcSerial.Size());
 }
 
 bool CBF_DrebServer::Start()
@@ -1177,35 +1177,48 @@ void CBF_DrebServer::GetHostInfo(S_MONITOR_HOST &host, std::vector<S_MONITOR_DIS
 	}
 }
 
+int  CBF_DrebServer::GetIndex()
+{
+	CBF_PMutex ppmutex(&m_pindexmutex);
+	int index= m_nCurIndex;
+    m_nCurIndex++;
+    if (m_nCurIndex >= m_nEnd)
+    {
+        m_nCurIndex = m_nBegin;
+    }
+	return index;
+}
 int CBF_DrebServer::SendMsg(S_BPC_RSMSG &sdata)
 {
-	if (!m_pSockMgr.AffirmIndex(sdata.sMsgBuf->sBpcHead.nIndex))
+	int index;
+	if (!m_pSockMgr.AffirmIndex(sdata.sMsgBuf->sBpcHead.nIndex)) //index非法，取一下
 	{
-		sdata.sMsgBuf->sBpcHead.nIndex = m_nCurIndex;
-		m_nCurIndex++;
-		if (m_nCurIndex >= m_nEnd)
+		index = GetIndex();	//从多个连接里取一个
+		sdata.sMsgBuf->sBpcHead.nIndex = index;
+	}
+	else //指定了连接
+	{
+		if (m_pSockMgr.at(sdata.sMsgBuf->sBpcHead.nIndex)->m_bChecked) //原连接正常，可以发送
 		{
-			m_nCurIndex = m_nBegin;
+			return m_pSockMgr.at(sdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(sdata);
+		}
+		else  //该连接没有连接成功
+		{
+			index = sdata.sMsgBuf->sBpcHead.nIndex;
 		}
 	}
-	else if (m_pSockMgr.at(sdata.sMsgBuf->sBpcHead.nIndex)->m_bChecked) //原连接正常，可以发送
-	{
-		return m_pSockMgr.at(sdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(sdata);
-	}
+	
 	//原连接不正常，选一个正常的发送，否则还是放到原连接的队列里
 	int nRet=0;
+	//连接非法或连接未成功
 	for (int i=m_nBegin ; i< m_nEnd; i++)
 	{
-		if (m_pSockMgr.at(m_nCurIndex)->m_bChecked)
+		if (m_pSockMgr.at(index)->m_bChecked)
 		{
-			nRet =  m_pSockMgr.at(m_nCurIndex)->SendMsg(sdata);
-			m_nCurIndex++;
-			if (m_nCurIndex >= m_nEnd)
-			{
-				m_nCurIndex = m_nBegin;
-			}
+			nRet =  m_pSockMgr.at(index)->SendMsg(sdata);
 			return nRet;
 		}
+		index = GetIndex();
 	}
 	//没有找到合适的连接，还是用原来的连接发吧
 	if (m_pSockMgr.at(sdata.sMsgBuf->sBpcHead.nIndex)->m_sock == INVALID_SOCKET || !m_pSockMgr.at(sdata.sMsgBuf->sBpcHead.nIndex)->m_bChecked )
@@ -1223,9 +1236,6 @@ int CBF_DrebServer::SendMsg(S_BPC_RSMSG &sdata)
 	{
 		return m_pSockMgr.at(sdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(sdata);
 	}
-	
-	
-
 }
 
 bool CBF_DrebServer::GetMsgData(S_BPC_RSMSG &rdata,unsigned int waitetms,bool get_front)

@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
 	memset(confile,0,sizeof(confile));
 	CShareMemory pShare;
     memset(g_VERSION, 0, sizeof(g_VERSION));
-    sprintf(g_VERSION, "2.0.1 %s", __DATE__);
+    sprintf(g_VERSION, "2.0.2 %s", __DATE__);
 	if (argc == 1)
 	{
 		printf("sap/bpc %s build [%s %s] 命令行参数说明:\n",g_VERSION,__DATE__,__TIME__);

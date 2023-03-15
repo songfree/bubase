@@ -82,6 +82,8 @@ protected:
 	virtual void MonitorBpu(S_BPC_RSMSG& rcvdata);
 	//报告信息
 	virtual void MonitorReport(S_BPC_RSMSG& rcvdata);
+	virtual void OnMsgReportBpc(S_BPC_RSMSG& rcvdata);
+
 	//解密解压数据
 	virtual bool UnzipBuf(BPCCOMMSTRU& data);
 	//设置bpu参数

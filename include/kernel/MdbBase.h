@@ -222,9 +222,9 @@ public:
         
 		
     }
-	void Erase(Record& rt)
+	int Erase(Record& rt)
 	{
-		m_index.erase(rt);
+		return m_index.erase(rt);
 	}
 	int Size()
 	{
@@ -322,9 +322,9 @@ public:
         m_index.erase(m_current++);
         m_bDroped = true;
     }
-    void Erase(Record& rt)
+    int Erase(Record& rt)
     {
-        m_index.erase(rt);
+        return m_index.erase(rt);
     }
     int Size()
     {
@@ -501,9 +501,9 @@ public:
 		}
 	}
 
-	void Erase(Record& rt)
+	int Erase(Record& rt)
 	{
-		m_index.erase(rt);
+		return m_index.erase(rt);
 	}
 	int Size()
 	{
@@ -600,9 +600,9 @@ public:
 			return true;
 		}
 	}
-	void Delete(int id)
+	int Delete(int id)
 	{
-		m_intdata.erase(id);
+		return m_intdata.erase(id);
 	}
 	void Clear()
 	{
@@ -705,6 +705,10 @@ public:
 			return true;
 		}
 	}
+    int Delete(unsigned int id)
+    {
+        return m_intdata.erase(id);
+    }
 	void Clear()
 	{
 		m_intdata.clear();
@@ -855,7 +859,7 @@ public:
 		return bret_;
 	}
 	//删除指定索引
-	void Delete(int k,...)
+	int Delete(int k,...)
 	{
 		Int_ a_;
 		va_list	intp;
@@ -868,8 +872,7 @@ public:
 			a_.k[i+1]=va_arg(intp, int);
 		}
 		va_end(intp);    
-		m_index.Erase(a_);
-		return;
+		return m_index.Erase(a_);
 	}
 	//根据索引查找rowid，若rowid在iset中存在则删除索引
 	void Delete(CInt iset,int k,...)
@@ -1079,7 +1082,7 @@ public:
 		return bret_;
 	}
 	//删除指定key
-	void Delete(int k,...)
+	int Delete(int k,...)
 	{
 		Int_ a_;
 		va_list	intp;
@@ -1092,8 +1095,7 @@ public:
 			a_.k[i+1]=va_arg(intp, int);
 		}
 		va_end(intp);    
-		m_key.Erase(a_);
-		return;
+		return m_key.Erase(a_);
 	}
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -1304,7 +1306,7 @@ public:
         return bret_;
     }
     //删除指定key
-    void Delete(int k, ...)
+    int Delete(int k, ...)
     {
         Int_ a_;
         va_list	intp;
@@ -1317,8 +1319,7 @@ public:
             a_.k[i + 1] = va_arg(intp, int);
         }
         va_end(intp);
-        m_key.Erase(a_);
-        return;
+        return m_key.Erase(a_);
     }
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -1528,7 +1529,7 @@ public:
 		return bret_;
 	}
 	//删除指定索引
-	void Delete(unsigned int k,...)
+	int Delete(unsigned int k,...)
 	{
 		Int_ a_;
 		va_list	intp;
@@ -1541,8 +1542,7 @@ public:
 			a_.k[i+1]=va_arg(intp,unsigned int);
 		}
 		va_end(intp);    
-		m_index.Erase(a_);
-		return;
+		return m_index.Erase(a_);
 	}
 	//根据索引查找rowid，若rowid在iset中存在则删除索引
 	void Delete(CInt iset,unsigned int k,...)
@@ -1752,7 +1752,7 @@ public:
 		return bret_;
 	}
 	//删除指定key
-	void Delete(unsigned int k,...)
+	int Delete(unsigned int k,...)
 	{
 		Int_ a_;
 		va_list	intp;
@@ -1765,8 +1765,7 @@ public:
 			a_.k[i+1]=va_arg(intp,unsigned int);
 		}
 		va_end(intp);    
-		m_key.Erase(a_);
-		return;
+		return m_key.Erase(a_);
 	}
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -1973,7 +1972,7 @@ public:
         return bret_;
     }
     //删除指定key
-    void Delete(unsigned int k, ...)
+    int Delete(unsigned int k, ...)
     {
         Int_ a_;
         va_list	intp;
@@ -1986,8 +1985,7 @@ public:
             a_.k[i + 1] = va_arg(intp, unsigned int);
         }
         va_end(intp);
-        m_key.Erase(a_);
-        return;
+        return m_key.Erase(a_);
     }
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -2197,7 +2195,7 @@ public:
 		return bret_;
 	}
 	//删除指定索引
-	void Delete(char *p,...)
+	int Delete(char *p,...)
 	{
 		Char_ a_;
 		va_list charp;
@@ -2210,8 +2208,7 @@ public:
 			CBF_Tools::StringCopy(a_.p[i+1],length-1,va_arg(charp,char*));
 		}
 		va_end(charp);
-		m_index.Erase(a_);
-		return;
+		return m_index.Erase(a_);
 	}
 	//根据索引查找rowid，若rowid在iset中存在则删除索引
 	void Delete(CInt iset,char *p,...)
@@ -2447,7 +2444,7 @@ public:
 		return bret_;
 	}
 	//删除指定key
-	void Delete(char *p,...)
+	int Delete(char *p,...)
 	{
 		Char_ a_;
 		va_list charp;
@@ -2460,8 +2457,7 @@ public:
 			CBF_Tools::StringCopy(a_.p[i+1],length-1,va_arg(charp,char*));
 		}
 		va_end(charp);
-		m_key.Erase(a_);
-		return;
+		return m_key.Erase(a_);
 	}
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -2694,7 +2690,7 @@ public:
         return bret_;
     }
     //删除指定key
-    void Delete(char* p, ...)
+    int Delete(char* p, ...)
     {
         Char_ a_;
         va_list charp;
@@ -2707,8 +2703,7 @@ public:
             CBF_Tools::StringCopy(a_.p[i + 1], length - 1, va_arg(charp, char*));
         }
         va_end(charp);
-        m_key.Erase(a_);
-        return;
+        return m_key.Erase(a_);
     }
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -2918,7 +2913,7 @@ public:
 		return bret_;
 	}
 	//删除指定key
-	void Delete(char *p,...)
+	int Delete(char *p,...)
 	{
 		Char_ a_;
 		va_list charp;
@@ -2931,8 +2926,7 @@ public:
 			a_.p[i+1]=va_arg(charp,char*);
 		}
 		va_end(charp);
-		m_key.Erase(a_);
-		return;
+		return m_key.Erase(a_);
 	}
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -3186,7 +3180,7 @@ public:
         return bret_;
     }
     //删除指定key
-    void Delete(char* p, ...)
+    int Delete(char* p, ...)
     {
         Char_ a_;
         va_list charp;
@@ -3199,8 +3193,7 @@ public:
             a_.p[i + 1] = va_arg(charp, char*);
         }
         va_end(charp);
-        m_key.Erase(a_);
-        return;
+        return m_key.Erase(a_);
     }
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -3393,7 +3386,7 @@ public:
 	}
 
 	//删除指定
-	void Delete(char *p,...)
+	int Delete(char *p,...)
 	{
 		Char_ a_;
 		va_list charp;
@@ -3406,8 +3399,7 @@ public:
 			a_.p[i+1]=va_arg(charp,char*);
 		}
 		va_end(charp);
-		m_index.Erase(a_);
-		return;
+		return m_index.Erase(a_);
 	}
 	//删除索引，根据索引查找rowid,若rowid在iset中存在则删除索引
 	void Delete(CInt iset,char *p,...)
@@ -3631,13 +3623,11 @@ public:
 		return bret_;
 	}
 	//删除索引
-	void Delete(char *p)
+	int Delete(char *p)
 	{
 		Char_ a_;
-
 		a_.p=p;
-		m_index.Erase(a_);
-		return;
+		return m_index.Erase(a_);
 	}
 	//删除索引，根据索引查找rowid,若rowid在iset中存在则删除索引
 	void Delete(CInt iset,char *p)
@@ -3866,7 +3856,7 @@ public:
 		return bret_;
 	}
 	//删除指定索引
-	void Delete(UINT64_ k,...)
+	int Delete(UINT64_ k,...)
 	{
 		Int64_ a_;
 		va_list	intp;
@@ -3879,8 +3869,7 @@ public:
 			a_.k[i+1]=va_arg(intp, UINT64_);
 		}
 		va_end(intp);    
-		m_index.Erase(a_);
-		return;
+		return m_index.Erase(a_);
 	}
 	//根据索引查找rowid，若rowid在iset中存在则删除索引
 	void Delete(CInt iset,UINT64_ k,...)
@@ -4094,7 +4083,7 @@ public:
 		return bret_;
 	}
 	//删除指定key
-	void Delete(UINT64_ k,...)
+	int Delete(UINT64_ k,...)
 	{
 		Int64_ a_;
 		va_list	intp;
@@ -4107,8 +4096,7 @@ public:
 			a_.k[i+1]=va_arg(intp, UINT64_);
 		}
 		va_end(intp);    
-		m_key.Erase(a_);
-		return;
+		return m_key.Erase(a_);
 	}
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -4318,7 +4306,7 @@ public:
         return bret_;
     }
     //删除指定key
-    void Delete(UINT64_ k, ...)
+    int Delete(UINT64_ k, ...)
     {
         Int64_ a_;
         va_list	intp;
@@ -4331,8 +4319,7 @@ public:
             a_.k[i + 1] = va_arg(intp, UINT64_);
         }
         va_end(intp);
-        m_key.Erase(a_);
-        return;
+        return m_key.Erase(a_);
     }
     //扫描全表，删除rowid
     void Delete(CInt iset)
@@ -4526,153 +4513,153 @@ public:
 		return m_table.size()-m_rowidpool.size();
 	}
 };
-//内存表
-template<typename Record>
-class CMemTable  
-{
-public:
-	
-	typedef std::vector<Record> VECTOR_;       //定义保存内存表数据的类型，vector的下标相当于rowid
-//	typedef std::deque<Record> VECTOR_;       //定义保存内存表数据的类型，vector的下标相当于rowid
-	std::list<int>    m_rowidpool;              //保存删除的内存表数据ID，相当于rowid，下次增加时直接使用         
-	VECTOR_      m_table;                  //表数据
-	std::vector<bool> m_inuseid;                //rowid对应的数据是否删除
-	unsigned int  m_current;
-public:
-	
-	CMemTable()
-	{
-		m_current = 0;
-	}
-	~CMemTable()
-	{
-		Clear();
-	}
-	//当记录删除时，过滤掉
-    Record *At(int index)
-	{
-		if (index <0 || index >m_table.size()-1)
-		{
-			return NULL;
-		}
-		if (m_inuseid[index]) //没有删除
-		{
-			return &(m_table.at(index));
-		}
-		else
-		{
-			return NULL;
-		}
-		
-	}
-	void Clear()
-	{
-		m_table.clear();
-		m_inuseid.clear();
-		m_rowidpool.clear();
-	}
-	int Add(Record& rt)
-	{
-		int id;
-		if (m_rowidpool.size() > 0)
-		{
-			id=m_rowidpool.front();
-			m_rowidpool.pop_front();
-			m_table[id]=rt;
-			m_inuseid[id]=true;
-		}
-		else
-		{
-			id=m_table.size();
-			m_table.push_back(rt);
-			m_inuseid.push_back(true);
-		}
-		return id;
-	}
-	void Update(int id,Record& rt,bool logged=false)
-	{
-		m_table[id]=rt;
-	}
-	void GetById(int id,Record& rt)
-	{
-		rt=m_table[id];
-	}
-	void Delete(int id)
-	{
-		if (m_inuseid[id] != false)
-		{
-			m_rowidpool.push_back(id);
-		}
-		m_inuseid[id]=false;
-	}
-	bool First(Record& rt)
-	{
-		m_current = 0;
-		for (unsigned int i=0;i<m_table.size();i++)
-		{
-			if (m_inuseid[i])
-			{
-				rt = m_table[i];
-				m_current = i;
-				return true;
-			}
-		}
-		return false;
-	}
-	Record *First()
-	{
-		m_current = 0;
-		for (int i=0;i<m_table.size();i++)
-		{
-			if (m_inuseid[i])
-			{
-				m_current = i;
-				return &(m_table[i]);
-			}
-		}
-		return NULL;
-	}
-	bool Next(Record& rt)
-	{
-		m_current++;
-		for (;m_current<m_table.size();m_current++)
-		{
-			if (m_inuseid[m_current])
-			{
-				rt = m_table[m_current];
-				return true;
-			}
-		}
-		return false;
-	}
-	Record *Next()
-	{
-		m_current++;
-		for (;m_current<m_table.size();m_current++)
-		{
-			if (m_inuseid[m_current])
-			{
-				return &(m_table[m_current]);
-			}
-		}
-		return NULL;
-	}
-	//包括删除的记录
-	int AllSize()
-	{
-		return m_table.size();
-	}
-	//不包括删除的记录
-	int RealSize()
-	{
-		return m_table.size()-m_rowidpool.size();
-	}
-	//不包括删除的记录
-	int Size()
-	{
-		return m_table.size()-m_rowidpool.size();
-	}
-};
+////内存表
+//template<typename Record>
+//class CMemTable  
+//{
+//public:
+//	
+//	typedef std::vector<Record> VECTOR_;       //定义保存内存表数据的类型，vector的下标相当于rowid
+////	typedef std::deque<Record> VECTOR_;       //定义保存内存表数据的类型，vector的下标相当于rowid
+//	std::list<int>    m_rowidpool;              //保存删除的内存表数据ID，相当于rowid，下次增加时直接使用         
+//	VECTOR_      m_table;                  //表数据
+//	std::vector<bool> m_inuseid;                //rowid对应的数据是否删除
+//	unsigned int  m_current;
+//public:
+//	
+//	CMemTable()
+//	{
+//		m_current = 0;
+//	}
+//	~CMemTable()
+//	{
+//		Clear();
+//	}
+//	//当记录删除时，过滤掉
+//    Record *At(int index)
+//	{
+//		if (index <0 || index >m_table.size()-1)
+//		{
+//			return NULL;
+//		}
+//		if (m_inuseid[index]) //没有删除
+//		{
+//			return &(m_table.at(index));
+//		}
+//		else
+//		{
+//			return NULL;
+//		}
+//		
+//	}
+//	void Clear()
+//	{
+//		m_table.clear();
+//		m_inuseid.clear();
+//		m_rowidpool.clear();
+//	}
+//	int Add(Record& rt)
+//	{
+//		int id;
+//		if (m_rowidpool.size() > 0)
+//		{
+//			id=m_rowidpool.front();
+//			m_rowidpool.pop_front();
+//			m_table[id]=rt;
+//			m_inuseid[id]=true;
+//		}
+//		else
+//		{
+//			id=m_table.size();
+//			m_table.push_back(rt);
+//			m_inuseid.push_back(true);
+//		}
+//		return id;
+//	}
+//	void Update(int id,Record& rt,bool logged=false)
+//	{
+//		m_table[id]=rt;
+//	}
+//	void GetById(int id,Record& rt)
+//	{
+//		rt=m_table[id];
+//	}
+//	void Delete(int id)
+//	{
+//		if (m_inuseid[id] != false)
+//		{
+//			m_rowidpool.push_back(id);
+//		}
+//		m_inuseid[id]=false;
+//	}
+//	bool First(Record& rt)
+//	{
+//		m_current = 0;
+//		for (unsigned int i=0;i<m_table.size();i++)
+//		{
+//			if (m_inuseid[i])
+//			{
+//				rt = m_table[i];
+//				m_current = i;
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
+//	Record *First()
+//	{
+//		m_current = 0;
+//		for (int i=0;i<m_table.size();i++)
+//		{
+//			if (m_inuseid[i])
+//			{
+//				m_current = i;
+//				return &(m_table[i]);
+//			}
+//		}
+//		return NULL;
+//	}
+//	bool Next(Record& rt)
+//	{
+//		m_current++;
+//		for (;m_current<m_table.size();m_current++)
+//		{
+//			if (m_inuseid[m_current])
+//			{
+//				rt = m_table[m_current];
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
+//	Record *Next()
+//	{
+//		m_current++;
+//		for (;m_current<m_table.size();m_current++)
+//		{
+//			if (m_inuseid[m_current])
+//			{
+//				return &(m_table[m_current]);
+//			}
+//		}
+//		return NULL;
+//	}
+//	//包括删除的记录
+//	int AllSize()
+//	{
+//		return m_table.size();
+//	}
+//	//不包括删除的记录
+//	int RealSize()
+//	{
+//		return m_table.size()-m_rowidpool.size();
+//	}
+//	//不包括删除的记录
+//	int Size()
+//	{
+//		return m_table.size()-m_rowidpool.size();
+//	}
+//};
 
 //索引字段基类
 class CIndex_Field_Base
@@ -5483,7 +5470,7 @@ public:
 	}
 protected:
 	
-	CMemTable <Record *> m_table;
+	CMemTableNew <Record *> m_table;
 	CPkeyInt<1>                     m_key;   //rowid索引
 };
 
@@ -5616,7 +5603,7 @@ public:
 	}
 protected:
 	
-	CMemTable <S_TBL_SAMPLE> m_table;        //内存表
+	CMemTableNew <S_TBL_SAMPLE> m_table;        //内存表
 	std::list<int>                m_queryResult;  //查询结果rowid列表
 	CIndexInt<1>             m_index_node;   //id索引
 	CPkeyInt<2>              m_pkey;         //id+私有id索引，唯一索引
@@ -5633,7 +5620,7 @@ class  CTbl_Char_Key
 {
 protected:
 	
-	CMemTable <S_CHAR_KEY> m_table;
+	CMemTableNew <S_CHAR_KEY> m_table;
 	CPkeyCharF<40,1>          m_pkey; 
 public:
 	CTbl_Char_Key()
@@ -5680,6 +5667,84 @@ public:
 		}
 		return NULL;
 	}
+};
+
+
+//CKeyFieldUnordered  CKeyField使用例子
+class index_field_sample : public CIndex_Field_Base
+{
+public:
+    UINT64_ account_id = 0;//资金账号
+    UINT64_ portfolio_id = 0;//策略ID
+    char    code[33] = { 0 };//代码
+    virtual bool operator<(const index_field_sample& field) const
+    {
+        int ret = account_id - field.account_id;
+        if (ret < 0)
+        {
+            return true;
+        }
+        else if (ret == 0)
+        {
+            int ret2 = portfolio_id - field.portfolio_id;
+            if (ret2 < 0) 
+			{
+                return true;
+            }
+            else if (ret2 == 0)
+            {
+                ret = strcmp(code, field.code);
+                if (ret < 0) 
+				{
+                    return true;
+                }
+            }
+            return false;
+        }
+        return false;
+    }
+    //unordered使用
+    virtual bool operator == (const index_field_sample& field) const
+    {
+        if (account_id != field.account_id)
+        {
+            return false;
+        }
+        else if (portfolio_id != field.portfolio_id)
+        {
+            return false;
+        }
+        else if (strcmp(code, field.code) != 0)
+        {
+            return false;
+        }
+        return true;
+    }
+};
+//使用CKeyFieldUnordered CKeyField的表的例子
+class CTbl_Table_Sample 
+{
+protected:
+    struct _hash
+    {
+        std::size_t operator() (const index_field_sample& f1) const
+        {
+            return hash_val(f1.account_id, f1.portfolio_id, (std::string)f1.code);
+        }
+    };
+	CKeyField<index_field_sample>   m_key1; //账户+策略+code 主键
+    CKeyFieldUnordered<index_field_sample, _hash>   m_key2; //账户+策略+code 主键
+
+	CIndexField<index_field_sample>   m_index1; //账户+策略+code索引 
+
+public:
+	CTbl_Table_Sample() {
+
+    }
+    virtual ~CTbl_Table_Sample() {
+
+    }
+   
 };
 
 
