@@ -897,8 +897,9 @@ int CBPCLink::DPTrans(PBPCCOMMSTRU calldata)
 		OnClose(__FILE__,__LINE__,"发送DPTrans失败");
 		return -1;
 	}
+	//20230407 去掉OnFree，以支持不停的Push数据
 	//我是空闲的，可以处理另外的业务了
-	OnFree();
+	//OnFree();
 	return 0;
 }
 
