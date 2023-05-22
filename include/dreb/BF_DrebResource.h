@@ -67,6 +67,8 @@ public:
 
 	unsigned int  g_nEndianFlag; //针对调用方字节序处理标志,0不做处理，适合C/C++.  1使用网络序(SNEDMSG和getmsg)时使用网络序传输数据 适合JAVA调用(java不用处理字节序)
 
+	int           g_nBcSerialDeleteTime;//广播序号重复过滤过期时间，即超过此时间的记录的广播的序号从内存表删除 秒
+
 	//心跳连接配置
 	int g_nDisconnectTime;//未使用断开时间，如果一个连接在此时间内一直没有使用，则将此连接断开。单位秒默认600秒即10分钟
 	int g_nHeartRun;//心跳时间,当发现连接超过此时间未用时，主动发送心跳，默认为5秒 
@@ -177,7 +179,11 @@ public:
             m_errMsg = "file error,no [package/head/public/queuesize] node";
 			g_nQueueSize = 1000;
         }
-
+        if (m_pXml.GetNodeValueByPath("package/head/public/bcserialdeletetime", false, g_nBcSerialDeleteTime) == NULL)
+        {
+            m_errMsg = "file error,no [package/head/public/bcserialdeletetime] node";
+			g_nBcSerialDeleteTime = 10;
+        }
 		if (m_pXml.GetNodeValueByPath("package/head/public/endian",false,ret) == NULL)
 		{
 			m_errMsg = "file error,no [package/head/public/endian] node";

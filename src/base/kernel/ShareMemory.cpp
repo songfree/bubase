@@ -187,7 +187,7 @@ int GetName(char* filename, char** pfn)
     *pfn = filename + offset + 1;
     return filelen - offset;
 }
-void * CShareMemory::Open(const char *name, int shmsize)
+void * CShareMemory::Open(const char *name, INT64_ shmsize)
 {
 	char buf[256];
 	Close();
@@ -195,7 +195,11 @@ void * CShareMemory::Open(const char *name, int shmsize)
 	m_fileno = sh_open(buf,O_CREAT|O_RDWR,SH_DENYNO);
 	if (m_fileno == -1)
 	{
-		sprintf(m_szmsg,"Cannot open SHM File for '%s' size=%d",name,shmsize);
+#ifdef _WINDOWS
+		sprintf(m_szmsg,"Cannot open SHM File for '%s' size=%I64d",name,shmsize);
+#else
+		sprintf(m_szmsg, "Cannot open SHM File for '%s' size=%lld", name, shmsize);
+#endif
 		return(NULL);
 	}
 	else
@@ -214,7 +218,7 @@ void * CShareMemory::Open(const char *name, int shmsize)
 		if (m_shmid == NULL)
 		{
 			// 共享内存创建错误：
-			sprintf(m_szmsg,"Cannot open share memory for SHM(%s) size=%d -errno:%u!", smname,shmsize,GetLastError());
+			sprintf(m_szmsg,"Cannot open share memory for SHM(%s) size=%I64d -errno:%u!", smname,shmsize,GetLastError());
 			Close();
 			return(NULL);
 		}
@@ -242,7 +246,7 @@ void * CShareMemory::Open(const char *name, int shmsize)
 	m_address = MapViewOfFile(m_shmid,FILE_MAP_WRITE|FILE_MAP_READ,0,0,0);
 	if (m_address == NULL)
 	{
-		sprintf(m_szmsg,"MapViewOfFile fail [SHM(%s) size=%d] - errno:%u!", smname,shmsize,GetLastError());
+		sprintf(m_szmsg,"MapViewOfFile fail [SHM(%s) size=%I64d] - errno:%u!", smname,shmsize,GetLastError());
 		Close();
 		return(NULL);
 	}

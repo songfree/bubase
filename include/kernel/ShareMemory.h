@@ -34,6 +34,7 @@
 #endif /// _MSC_VER > 1000
 
 #include "public.h"
+#include "typedefine.h"
 #ifdef WIN32
 #include <windows.h>
 typedef int key_t;
@@ -58,10 +59,10 @@ typedef int SHMID;
 class KERNEL_EXPORT CShareMemory  
 {
 public:
-	int m_fileno;        /// 用于加锁的文件, 也就是基本文件
-	SHMID m_shmid;       /// 共享内存ID
-	int m_size;          /// 本共享内存长度
-	void *m_address;     /// 共享内存空间在本进程中的地址
+	int    m_fileno;        /// 用于加锁的文件, 也就是基本文件
+	SHMID   m_shmid;       /// 共享内存ID
+	INT64_    m_size;          /// 本共享内存长度
+	void   *m_address;     /// 共享内存空间在本进程中的地址
 	char m_szmsg[256];   /// 在错误的时候，用于存放错误信息
 
 public:
@@ -89,10 +90,10 @@ public:
 	/// 编程  : 王明松 2007-4-25 11:08:51
 	/// 返回  : void * NULL：打开失败；否则，返回成功打开的共享内存区域的进程映射地址。
 	/// 参数  : const char *name 指定该共享内存的名字，当name==NULL时，不作检查或设置名字
-	/// 参数  : int shmsize 创建或打开的共享内存大小
+	/// 参数  : INT64_ shmsize 创建或打开的共享内存大小
 	/// 描述  : 用本类实例打开一个进程可保护共享内存区域  注意：在使用本方法的时候，建议设置正确的shmsize;
     ///             注意，这里返回的映射地址是由系统返回的，不要作初试化指定
-	void * Open(const char *name, int shmsize);
+	void * Open(const char *name, INT64_ shmsize);
 
 
 	/// 函数名: myftok

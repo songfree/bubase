@@ -78,6 +78,8 @@ bool CBF_DrebServer::Init(CBF_DrebResource *res, CDrebMsgProcBase* spi)
 	m_nBegin = 0;
 	m_nEnd = m_pRes->g_vDrebLinkInfo.size();
 
+	m_bcSerial.m_nDeleteTime = m_pRes->g_nBcSerialDeleteTime;	//总线api会记录广播的序号， 连接多个总线，可能会收到相同的广播，在api里过滤。当超过此时间后，记录的序号从内存表删除
+
 	//设置定时器
 	m_pTimer.Init(100,true);
 	//计算每秒数据量的定时器

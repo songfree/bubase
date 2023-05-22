@@ -34,6 +34,7 @@ CBF_DrebResource::CBF_DrebResource()
 	g_nSvrMainId=0;     //目标服务功能号 ,必须填写
 	g_nSvrPrivateId=0;  //目标私有序号 0表示公共 >0为每个服务的序号，必须填写
 	
+	g_nBcSerialDeleteTime = 10;//重复的广播，10秒删除
 	bzero(g_sStartDateTime,sizeof(g_sStartDateTime));  //不用填写，由程序运行的填
 	
 	//以下三项为调用者在main里调用GetModuleNamePath取得运行程序的信息

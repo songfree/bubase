@@ -56,11 +56,11 @@ protected:
 	CPkeyIntUnordered<3>                 m_keyId;//请求ID
     CBF_Mutex                   m_mutex;//互斥锁
 public:
-
+	int  m_nDeleteTime;	 //过期删除时间 秒
     CBF_BufferPool* m_pMemPool;//内存分配池;
 	CTbl_BcSerial()
     {
-
+		m_nDeleteTime = 60;
     }
     virtual ~CTbl_BcSerial()
     {
@@ -110,7 +110,7 @@ public:
         bool bret = m_keyId.First(rid);
         while (bret)
         {
-            if (time(NULL) - m_table.m_table[rid].timestamp > 60) //大于1分钟的，删除
+            if (time(NULL) - m_table.m_table[rid].timestamp > m_nDeleteTime) //大于1分钟的，删除
             {
                 iset.Add(rid);
             }

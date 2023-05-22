@@ -1,7 +1,8 @@
 此框架是借鉴KS的开发框架独立研发的面向服务的分布式开发框架 支持windows/linux等平台
 
 感兴趣可加QQ:738651沟通。
-
+202305：版本2.0.10  修改kernel库的共享内存类，支持共享内存大小超过2G
+202304：版本2.0.9  修改总线api库，针对广播数据过滤重复的内存表定期清除，增加配置过期时间默认10秒，即当内存表记录超过此时间后删除。防止数据量太大占用内存过多
 202304：版本2.0.8  修改bumodule库，支持推送
 202302：版本2.0.7  优化bpc/sap，当sap接监控spu时，此sap的监控信息不经过总线内部直接发给监控spu
 202212：版本2.0.6  优化日志信息
@@ -103,24 +104,24 @@ BUBASE_BIN
  
                                                 
 VC编译说明：
-     设置系统的环境变量   D:\BUBASE及D:\BUBASE_BIN是个人使用的目录，可根据需要修改
-     BUBASE_INCLUDE  = D:\BUBASE\include\kernel;D:\BUBASE\include\xdp;D:\BUBASE\include\xml;D:\BUBASE\include\gateway;D:\BUBASE\include\dreb;D:\BUBASE\include\dbpub;D:\BUBASE\include\dbapi;D:\BUBASE\include\cgateapi;D:\BUBASE\include\bumodule;D:\BUBASE\include\aio;D:\BUBASE\include\gtp;D:\BUBASE\include\kvdata   
+     设置系统的环境变量   D:\BUBASE_BIN是例子目录，要根据实际的目录替换
+     BUBASE_INCLUDE  = D:\BUBASE_BIN\include\kernel;D:\BUBASE_BIN\include\xdp;D:\BUBASE_BIN\include\xml;D:\BUBASE_BIN\include\gateway;D:\BUBASE_BIN\include\dreb;D:\BUBASE_BIN\include\dbpub;D:\BUBASE_BIN\include\dbapi;D:\BUBASE_BIN\include\cgateapi;D:\BUBASE_BIN\include\bumodule;D:\BUBASE_BIN\include\aio;D:\BUBASE_BIN\include\gtp;D:\BUBASE_BIN\include\kvdata   
           即实际的框架头文件目录
-     BUBASE_LIB_X64  = D:\BUBASE_BIN\vc2012\x64\lib
+     BUBASE_LIB_X64  = D:\BUBASE_BIN\vc2019\x64\lib
           即编译好的64位库文件存放目录，库依赖时要用到。
-     BUBASE_LIB_X86  = D:\BUBASE_BIN\vc2012\x86\lib
+     BUBASE_LIB_X86  = D:\BUBASE_BIN\vc2019\x86\lib
           即编译好的32位库文件存放目录，库依赖时要用到。
-     BUBASE_BIN_X86 =  D:\BUBASE_BIN\vc2012\x86\bin     
+     BUBASE_BIN_X86 =  D:\BUBASE_BIN\vc2019\x86\bin     
           即编译好的32位可执行程序存放目录。
-     BUBASE_BIN_X64 =  D:\BUBASE_BIN\vc2012\x64\bin     
+     BUBASE_BIN_X64 =  D:\BUBASE_BIN\vc2019\x64\bin     
           即编译好的64位可执行程序存放目录。
-     BUBASE_LIBAPP_X64  = D:\BUBASE_BIN\vc2012\x64\libapp
+     BUBASE_LIBAPP_X64  = D:\BUBASE_BIN\vc2019\x64\libapp
           即编译好的64位应用库文件存放目录，库依赖时要用到。
-     BUBASE_LIBAPP_X86  = D:\BUBASE_BIN\vc2012\x86\libapp
+     BUBASE_LIBAPP_X86  = D:\BUBASE_BIN\vc2019\x86\libapp
           即编译好的32位应用库文件存放目录，库依赖时要用到。
-     BUBASE_TOOLS_X86 =  D:\BUBASE_BIN\vc2012\x86\tools     
+     BUBASE_TOOLS_X86 =  D:\BUBASE_BIN\vc2019\x86\tools     
           即编译好的32位mfc界面程序存放目录。
-     BUBASE_TOOLS_X64 =  D:\BUBASE_BIN\vc2012\x64\tools
+     BUBASE_TOOLS_X64 =  D:\BUBASE_BIN\vc2019\x64\tools
           即编译好的64位mfc界面程序存放目录
      
 VS 64位库目录
@@ -154,4 +155,7 @@ LINUX编译说明：
      
 
 
-     
+VC调试运行说明：
+     调试的时候，需要找到BUBASE的库文件目录，所以要在windows的环境变量的PATH里面设置所使用BUBASE库目录
+     同样以D:\BUBASE_BIN\vc2019\为例进行说明，这里使用X64的库，修改PATH变量增加如下：
+     D:\BUBASE_BIN\vc2019\x64\bin;D:\BUBASE_BIN\vc2019\x64\lib;D:\BUBASE_BIN\vc2019\x64\libapp;
