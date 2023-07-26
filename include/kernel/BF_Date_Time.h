@@ -288,6 +288,7 @@ public:
 	// 描述  : 取时间
 	static CBF_Time_Value Gettimeofday();
 
+	static void GetTickNS(UINT64_ &us,int &ns);
 private:
 
 	// 函数名: GetMonthDay
@@ -326,6 +327,8 @@ private:
 	long m_second;
 	long m_microsec;
 	long m_wday;
+
+	
 };
 
 #endif // !defined(AFX_BF_DATE_TIME_H__759A17FB_CA08_4C15_B07E_CD66109BFA3A__INCLUDED_)

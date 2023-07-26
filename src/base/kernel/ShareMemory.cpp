@@ -214,7 +214,9 @@ void * CShareMemory::Open(const char *name, INT64_ shmsize)
 	GetName((char *)name,&smname);
 	if (shmsize>0)
 	{
-		m_shmid = CreateFileMapping(INVALID_HANDLE_VALUE,NULL,PAGE_READWRITE,0,shmsize, smname);
+        int high = (int)((shmsize & 0xFFFFFFFF00000000LL) >> 32);
+		int low = (int)(shmsize & 0xFFFFFFFFLL);
+		m_shmid = CreateFileMapping(INVALID_HANDLE_VALUE,NULL,PAGE_READWRITE, high, low, smname);
 		if (m_shmid == NULL)
 		{
 			// 共享内存创建错误：

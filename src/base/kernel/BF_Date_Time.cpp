@@ -616,3 +616,16 @@ unsigned int CBF_Date_Time::GetRemainSecCurDate()
 {
 	return 24*60*60-m_hour*60*60-m_minute*60 - m_second;
 }
+
+void CBF_Date_Time::GetTickNS(UINT64_& us,int& ns)
+{
+#ifdef LINUX
+	struct timespec  time_start;
+    clock_gettime(CLOCK_REALTIME, &time_start);
+	us = (UINT64_)time_start.tv_sec*1000000+ time_start.tv_nsec/1000;
+	ns = time_start.tv_nsec%1000;
+#else
+	ns=0;
+	us = GetTickUS();
+#endif
+}

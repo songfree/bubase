@@ -5366,6 +5366,21 @@ public:
 		}
 		return;
 	}
+    void Delete(CInt iset, Record& rf)
+    {
+		Record tmp =rf;
+        bool bret = Find(tmp);
+        while (bret)
+        {
+            if (iset.Find(tmp.m_nRowId))
+            {
+                m_index.EraseOne();
+            }
+            bret = Next(tmp);
+        }
+        return;
+    }
+
 	void EraseOne()
 	{
 		m_index.EraseOne();
