@@ -82,13 +82,13 @@ void CDrebMsgThread::OnMsgConnectBack(S_BPC_RSMSG &rcvdata)
 {
 	//发送注册等
 #ifdef _ENGLISH_
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"Recv DREB connect rsp，subscribe broadcast");
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"Recv DREB index[%d]connect rsp，subscribe broadcast", rcvdata.sMsgBuf->sBpcHead.nIndex);
 #else
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"收到DREB连接成功的响应 向总线订阅广播");
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"收到DREB index[%d]连接成功的响应 向总线订阅广播", rcvdata.sMsgBuf->sBpcHead.nIndex);
 #endif
     std::vector<int> lBcRegister;
     g_pGateRes->g_lBCFuncList.Select(lBcRegister);
-	m_pDrebApi->Subscribe(rcvdata.index, &lBcRegister);
+	m_pDrebApi->Subscribe(rcvdata.sMsgBuf->sBpcHead.nIndex, &lBcRegister);
 	
 }
 
@@ -196,7 +196,7 @@ void CDrebMsgThread::OnMsgRequest(S_BPC_RSMSG& rcvdata)
     data.data.head.stNext.n_nNextNo = 0;
     data.data.head.stNext.n_nNextOffset = 0;
 
-    data.data.head.stDest.nSerial = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial; //订阅模式下，填写交易账户的id (限定交易账户为整型数字)
+    data.data.head.stDest.nSerial = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial; 
     data.index = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex;
     data.timestamp = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook; 
 
@@ -218,12 +218,14 @@ void CDrebMsgThread::OnMsgRequest(S_BPC_RSMSG& rcvdata)
         {
             level = bcinfo->nLevel;
         }
+        m_pLog->LogMp(LOG_DEBUG+1, __FILE__, __LINE__, "广播 行情 func=%d date=%d code=%d time=%d", rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex);
         //控制行情的发送，按交易时间或行情序号，后到的不发
         if (level == 2 && g_pGateRes->g_nFilterQuo == 1)
         {
             if (m_pQuotation.IsNewQuotation(rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex) > 0)
             {
                 //放入队列，待发送
+                m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "广播 行情 func=%d date=%d code=%d time=%d", rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex);
                 data.nkey = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
                 data.isBC = 1;
                 data.index = 0;
@@ -231,10 +233,11 @@ void CDrebMsgThread::OnMsgRequest(S_BPC_RSMSG& rcvdata)
                 m_pSendData->PushData(data, level);
                 m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
                 rcvdata.sMsgBuf = NULL;
+                
             }
             else
             {
-                m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "行情[%d %d %d]不是最新，丢弃", rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex);
+                m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "广播 行情 func=%d date=%d code=%d time=%d不是最新，丢弃", rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook, rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex);
                 m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
                 rcvdata.sMsgBuf = NULL;
             }

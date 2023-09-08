@@ -69,6 +69,7 @@ public:
 
 	int           g_nBcSerialDeleteTime;//广播序号重复过滤过期时间，即超过此时间的记录的广播的序号从内存表删除 秒
 
+	int g_nCpuCore;//绑定的cpu核心
 	//心跳连接配置
 	int g_nDisconnectTime;//未使用断开时间，如果一个连接在此时间内一直没有使用，则将此连接断开。单位秒默认600秒即10分钟
 	int g_nHeartRun;//心跳时间,当发现连接超过此时间未用时，主动发送心跳，默认为5秒 
@@ -197,7 +198,10 @@ public:
 		{
 			g_nEndianFlag = 0;
 		}
-		
+        if (m_pXml.GetNodeValueByPath("package/head/cpucores", false, g_nCpuCore) == NULL)
+        {
+            g_nCpuCore = 0;
+        }
 		if (m_pXml.GetNodeValueByPath("package/head/bpc/svrid",false,ret) == NULL)
 		{
 			m_errMsg = "file error,no [package/head/bpc/svrid] node";

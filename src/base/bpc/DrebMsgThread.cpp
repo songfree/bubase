@@ -82,9 +82,9 @@ void CDrebMsgThread::OnMsgConnectBack(S_BPC_RSMSG &rcvdata)
 {
 	//发送注册等
 #ifdef _ENGLISH_
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"Recv DREB connect rsp，subscribe broadcast");
+    m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "Recv DREB index[%d]connect rsp，subscribe broadcast", rcvdata.sMsgBuf->sBpcHead.nIndex);
 #else
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"收到DREB连接成功的响应 向总线订阅广播");
+    m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "收到DREB index[%d]连接成功的响应 向总线订阅广播", rcvdata.sMsgBuf->sBpcHead.nIndex);
 #endif
     std::vector<S_FUNCINFO_TBL> funclist;
     m_pFuncTbl->GetAllFunc(funclist);
@@ -93,8 +93,8 @@ void CDrebMsgThread::OnMsgConnectBack(S_BPC_RSMSG &rcvdata)
     {
         txlist.push_back(funclist[i].nFuncNo);
     }
-    m_pDrebApi->RegisterDreb(rcvdata.index, &txlist);
-	m_pDrebApi->Subscribe(rcvdata.index,m_lBcRegister);
+    m_pDrebApi->RegisterDreb(rcvdata.sMsgBuf->sBpcHead.nIndex, &txlist);
+	m_pDrebApi->Subscribe(rcvdata.sMsgBuf->sBpcHead.nIndex,m_lBcRegister);
 	
 }
 

@@ -30,6 +30,8 @@ CBF_DrebResource::CBF_DrebResource()
 	g_nMonitorSvrPrivateId=0;     //私有服务节点号
 	g_nMonitorTxCode=99001;           //监控交易码
 	g_nQueueSize=1000;
+
+	g_nCpuCore=0;
 	//在总线上注册的公共服务号和私有服务号
 	g_nSvrMainId=0;     //目标服务功能号 ,必须填写
 	g_nSvrPrivateId=0;  //目标私有序号 0表示公共 >0为每个服务的序号，必须填写

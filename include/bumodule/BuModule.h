@@ -48,7 +48,7 @@
 class BUMODULE_EXPORT CBuModule   : public CIBuModule
 {
 public:
-	void BindOldFunc();
+	//void BindOldFunc();
 
 	// 函数名: BpuCall
 	// 编程  : 王明松 2013-7-17 15:14:22
@@ -123,7 +123,7 @@ public:
 	// 返回  : virtual int 
 	// 参数  : PBPCCOMMSTRU data
 	// 描述  : 统一调用兼容老框架里的原子方子，注册时所有的老框架的交易都绑定到此方法
-	virtual int RunXml(PBPCCOMMSTRU data);
+	//virtual int RunXml(PBPCCOMMSTRU data);
 
 	// 函数名: SetPuPara
 	// 编程  : 王明松 2010-6-30 11:00:30
@@ -164,7 +164,7 @@ public:
 	/// 参数  : bool isStop       功能是否停止
 	/// 参数  : int appType       应用类型  可根据此类型来连接不同的数据库
 	/// 描述  : 设置功能的参数，兼容老框架的xmlpack的方法
-	void setFuncInfo(int funcNo,FuncPointerOld pfunc,char *funcName,double version,char *author,int level,bool repealFlag,bool isTxUnit,bool isStop,int appType);
+	//void setFuncInfo(int funcNo,FuncPointerOld pfunc,char *funcName,double version,char *author,int level,bool repealFlag,bool isTxUnit,bool isStop,int appType);
 	
 	
 	CBuModule();
@@ -180,7 +180,7 @@ protected:
 	bool           m_bIsInit;  //Init方法调用成功后置为true
 	bool           m_bIsSetPara;//是否已设置参数
 	CFuncTbl       m_pFuncTbl; //功能列表
-	CFuncTblOld    m_pFuncTblOld;//存放兼容老框架的交易信息
+	//CFuncTblOld    m_pFuncTblOld;//存放兼容老框架的交易信息
 
 	BPCCOMMSTRU    m_pAnsData; //仅用于应答，其他地方不要用，当调用AnsData后数据因字节序处理会发生变化，所以每次要重新置值
 

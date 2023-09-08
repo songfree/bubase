@@ -93,7 +93,7 @@ protected:
 //	POOLSTACK m_pTotalBuffer;
 
 	
-	CMemTable <void *> m_pTotalBuffer_new;  //存放所有的缓存地址
+	CMemTableNew <void *> m_pTotalBuffer_new;  //存放所有的缓存地址
 	CPkeyUint64<1> m_pKeyAddr;//所有的缓存地址的索引
 };
 

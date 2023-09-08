@@ -144,7 +144,7 @@ extern "C"
 	// 参数  : int timeout 超时时间秒
 	// 描述  : 取推送或广播请求
 	int BFCGATE_TS_GetReqData(void *pClass,void *data,int timeout);
-	
+
 	// 函数名: BFCGATE_TS_GetAnsData
 	// 编程  : 王明松 2013-5-23 15:14:47
 	// 返回  : int <0出错 =0超时无请求  >=1成功取到交易请求 队列里的值为此值减1

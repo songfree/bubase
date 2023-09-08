@@ -120,6 +120,27 @@ int CBF_DrebServer::Run()
 		m_pLog.LogMp(LOG_ERROR,__FILE__,__LINE__,m_errMsg);
 		return -1;
 	}
+#ifndef _WINDOWS
+    if (m_pRes->g_nCpuCore > 0)
+    {
+        cpu_set_t cpu_set;
+        CPU_ZERO(&cpu_set);
+        CPU_SET(m_pRes->g_nCpuCore, &cpu_set);
+
+        int ret = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set), &cpu_set);
+        if (ret < 0)
+        {
+            //printf("bind core fail\n");
+			m_pLog.LogMp(LOG_ERROR, __FILE__, __LINE__, "bind core %d fail", m_pRes->g_nCpuCore);
+        }
+        else
+        {
+            //printf("bind core success\n");
+			m_pLog.LogMp(LOG_INFO, __FILE__, __LINE__, "bind core %d success", m_pRes->g_nCpuCore);
+        }
+}
+#endif
+
 #ifdef _ENGLISH_
 	m_pLog.LogMp(LOG_INFO,__FILE__,__LINE__,"Start DrebServer thread");
 #else
@@ -643,6 +664,7 @@ void CBF_DrebServer::OnRecv(int conindex)
 					m_pDataRcv.sMsgBuf = NULL;
 					continue;
 				}
+				m_pDataRcv.index  = conindex;
 				ProcessDreb(m_pDataRcv);
 			}
 			else
