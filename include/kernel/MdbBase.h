@@ -737,11 +737,27 @@ public:
 
 			for (i=0; i<count; i++)
 			{
-				r=f1.k[i]-f2.k[i];
-				if (r != 0)
-				{
-					break;
-				}
+                if (f1.k[i] == f2.k[i])
+                {
+                    continue;
+                }
+                else
+                {
+                    if (f1.k[i] > f2.k[i])
+                    {
+                        r = 1;
+                    }
+                    else
+                    {
+                        r = -1;
+                    }
+                    break;
+                }
+				//r=f1.k[i]-f2.k[i];
+				//if (r != 0)
+				//{
+				//	break;
+				//}
 			}
 			return r<0;
 		}
@@ -983,11 +999,27 @@ public:
 
 			for (i=0; i<count; i++)
 			{
-				r=f1.k[i]-f2.k[i];
-				if (r != 0)
-				{
-					break;
-				}
+                if (f1.k[i] == f2.k[i])
+                {
+                    continue;
+                }
+                else
+                {
+                    if (f1.k[i] > f2.k[i])
+                    {
+                        r = 1;
+                    }
+                    else
+                    {
+                        r = -1;
+                    }
+                    break;
+                }
+				//r=f1.k[i]-f2.k[i];
+				//if (r != 0)
+				//{
+				//	break;
+				//}
 			}
 			return r<0;
 		}
@@ -1406,11 +1438,27 @@ public:
 
 			for (i=0; i<count; i++)
 			{
-				r=f1.k[i]-f2.k[i];
-				if (r != 0)
+				if (f1.k[i] == f2.k[i])
 				{
+					continue;
+				}
+				else
+				{
+					if (f1.k[i] > f2.k[i])
+					{
+						r = 1;
+					}
+					else 
+					{
+						r = -1;
+					}
 					break;
 				}
+				//r=f1.k[i]-f2.k[i];
+				//if (r != 0)
+				//{
+				//	break;
+				//}
 			}
 			return r<0;
 		}
@@ -1653,11 +1701,27 @@ public:
 
 			for (i=0; i<count; i++)
 			{
-				r=f1.k[i]-f2.k[i];
-				if (r != 0)
-				{
-					break;
-				}
+                if (f1.k[i] == f2.k[i])
+                {
+                    continue;
+                }
+                else
+                {
+                    if (f1.k[i] > f2.k[i])
+                    {
+                        r = 1;
+                    }
+                    else
+                    {
+                        r = -1;
+                    }
+                    break;
+                }
+				//r=f1.k[i]-f2.k[i];
+				//if (r != 0)
+				//{
+				//	break;
+				//}
 			}
 			return r<0;
 		}
@@ -3982,11 +4046,27 @@ public:
 
 			for (i=0; i<count; i++)
 			{
-				r=f1.k[i]-f2.k[i];
-				if (r != 0)
-				{
-					break;
-				}
+                if (f1.k[i] == f2.k[i])
+                {
+                    continue;
+                }
+                else
+                {
+                    if (f1.k[i] > f2.k[i])
+                    {
+                        r = 1;
+                    }
+                    else
+                    {
+                        r = -1;
+                    }
+                    break;
+                }
+				//r=f1.k[i]-f2.k[i];
+				//if (r != 0)
+				//{
+				//	break;
+				//}
 			}
 			return r<0;
 		}
