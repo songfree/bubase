@@ -8,6 +8,8 @@
 //
 #include "MultiColumnComboBox.h"
 #include "BF_Xml.h"
+
+using namespace std;
 /////////////////////////////////////////////////////////////////////////////
 // CVarConfig dialog
 

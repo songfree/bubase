@@ -138,7 +138,7 @@ void CBFDreb::OnStop()
 	g_Vars.g_bIsExit = true;
 	g_pDrebTimer.StopTimer();
 	g_pPoolModule.StopTimer();
-	m_log->LogMp(LOG_INFO,__FILE__,__LINE__,"DREB开始停止");
+	m_log->LogMp(LOG_INFO,__FILE__,__LINE__,"DREB开始停止 总共转发广播[%lld]笔，平均耗时[%.3lf]us", g_pProcThread[0].m_nTotalAbc, (double)g_pProcThread[0].m_nTotalUs/g_pProcThread[0].m_nTotalAbc);
 	g_pPoolModule.Join();
 	g_Vars.g_pLog.StopLog();
 	g_Vars.g_pDataLog.StopLog();

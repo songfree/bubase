@@ -3,4 +3,9 @@
   <PropertyGroup>
     <RESOURCE_FILE>drebclient.rc</RESOURCE_FILE>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommand>$(OutDir)\drebclientd.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

@@ -38,9 +38,9 @@ public:
 
 
 protected:
-	CMemTable <S_CGATE_QUOTATION> m_table;        //行情最新内存表
+	CMemTableNew <S_CGATE_QUOTATION> m_table;        //行情最新内存表
 	
-	CPkeyIntUnordered<2>             m_pkey;   //合约编号
+	CPkeyIntUnordered<2>             m_pkey;   //行情交易码+合约编号
 	
 };
 

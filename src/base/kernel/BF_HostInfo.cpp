@@ -298,7 +298,7 @@ int CBF_HostInfo::GetCpu()
 	int iCount = 0;
 	char sTemp[20][100];
 	memset(sTemp,0,sizeof(sTemp));
-	FILE * fp = popen("vmstat 1 1","r");
+	FILE * fp = popen("vmstat 1 2","r");
 	if (fp == NULL)
 	{
 		m_log.LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Get CPURadio error");
@@ -311,7 +311,7 @@ int CBF_HostInfo::GetCpu()
 			memset(sWorkBuffer,0,sizeof(sWorkBuffer));
 			fgets(sWorkBuffer, sizeof(sWorkBuffer)-1, fp);
 #ifdef LINUX
-			if(iCount == 2)
+			if(iCount == 3)
 			{
 				sscanf(sWorkBuffer,"%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",sTemp[0],sTemp[1],sTemp[2],sTemp[3],sTemp[4],sTemp[5],\
 					sTemp[6],sTemp[7],sTemp[8],sTemp[9],sTemp[10],sTemp[11],sTemp[12],sTemp[13],sTemp[14],\
@@ -334,7 +334,7 @@ int CBF_HostInfo::GetCpu()
 				return 100-atoi(sTemp[15]);
 			}
 #else  //HP_UX
-			if(iCount == 2)
+			if(iCount == 3)
 			{
 				sscanf(sWorkBuffer,"%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",sTemp[0],sTemp[1],sTemp[2],sTemp[3],sTemp[4],sTemp[5],\
 					sTemp[6],sTemp[7],sTemp[8],sTemp[9],sTemp[10],sTemp[11],sTemp[12],sTemp[13],sTemp[14],\

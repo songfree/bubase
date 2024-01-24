@@ -146,8 +146,8 @@ public:
 	CBF_Tools     m_pTool;
 	CBF_SimpleLog  m_pLog;
 
-	vector<int> m_allheadno;
-	vector<int> m_allpackno;
+	std::vector<int> m_allheadno;
+	std::vector<int> m_allpackno;
 	char m_errMsg[256];
 	
 	bool m_bIsResult;//是否显示结果

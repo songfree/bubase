@@ -792,13 +792,16 @@ void CSubscribeTbl::UnSubscribe(unsigned int   nIndex)
 	{
 		return;
 	}
-	m_indexindex.Delete(iset);
-	m_indexFunc.Delete(iset);
-	m_key.Delete(iset);
+	//m_indexindex.Delete(iset);
+	//m_indexFunc.Delete(iset);
+	//m_key.Delete(iset);
 	int rid;
 	int bret = iset.First(rid);
 	while (bret)
-	{
+	{	
+		m_key.Delete(m_table.m_table[rid].nIndex, m_table.m_table[rid].nFuncNo);
+		m_indexindex.Delete(iset, m_table.m_table[rid].nIndex);
+		m_indexFunc.Delete(iset, m_table.m_table[rid].nFuncNo);
 		m_table.Delete(rid);
 		bret = iset.Next(rid);
 	}

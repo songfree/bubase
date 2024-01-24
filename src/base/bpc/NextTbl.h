@@ -89,7 +89,7 @@ public:
 	bool Insert(S_NEXT_TBL fn);
 protected:
 	
-	CMemTable <S_NEXT_TBL> m_table;               //功能 内存表
+	CMemTableNew <S_NEXT_TBL> m_table;               //功能 内存表
 	CIndexInt<3>           m_pkey;                //节点ID，节点私有ID，节点流水，唯一索引
 	CIndexInt<1>           m_indextime;           //时间索引
 	CBF_Mutex m_mutex;	

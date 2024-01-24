@@ -21,7 +21,7 @@ public:
 	/// 编程  : 王明松 2009-7-17 17:11:33
 	/// 返回  : string & 
 	/// 描述  : 获取整型变量的格式字串
-	string & GetFmt();
+	std::string & GetFmt();
 
 	/// 函数名: SetVarPara
 	/// 编程  : 王明松 2009-7-17 17:10:28
@@ -30,7 +30,7 @@ public:
 	/// 参数  : int type
 	/// 参数  : int len
 	/// 描述  : 设置变量参数
-	void SetVarPara(string name,int type,int len);
+	void SetVarPara(std::string name,int type,int len);
 
 	/// 函数名: IntVarInit
 	/// 编程  : 王明松 2009-7-17 17:10:36
@@ -38,14 +38,14 @@ public:
 	/// 参数  : string fmt
 	/// 参数  : __int64 initvalue
 	/// 描述  : 整型变量初始化
-	void IntVarInit(string fmt, __int64 initvalue);
+	void IntVarInit(std::string fmt, __int64 initvalue);
 
 	/// 函数名: PushVarValue
 	/// 编程  : 王明松 2009-7-17 17:03:48
 	/// 返回  : bool 
 	/// 参数  : string svalue
 	/// 描述  : 放入一个列表变量
-	bool PushVarValue(string svalue);
+	bool PushVarValue(std::string svalue);
 
 	/// 函数名: GetVarType
 	/// 编程  : 王明松 2009-7-17 17:04:01
@@ -57,7 +57,7 @@ public:
 	/// 编程  : 王明松 2009-7-17 17:04:14
 	/// 返回  : string & 
 	/// 描述  : 获取变量名称
-	string & GetVarName();
+	std::string & GetVarName();
 
 
 	/// 函数名:     GetVarValue
@@ -87,7 +87,7 @@ protected:
 	__int64 m_lValue ; //整型增加变量 类型为0时使用   _atoi64(value+1);//sprintf(value,"%I64d",lvalue+1); 
 	CBF_Mutex  m_mutex;
 	std::string m_sVarName;//变量名称
-	vector<string>m_varValueList;//变量列表  类型为1 2时使用
+	std::vector<std::string>m_varValueList;//变量列表  类型为1 2时使用
 	int m_varValueNo;//顺序选择时的下标
 	
 

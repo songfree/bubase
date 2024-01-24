@@ -245,7 +245,7 @@ void CAIO_Work::OnClose(PSOCKET_POOL_DATA info,std::string msg)
 	}
 	info->ptr = NULL;
 	CloseClient(info);
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"关闭连接 %s",msg.c_str());
+	m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"关闭连接 %s",msg.c_str());
 	
 }
 

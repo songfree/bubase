@@ -1053,7 +1053,7 @@ void CBF_DrebServer::GetHostInfo()
 	}
 	//删除过期的广播信息
 	m_bcSerial.Delete();
-	m_pLog.LogMp(LOG_PROMPT, __FILE__, __LINE__, "队列消息数:%d 广播信息数[%d]",m_qRcvQueue.GetDataCount(), m_bcSerial.Size());
+	//m_pLog.LogMp(LOG_PROMPT, __FILE__, __LINE__, "队列消息数:%d 广播信息数[%d]",m_qRcvQueue.GetDataCount(), m_bcSerial.Size());
 }
 
 bool CBF_DrebServer::Start()
@@ -1229,6 +1229,8 @@ int CBF_DrebServer::SendMsg(S_BPC_RSMSG &sdata)
 		else  //该连接没有连接成功
 		{
 			index = sdata.sMsgBuf->sBpcHead.nIndex;
+			m_pLog.LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "连接[%d]状态不正常", sdata.sMsgBuf->sBpcHead.nIndex);
+			return -10;
 		}
 	}
 	

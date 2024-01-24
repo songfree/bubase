@@ -5,6 +5,11 @@
 #include "Xdp.h"
 #include "XdpApi.h"
 
+
+//给c#等用的全局变量
+std::vector<CXdp *> g_XdpArray;
+
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -1504,6 +1509,8 @@ CXdpRecord * CXdp::GetXdpRecord(unsigned short rec)
 
 
 
+
+
 // 函数名: GetRealPackSize
 // 编程  : 王明松 2014-10-30 11:31:20
 // 返回  : unsigned short 
@@ -1928,6 +1935,7 @@ int XDP_InitXdp(void **CXdpClass,const char *datafile,char *errmsg)
 	}
 	if (!xdp->InitXdp(datafile,errmsg))
 	{
+		*CXdpClass = xdp;
 		return -1;
 	}
 	*CXdpClass = xdp;
@@ -1967,4 +1975,469 @@ int  XDP_Copy(void *CXdpClassDst,void *CXdpClassSrc)
 		return -1;
 	}
 	return 0;
+}
+
+//封装给c#用的c方法
+
+
+
+// 函数名: GetRealPackSize
+// 编程  : 王明松 2014-10-30 11:31:20
+// 返回  : unsigned short 
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 描述  : 取得当前实际报文的大小
+unsigned short XDPI_GetRealPackSize(unsigned int xdpindex)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return 0;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    return xdp->GetRealPackSize();
+}
+
+// 函数名: CancelField
+// 编程  : 王明松 2014-10-30 11:17:16
+// 返回  : int 0成功 非0人败
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : unsigned short rec  从1开始
+// 参数  : const char *fieldname
+// 描述  : 取消字段，这样就不会生成此字段报文或取出值了
+int XDPI_CancelFieldByName(unsigned int xdpindex, unsigned short rec, const char* fieldname)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    if (!xdp->CancelField(rec, fieldname))
+    {
+        return -1;
+    }
+    return 0;
+}
+
+// 函数名: CancelField
+// 编程  : 王明松 2014-10-30 11:16:28
+// 返回  : int 0成功 非0人败
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : unsigned short rec   从1开始
+// 参数  : unsigned short index
+// 描述  : 取消字段，这样就不会生成此字段报文或取出值了
+int XDPI_CancelFieldByIndex(unsigned int xdpindex, unsigned short rec, unsigned short index)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    if (!xdp->CancelField(rec, index))
+    {
+        return -1;
+    }
+    return 0;
+}
+
+// 函数名: PrintXdp
+// 编程  : 王明松 2014-10-30 11:15:33
+// 返回  : void 
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : char *xdpbuf
+// 描述  : 将报文内容显示出来，二进制数据转为16进制显示
+void XDPI_PrintXdp(unsigned int xdpindex, char* xdpbuf)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return ;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    xdp->PrintXdp(xdpbuf);
+    return;
+}
+
+// 函数名: GetCurSavePackNum
+// 编程  : 王明松 2014-10-29 11:45:49
+// 返回  : unsigned short 
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 描述  : 取得保存多记录的结构数目，注意不包括第一条记录
+unsigned short XDPI_GetCurSavePackNum(unsigned int xdpindex)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return 0;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    return xdp->GetCurSavePackNum();
+}
+
+// 函数名: ClearNextRecord
+// 编程  : 王明松 2014-10-29 11:34:21
+// 返回  : void 
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 描述  : 清空保存多记录的结构
+void XDPI_ClearNextRecord(unsigned int xdpindex)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    xdp->ClearNextRecord();
+	return;
+}
+
+
+// 函数名: GetFieldType
+// 编程  : 王明松 2014-10-29 11:22:23
+// 返回  : unsigned short 类型，见XdpFmt.h宏定义
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : const char *fieldname/unsigned short index 字段名称/索引
+// 描述  : 取得字段类型
+unsigned short XDPI_GetFieldTypeByName(unsigned int xdpindex, const char* fieldname)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return XDP_UNKNOW;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    return xdp->GetFieldType(fieldname);
+}
+unsigned short XDPI_GetFieldTypeByIndex(unsigned int xdpindex, unsigned short index)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+		return XDP_UNKNOW;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    return xdp->GetFieldType(index);
+}
+
+// 函数名: GetRecCount
+// 编程  : 王明松 2014-10-29 11:10:29
+// 返回  : unsigned short 记录数
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 描述  : 返回当前报文中共有几条记录，注意记录数和保存多记录的结构数目不是一个概念
+unsigned short XDPI_GetRecCount(unsigned int xdpindex)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return 0;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    return xdp->GetRecCount();
+}
+
+// 函数名: GetFieldValue
+// 编程  : 王明松 2014-10-29 11:04:09
+// 返回  : int 0成功 非0人败
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : unsigned short rec    第几条记录
+// 参数  : unsigned short index/const char *fieldname  字段索引/名称
+// 参数  : char *data      数据缓冲  当为数值型时，要用强制转换  如：int *aa = (int *)data;
+// 输入输出参数  : unsigned int &datalen   输入为data缓冲大小 输出为实际数据长度
+// 参数  : int &fieldtype  字段类型，见XdpFmt.h中宏定义
+// 参数  : char *errmsg  出错信息
+// 描述  : 从xdp中取字段值
+int XDPI_GetFieldValueByName(unsigned int xdpindex, unsigned short rec, const char* fieldname, char* data, unsigned int* datalen, int* fieldtype, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    unsigned int dlen = *datalen;
+    int ftype;
+    if (!xdp->GetFieldValue(rec, fieldname, data, dlen, ftype, errmsg))
+    {
+        return -1;
+    }
+    *datalen = dlen;
+    *fieldtype = ftype;
+    return 0;
+}
+int XDPI_GetFieldValueByIndex(unsigned int xdpindex, unsigned short rec, unsigned short index, char* data, unsigned int* datalen, int* fieldtype, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    unsigned int dlen = *datalen;
+    int ftype;
+    if (!xdp->GetFieldValue(rec, index, data, dlen, ftype, errmsg))
+    {
+        return -1;
+    }
+    *datalen = dlen;
+    *fieldtype = ftype;
+    return 0;
+}
+
+// 函数名: GetFieldValue
+// 编程  : 王明松 2014-10-29 11:11:55
+// 返回  : int 0成功 非0人败
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : unsigned short index/const char *fieldname 字段索引/名称
+// 参数  : char *data       数据缓冲 当为数值型时，要用强制转换来取值  如：int *aa = (int *)data;
+// 参数  : unsigned int &datalen     输入为data缓冲大小 输出为实际数据长度
+// 参数  : int &fieldtype  字段类型，见XdpFmt.h中宏定义
+// 参数  : char *errmsg   出错信息
+// 描述  : 从xdp中取第一个记录的字段值
+int XDPI_GetFirstFieldValueByIndex(unsigned int xdpindex, unsigned short index, char* data, unsigned int* datalen, int* fieldtype, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    unsigned int dlen = *datalen;
+    int ftype;
+    if (!xdp->GetFieldValue(index, data, dlen, ftype, errmsg))
+    {
+        return -1;
+    }
+    *datalen = dlen;
+    *fieldtype = ftype;
+    return 0;
+}
+int XDPI_GetFirstFieldValueByName(unsigned int xdpindex, const char* fieldname, char* data, unsigned int* datalen, int* fieldtype, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    unsigned int dlen = *datalen;
+    int ftype;
+    if (!xdp->GetFieldValue(fieldname, data, dlen, ftype, errmsg))
+    {
+        return -1;
+    }
+    *datalen = dlen;
+    *fieldtype = ftype;
+    return 0;
+}
+
+
+
+// 函数名: SetFieldValue
+// 编程  : 王明松 2014-10-29 11:40:30
+// 返回  : int 0成功 非0人败
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : unsigned short rec    要设置为记录数，注意若rec大于原记录数那么记录数要从小到大按顺序设置
+// 参数  : unsigned short index/const char *fieldname 字段索引/名称
+// 参数  : const char *data   数据缓冲 当为数值型时，要用强制转换来置值  如：int *aa = (int *)data; *aa = 1200
+// 参数  : int datalen     数据长度
+// 参数  : char *errmsg    出错信息
+// 描述  : 设置指定记录数的字段值
+int XDPI_SetFieldValueByName(unsigned int xdpindex, unsigned short rec, const char* fieldname, const char* data, unsigned int datalen, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    if (!xdp->SetFieldValue(rec, fieldname, data, datalen, errmsg))
+    {
+        return -1;
+    }
+    return 0;
+}
+int XDPI_SetFieldValueByIndex(unsigned int xdpindex, unsigned short rec, unsigned short index, const char* data, unsigned int datalen, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    if (!xdp->SetFieldValue(rec, index, data, datalen, errmsg))
+    {
+        return -1;
+    }
+    return 0;
+}
+
+
+
+// 函数名: SetFieldValue
+// 编程  : 王明松 2014-10-29 11:40:35
+// 返回  : int 0成功 非0人败
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : unsigned short index/const char *fieldname 字段索引/名称  
+// 参数  : const char *data   数据缓冲 当为数值型时，要用强制转换来置值  如：int *aa = (int *)data; *aa = 1200
+// 参数  : int datalen    数据长度
+// 参数  : char *errmsg  出错信息
+// 描述  : 设置第一条记录的字段值
+int XDPI_SetFirstFieldValueByIndex(unsigned int xdpindex, unsigned short index, const char* data, unsigned int datalen, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    if (!xdp->SetFieldValue(index, data, datalen, errmsg))
+    {
+        return -1;
+    }
+    return 0;
+}
+int XDPI_SetFirstFieldValueByName(unsigned int xdpindex, const char* fieldname, const char* data, unsigned int datalen, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    if (!xdp->SetFieldValue(fieldname, data, datalen, errmsg))
+    {
+        return -1;
+    }
+    return 0;
+}
+
+
+// 函数名: SetCurRecCount
+// 编程  : 王明松 2014-10-29 10:55:12
+// 返回  : int 0成功 非0人败，当原报文的记录Y<X时失败
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : unsigned short rec 
+// 描述  : 设置当前的记录数，当原报文中有Y条记录时，本次只返回X(X<Y)条记录时，必须重置记录数为X,否则返回的仍为Y条
+int XDPI_SetCurRecCount(unsigned int xdpindex, unsigned short x)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    if (!xdp->SetCurRecCount(x))
+    {
+        return -1;
+    }
+    return 0;
+}
+
+// 函数名: ResetData
+// 编程  : 王明松 2014-10-27 14:24:43
+// 返回  : void 
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 描述  : 清除多记录，重置位图
+void XDPI_ResetData(unsigned int xdpindex)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return ;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    xdp->ResetData();
+    return;
+}
+
+// 函数名: ToBuffer
+// 编程  : 王明松 2014-10-27 14:18:52
+// 返回  : int 0成功 非0人败
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : char *xdpbuf   xdp报文
+// 输入输出参数  : int *len    输入为xdpbuf大小,输出为xdp报文大小
+// 参数  : char *errmsg   出错信息
+// 描述  : 生成xdp报文
+int XDPI_ToBuffer(unsigned int xdpindex, char* xdpbuf, unsigned int* len, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    unsigned int dlen = *len;
+    if (!xdp->ToBuffer(xdpbuf, dlen, errmsg))
+    {
+        *len = 0;
+        return -1;
+    }
+    *len = dlen;
+    return 0;
+}
+
+// 函数名: FromBuffer
+// 编程  : 王明松 2014-10-27 14:17:34
+// 返回  : int 0成功 非0人败
+// 参数  : unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 参数  : const char *xdpbuf   xdp数据缓冲
+// 参数  : int xdpbuflen   xdp数据长度
+// 参数  : char *errmsg   出错信息
+// 描述  : 从数据缓冲解析报文
+int XDPI_FromBuffer(unsigned int xdpindex, const char* xdpbuf, unsigned int xdpbuflen, char* errmsg)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    if (!xdp->FromBuffer(xdpbuf, xdpbuflen, errmsg))
+    {
+        return -1;
+    }
+    return 0;
+}
+
+// 函数名: InitXdp
+// 编程  : 王明松 2014-10-27 14:14:55
+// 返回  : int >=0成功 xdp类的实例下标   <0失败
+// 参数  : const char *datafile   xml配置文件
+// 参数  : char *errmsg      出错信息
+// 描述  : 初始化报文，
+int XDPI_InitXdp(const char* datafile, char* errmsg)
+{
+    CXdp* xdp = new CXdp();
+    if (NULL == xdp)
+    {
+        sprintf(errmsg, "new CXdp失败");
+        return -1;
+    }
+    if (!xdp->InitXdp(datafile, errmsg))
+    {
+		delete xdp;
+		xdp = NULL;
+        return -1;
+    }
+    g_XdpArray.push_back(xdp);
+    return g_XdpArray.size()-1;
+}
+
+// 函数名: FreeXdp
+// 编程  : 王明松 2014-11-7 11:19:43
+// 返回  : void
+// 参数  :  unsigned int xdpindex   xdp类的实例下标，由InitXdp获得
+// 描述  : 释放xdp类的实例
+void XDPI_FreeXdp(unsigned int xdpindex)
+{
+    if (xdpindex > g_XdpArray.size() - 1)
+    {
+        return ;
+    }
+    CXdp* xdp = g_XdpArray[xdpindex];
+    delete xdp;
+	g_XdpArray[xdpindex] = NULL;
+    return;
+}
+int  XDPI_Copy(unsigned int destindex, unsigned int srcindex)
+{
+	if (destindex == srcindex)
+	{
+		return -1;
+	}
+	if (destindex > g_XdpArray.size() - 1)
+	{
+		return -1;
+	}
+	CXdp* xdpsrc = g_XdpArray[srcindex];
+    if (srcindex > g_XdpArray.size() - 1)
+    {
+        return -1;
+    }
+    CXdp* xdpdst = (CXdp*)g_XdpArray[destindex];
+    if (!xdpdst->XdpCopy(xdpsrc))
+    {
+        return -1;
+    }
+    return 0;
 }

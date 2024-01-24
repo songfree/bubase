@@ -283,7 +283,7 @@ void CFrontApi::SetPara(const char *ip, int port,const char *logname,int logleve
 	m_nEncryptZipFlag = encryptflag;
 }
 
-string CFrontApi::GetErrMsg()
+std::string CFrontApi::GetErrMsg()
 {
 	return m_errMsg;
 }

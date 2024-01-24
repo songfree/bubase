@@ -319,7 +319,7 @@ int CGateLink::GetConnectStatus()
 
 // 函数名: GetReqData
 // 编程  : 王明松 2013-5-23 15:12:42
-// 返回  : int -1连接关闭 =0超时无请求  >1成功取到请求
+// 返回  : int -1连接关闭 =0超时无请求  >0成功取到请求
 // 参数  : PCGATE_COMMSTRU data   请求数据
 // 参数  : int timeout 超时时间秒
 // 描述  : 取推送或广播请求

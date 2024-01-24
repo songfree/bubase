@@ -94,10 +94,10 @@ BOOL CVarConfig::OnInitDialog()
 	m_xmlpack.gotoHead();
 	CNode *headnode = m_xmlpack.m_xml.getCurrentNode();
 	CNode *tmpnode = headnode->getFirstChild();
-	string type;
-	string len;
-	string fmt;
-	string initvalue;
+	std::string type;
+	std::string len;
+	std::string fmt;
+	std::string initvalue;
 	char tmpchar[40];
 
 	while (tmpnode != NULL)
@@ -383,7 +383,7 @@ void CVarConfig::OnOK()
 			return ;
 		}
 	}
-	string stemp;
+	std::string stemp;
 	if (m_xmlpack.getHeadValue(csName.GetBuffer(csName.GetLength()),stemp)==0)
 	{
 		{

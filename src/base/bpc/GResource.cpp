@@ -89,6 +89,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 	if (confile == NULL)
 	{
 		m_errMsg = "传入文件为空";
+		printf("传入文件为空\n");
 		return false;
 	}
 	if (!CBF_DrebResource::Init(confile))
@@ -125,6 +126,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 		if (m_xmlconf.GetNodeValueByPath("package/head/bpc/regfile",false,g_sRegisterFile) == NULL)
 		{
 			m_errMsg = "配置文件错,无[package/head/bpc/regfile]节点";
+			printf("%s\n", m_errMsg.c_str());
 			return false;
 		}
 	}
@@ -141,6 +143,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 	{
 		m_errMsg = "配置文件错,无[package/head/dreb]节点";
 		m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"%s",m_errMsg.c_str());
+		printf("%s\n", m_errMsg.c_str());
 		return false;
 	}
 	
@@ -148,12 +151,14 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 	{
 		m_errMsg = "配置文件错,无[package/head/bpu/bpuport]节点";
 		m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"%s",m_errMsg.c_str());
+		printf("%s\n", m_errMsg.c_str());
 		return false;
 	}
 	if (g_nPort <= 1024 || g_nPort>65534)
 	{
 		m_errMsg = "配置文件错,[package/head/bpu/bpuport]节点配置不合法";
 		m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"%s",(char *)m_errMsg.c_str());
+		printf("%s\n", m_errMsg.c_str());
 		return false;
 	}
 	
@@ -165,6 +170,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 	{
 		m_errMsg = "配置文件错 无[package/head/bpu/bpugroup]节点";
 		m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"%s",(char *)m_errMsg.c_str());
+		printf("%s\n", m_errMsg.c_str());
 		return false;
 	}
 	
@@ -179,6 +185,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 		{
 			m_errMsg = std::string("BPU组名称长度不能大于20字符");
 			m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+			printf("%s\n", m_errMsg.c_str());
 			return false;
 		}
 		sprintf(tmpchar,"package/head/bpu/bpugroup/%s/dispatchmode",bpugroupinfo.g_sBpuGroupName.c_str());
@@ -186,6 +193,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 		{
 			m_errMsg = std::string("无[") + tmpchar +"]节点";
 			m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+			printf("%s\n", m_errMsg.c_str());
 			return false;
 		}
 		bpugroupinfo.g_nDispatchMode = atoi(stmp.c_str());
@@ -201,6 +209,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 			{
 				m_errMsg = std::string("无[") + tmpchar +"]节点";
 				m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+				printf("%s\n", m_errMsg.c_str());
 				return false;
 			}
 			bpugroupinfo.g_nBpuNum = atoi(stmp.c_str());
@@ -222,6 +231,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 		{
 			m_errMsg = std::string("无[") + tmpchar +"]节点";
 			m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+			printf("%s\n", m_errMsg.c_str());
 			return false;
 		}
 		if (stmp.compare("1") == 0)
@@ -238,6 +248,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 		{
 			m_errMsg = std::string("无[") + tmpchar +"]节点";
 			m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+			printf("%s\n", m_errMsg.c_str());
 			return false;
 		}
 		if (stmp.compare("1") == 0)
@@ -255,6 +266,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 		{
 			m_errMsg = std::string("无[") + tmpchar +"]节点或use属性";
 			m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+			printf("%s\n", m_errMsg.c_str());
 			return false;
 		}
 		if (stmp.compare("1")== 0)
@@ -272,6 +284,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 			{
 				m_errMsg = std::string("无[") + tmpchar +"]节点";
 				m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+				printf("%s\n", m_errMsg.c_str());
 				return false;
 			}
 			sprintf(tmpchar,"package/head/bpu/bpugroup/%s/autoloadbpu/bpuprgpath",bpugroupinfo.g_sBpuGroupName.c_str());
@@ -279,6 +292,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 			{
 				m_errMsg = std::string("无[") + tmpchar +"]节点";
 				m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+				printf("%s\n", m_errMsg.c_str());
 				return false;
 			}
 			sprintf(tmpchar,"package/head/bpu/bpugroup/%s/autoloadbpu/bpurunpath",bpugroupinfo.g_sBpuGroupName.c_str());
@@ -286,6 +300,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 			{
 				m_errMsg = std::string("无[") + tmpchar +"]节点";
 				m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+				printf("%s\n", m_errMsg.c_str());
 				return false;
 			}
 			sprintf(tmpchar,"package/head/bpu/bpugroup/%s/autoloadbpu/bpupara",bpugroupinfo.g_sBpuGroupName.c_str());
@@ -293,6 +308,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 			{
 				m_errMsg = std::string("无[") + tmpchar +"]节点";
 				m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+				printf("%s\n", m_errMsg.c_str());
 				return false;
 			}
 		}
@@ -304,6 +320,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 		{
 			m_errMsg = std::string("BPU组名称重复:")+bpugroupinfo.g_sBpuGroupName;
 			m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置文件错 %s",(char *)m_errMsg.c_str());
+			printf("%s\n", m_errMsg.c_str());
 			return false;
 		}
 		bpugroupinfo.g_bIsReg = false;
@@ -313,6 +330,7 @@ bool CGResource::Init(char *confile, CIErrlog* log)
 		{
 			m_errMsg = std::string("new CPoolData出错")+bpugroupinfo.g_sBpuGroupName;
 			m_log->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"%s",(char *)m_errMsg.c_str());
+			printf("%s\n", m_errMsg.c_str());
 			return false;
 		}
 

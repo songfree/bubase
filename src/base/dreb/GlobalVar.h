@@ -114,6 +114,8 @@ public:
 	int g_nMaxLogSize;         //字节数<1024不限制
 	int g_nMaxDataLogSize;         //字节数<1024不限制  
 
+	int g_nCpuCore;//绑定的cpu核心
+
 	int g_nCrcFlag; //crc校验标志  0不校验不生成  1校验 生成
 	std::string g_sLogFileName;   //日志文件名
 	std::string g_sLogFilePath;   //日志文件目录

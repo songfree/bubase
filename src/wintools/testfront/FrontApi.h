@@ -50,7 +50,7 @@ public: //下面为通讯的api部分
 	/// 编程  : 王明松 2008-10-27 15:11:56
 	/// 返回  : string 
 	/// 描述  : 获取出错信息
-	string GetErrMsg();
+	std::string GetErrMsg();
 
 
 	/// 函数名: SetPara

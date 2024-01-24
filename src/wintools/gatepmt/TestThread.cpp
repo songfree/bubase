@@ -292,7 +292,7 @@ int CTestThread::ThreadInit()
 	return 0;
 }
 
-int CTestThread::GetVarOffset(CIVarDefine *var, const char *databuf,int datalen,vector<_SVAROFFSET>&result)
+int CTestThread::GetVarOffset(CIVarDefine *var, const char *databuf,int datalen, std::vector<_SVAROFFSET>&result)
 {
 	
 	int namelen;
@@ -333,10 +333,10 @@ int CTestThread::GetVarOffset(CIVarDefine *var, const char *databuf,int datalen,
 
 void CTestThread::ResetBuf()
 {
-	string varname;
-	string lastvname;
+	std::string varname;
+	std::string lastvname;
 	char svalue[100];
-	string ssvalue;
+	std::string ssvalue;
 	int vartype;
 
 	for (int i=0;i<m_varList.size();i++)

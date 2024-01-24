@@ -34,6 +34,8 @@ CMsgProcThread::CMsgProcThread()
 	m_pMsgQueue = NULL;
 //	memset(&m_pRsMsgHead,0,sizeof(DREB_HEAD));
 	m_nIndex =0;
+    m_nTotalAbc=0;//总共发送广播数
+    m_nTotalUs=0;//转发广播总共耗时
 }
 
 CMsgProcThread::~CMsgProcThread()
@@ -984,8 +986,11 @@ void CMsgProcThread::OnCmdDpABc(S_DREB_RSMSG *msg)
 {
 	if (msg->message.head.cRaflag == 0)
 	{
+		t_nBeginUs = CBF_Date_Time::GetTickUS();
 		TransDestBc(msg);
 		TransBroadCast(msg,false);
+		m_nTotalUs +=(CBF_Date_Time::GetTickUS()- t_nBeginUs);
+		m_nTotalAbc++;
 	}
 	else
 	{
@@ -2678,8 +2683,8 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
                           
 							 if (m_log->isWrite(LOG_DEBUG + 1))
 							 {
-								 m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "发给服务 [%d %d ]订阅的广播信息 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]", \
-									 subcribelist[i].nSvrMainId, subcribelist[i].cSvrPrivateId, \
+								 m_log->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "发给服务 [%d %d ] index[%d] 订阅的广播信息 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 目标[%d %d %d %d] 业务数据长度[%d]", \
+									 subcribelist[i].nSvrMainId, subcribelist[i].cSvrPrivateId, subcribelist[i].nIndex, \
 									GetDrebCmdType(data->message.head.cCmd).c_str(), data->message.head.cNextFlag, \
 									data->message.head.cRaflag, data->message.head.d_Dinfo.d_nServiceNo, data->message.head.s_Sinfo.s_nNodeId, \
 									data->message.head.s_Sinfo.s_cNodePrivateId, data->message.head.s_Sinfo.s_nDrebSerial, \

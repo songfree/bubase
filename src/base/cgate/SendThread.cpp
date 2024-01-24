@@ -10,6 +10,10 @@
 #define  DESENCRYPTKEY3   "wms13711songfree"
 #define  DESENCRYPTKEY    "rd402wms"
 
+#define  FUNC_QUOTATION               990001   //证券行情功能号 主题
+#define  FUNC_QUOTATION_LEVEL1        990003   //证券LEVEL行情功能号 主题
+#define  FUNC_QUOTATION_FUTURE        990011   //期货行情功能号 主题
+
 CSendThread::CSendThread()
 {
 	m_pSendData = NULL;
@@ -226,7 +230,8 @@ void CSendThread::SendSingleBcMsg(S_CGATE_SMSG *msg)
 	dd.s_nTimestamp = info->s_nTimestamp;
 	dd.s_nTotalLen = CGATEHEADLEN+msg->data.head.nLen;
 	
-	dd.s_nHook = msg->data.head.stDest.nSerial;
+	//dd.s_nHook = msg->data.head.stDest.nSerial;
+	dd.s_nHook = msg->nkey;
 
 	m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"广播推送发送长度[%d] 数据长度[%d] 报文头长度[%d] cZip[%d] index[%d] 标识[%d]",\
 		dd.s_nTotalLen,msg->data.head.nLen,CGATEHEADLEN,msg->data.head.stComm.cZip,info->s_nIndex,msg->data.head.stDest.nSerial);
@@ -306,6 +311,74 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
         if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey))
         {
             m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅%d %d", i, msg->data.head.stDest.nServiceNo, msg->nkey);
+#ifdef NDSUBSCRIBE
+			//写死是否订阅了LEVEL1的行情
+			if (msg->data.head.stDest.nServiceNo == FUNC_QUOTATION)  //是证券level2行情，需要查看是否订阅了level1行情，若订阅了，将报文截短，发送
+			{
+                if (!psub->IsSubscribe(FUNC_QUOTATION_LEVEL1, msg->nkey)) //未订阅level1
+                {
+					continue;
+				}
+                char quobuffer[1000];
+                unsigned int unziplen = sizeof(quobuffer);
+				if (msg->data.head.stComm.cZip !=0)
+				{
+					//订阅了level1，解压缩报文
+					if (!CBF_Tools::Uncompress((unsigned char*)(quobuffer), unziplen, (unsigned char*)(msg->data.buffer), msg->data.head.nLen))
+					{
+						m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "Uncompress error!");
+						continue;
+					}
+				}
+				else
+				{
+					memcpy(quobuffer, msg->data.buffer, msg->data.head.nLen);
+					unziplen = msg->data.head.nLen;
+				}
+                //unziplen = 64;//写死长度为level1_INT 的64字节
+                //short* level = (short*)(quobuffer + 34);
+                unziplen = 76;//写死长度为level1 的76字节
+                short* level = (short*)(quobuffer + 54);
+
+                *level = 1; //1档行情
+                senddata.rtime = msg->rtime;                 //入队列时间
+                senddata.d_nNodeId = msg->d_nNodeId;        //目标数据总线节点编号
+                senddata.d_cNodePrivateId = msg->d_cNodePrivateId; //数据总线节点私有序号
+                senddata.s_nDrebSerial = msg->s_nDrebSerial;    //总线流水标识
+                senddata.isBC = msg->isBC;             //是否广播
+                senddata.txcode = msg->txcode;           //交易码
+                senddata.prio = msg->prio;             //优先级
+                senddata.nkey = msg->nkey;             //  	 广播的key，对应总线的s_nHook字段
+                memcpy(&senddata.data.head, &msg->data.head, sizeof(CGATE_HEAD));
+                senddata.data.head.stComm.cZip = 0;
+                senddata.data.head.nLen = unziplen;
+                memcpy(senddata.data.buffer, quobuffer, senddata.data.head.nLen);
+                senddata.index = i;
+                senddata.timestamp = 0;
+				/*
+				unziplen = 72;//写死长度为level1的72字节
+                short* level = (short*)(quobuffer + 42);
+                *level = 1; //1档行情
+				senddata.rtime = msg->rtime;                 //入队列时间
+				senddata.d_nNodeId= msg->d_nNodeId;        //目标数据总线节点编号
+				senddata.d_cNodePrivateId= msg->d_cNodePrivateId; //数据总线节点私有序号
+				senddata.s_nDrebSerial= msg->s_nDrebSerial;    //总线流水标识
+				senddata.isBC= msg->isBC;             //是否广播
+				senddata.txcode= msg->txcode;           //交易码
+				senddata.prio= msg->prio;             //优先级
+				senddata.nkey= msg->nkey;             //  	 广播的key，对应总线的s_nHook字段
+				memcpy(&senddata.data.head, &msg->data.head, sizeof(CGATE_HEAD));
+				senddata.data.head.stComm.cZip =0;
+				senddata.data.head.nLen = unziplen;
+				memcpy(senddata.data.buffer,quobuffer, senddata.data.head.nLen);
+                senddata.index = i;
+                senddata.timestamp = 0;
+				*/
+                SendSingleBcMsg(&senddata);
+				m_nSendQuoteNum++;
+				continue;
+			}
+#endif
             continue;
         }
 		memcpy(&senddata,msg,sizeof(S_CGATE_SMSG));	

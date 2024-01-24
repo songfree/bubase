@@ -20,7 +20,7 @@ CBuModule::CBuModule()
 	//新增加功能要在此进行设置
 	//InitFuncInfo(1000,(FuncPointer)&CBuModule::test01,"测试",1.0,"作者",1,false,true,false);
 	//setFuncInfo(1000,(FuncPointerOld)&CBuModule::test01xml,"测试",1.0,"作者",1,false,true,false,0);
-	BindOldFunc();
+	//BindOldFunc();
 }
 
 CBuModule::~CBuModule()
@@ -48,24 +48,24 @@ void CBuModule::InitFuncInfo(int funcNo, FuncPointer pfunc, const char *funcName
 	strcpy(pFunc.sDllName,"");
 	m_pFuncTbl.Insert(pFunc);
 }
-void CBuModule::setFuncInfo(int funcNo,FuncPointerOld pfunc,char *funcName,double version,char *author,int level,bool repealFlag,bool isTxUnit,bool isStop,int appType)
-{
-	S_TBL_FUNC_OLD pFunc;
-	bzero(&pFunc,sizeof(S_TBL_FUNC_OLD));
-	pFunc.nFuncNo = funcNo;
-	pFunc.pFunc = pfunc;
-	CBF_Tools::StringCopy(pFunc.sFuncName,80,funcName);
-	pFunc.dVersion = version;
-	CBF_Tools::StringCopy(pFunc.sAuthor,40,author);
-	pFunc.nLevel = level;
-	pFunc.bRepealFlag = repealFlag;
-	pFunc.bIsTxUnit = isTxUnit;
-	pFunc.bIsStop = isStop;
-	pFunc.pBuInstance = NULL;
-	strcpy(pFunc.sDllName,"");
-	m_pFuncTblOld.Insert(pFunc);
-
-}
+//void CBuModule::setFuncInfo(int funcNo,FuncPointerOld pfunc,char *funcName,double version,char *author,int level,bool repealFlag,bool isTxUnit,bool isStop,int appType)
+//{
+//	S_TBL_FUNC_OLD pFunc;
+//	bzero(&pFunc,sizeof(S_TBL_FUNC_OLD));
+//	pFunc.nFuncNo = funcNo;
+//	pFunc.pFunc = pfunc;
+//	CBF_Tools::StringCopy(pFunc.sFuncName,80,funcName);
+//	pFunc.dVersion = version;
+//	CBF_Tools::StringCopy(pFunc.sAuthor,40,author);
+//	pFunc.nLevel = level;
+//	pFunc.bRepealFlag = repealFlag;
+//	pFunc.bIsTxUnit = isTxUnit;
+//	pFunc.bIsStop = isStop;
+//	pFunc.pBuInstance = NULL;
+//	strcpy(pFunc.sDllName,"");
+//	m_pFuncTblOld.Insert(pFunc);
+//
+//}
 int CBuModule::Run(PBPCCOMMSTRU data)
 {
 	if (!m_bIsSetPara)
@@ -95,90 +95,90 @@ int CBuModule::Run(PBPCCOMMSTRU data)
 	return nRes;
 }
 
-int CBuModule::RunXml(PBPCCOMMSTRU data)
-{
-	if (!m_bIsSetPara)
-	{
-		printf("SetBuPara未调用\n");
-		return -1;
-	}
-	S_TBL_FUNC_OLD pFunc = m_pFuncTblOld.Find(data->sDBHead.d_Dinfo.d_nServiceNo);
-	if (pFunc.nFuncNo == 0)
-	{
-		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"无此功能 %d",data->sDBHead.d_Dinfo.d_nServiceNo);
-		return -1;
-	}
-	int nRes=0;
-	try
-	{
-		data->sBuffer[data->sDBHead.nLen]=0;
-		if (!m_xmlpack.fromBuf(data->sBuffer))
-		{
-			m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"调用老框架的交易非xml %d",data->sDBHead.d_Dinfo.d_nServiceNo);
-			data->sDBHead.nLen = 0;
-			data->sDBHead.a_Ainfo.a_nRetCode = ERR_BPU_DATA;
-			AnsData(data);
-			return -1;
-		}
-		m_muxmlpack.clear();
-		nRes= (this->*(pFunc.pFunc))(&m_xmlpack,&m_muxmlpack);
-		pFunc.nCallNum++;
-		int nlen;
-		nlen = BPUDATASIZE;
-		int recnum= m_muxmlpack.size();
-		if (recnum>1)
-		{
-			for (int i=0;i<recnum;i++)
-			{
-				data->sDBHead.n_Ninfo.n_nNextNo = recnum;
-				nlen = BPUDATASIZE;
-				if (!m_muxmlpack.at(i)->toBufOld(data->sBuffer,nlen))
-				{
-					m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"框架数据不符 tobuffer出错 %d",data->sDBHead.d_Dinfo.d_nServiceNo);
-					data->sDBHead.nLen = 0;
-					data->sDBHead.a_Ainfo.a_nRetCode = ERR_BPU_DATA;
-					data->sDBHead.cNextFlag = 0;//无后续包
-					AnsData(data);
-					return -1;
-				}
-				data->sDBHead.nLen = nlen;
-				data->sDBHead.n_Ninfo.n_nNextOffset = i+1;
-				if (i == recnum-1)
-				{
-					data->sDBHead.cNextFlag = 10;
-				}
-				else
-				{
-					data->sDBHead.cNextFlag = 1;
-				}
-				AnsData(data);
-			}
-		}
-		else
-		{
-			nlen = BPUDATASIZE;
-			//数据转换并应答
-			if (!m_xmlpack.toBufOld(data->sBuffer,nlen))
-			{
-				m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"框架数据不符 tobuffer出错 %d",data->sDBHead.d_Dinfo.d_nServiceNo);
-				data->sDBHead.nLen = 0;
-				data->sDBHead.a_Ainfo.a_nRetCode = ERR_BPU_DATA;
-				data->sDBHead.cNextFlag = 0;//无后续包
-				AnsData(data);
-				return -1;
-			}
-			data->sDBHead.nLen = nlen;
-			data->sDBHead.cNextFlag = 0;//无后续包
-			AnsData(data);
-		}
-	}
-	catch (...)
-	{
-		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"调用功能异常出错 %d",pFunc.nFuncNo);
-		return -1;
-	}
-	return nRes;
-}
+//int CBuModule::RunXml(PBPCCOMMSTRU data)
+//{
+//	if (!m_bIsSetPara)
+//	{
+//		printf("SetBuPara未调用\n");
+//		return -1;
+//	}
+//	S_TBL_FUNC_OLD pFunc = m_pFuncTblOld.Find(data->sDBHead.d_Dinfo.d_nServiceNo);
+//	if (pFunc.nFuncNo == 0)
+//	{
+//		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"无此功能 %d",data->sDBHead.d_Dinfo.d_nServiceNo);
+//		return -1;
+//	}
+//	int nRes=0;
+//	try
+//	{
+//		data->sBuffer[data->sDBHead.nLen]=0;
+//		if (!m_xmlpack.fromBuf(data->sBuffer))
+//		{
+//			m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"调用老框架的交易非xml %d",data->sDBHead.d_Dinfo.d_nServiceNo);
+//			data->sDBHead.nLen = 0;
+//			data->sDBHead.a_Ainfo.a_nRetCode = ERR_BPU_DATA;
+//			AnsData(data);
+//			return -1;
+//		}
+//		m_muxmlpack.clear();
+//		nRes= (this->*(pFunc.pFunc))(&m_xmlpack,&m_muxmlpack);
+//		pFunc.nCallNum++;
+//		int nlen;
+//		nlen = BPUDATASIZE;
+//		int recnum= m_muxmlpack.size();
+//		if (recnum>1)
+//		{
+//			for (int i=0;i<recnum;i++)
+//			{
+//				data->sDBHead.n_Ninfo.n_nNextNo = recnum;
+//				nlen = BPUDATASIZE;
+//				if (!m_muxmlpack.at(i)->toBufOld(data->sBuffer,nlen))
+//				{
+//					m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"框架数据不符 tobuffer出错 %d",data->sDBHead.d_Dinfo.d_nServiceNo);
+//					data->sDBHead.nLen = 0;
+//					data->sDBHead.a_Ainfo.a_nRetCode = ERR_BPU_DATA;
+//					data->sDBHead.cNextFlag = 0;//无后续包
+//					AnsData(data);
+//					return -1;
+//				}
+//				data->sDBHead.nLen = nlen;
+//				data->sDBHead.n_Ninfo.n_nNextOffset = i+1;
+//				if (i == recnum-1)
+//				{
+//					data->sDBHead.cNextFlag = 10;
+//				}
+//				else
+//				{
+//					data->sDBHead.cNextFlag = 1;
+//				}
+//				AnsData(data);
+//			}
+//		}
+//		else
+//		{
+//			nlen = BPUDATASIZE;
+//			//数据转换并应答
+//			if (!m_xmlpack.toBufOld(data->sBuffer,nlen))
+//			{
+//				m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"框架数据不符 tobuffer出错 %d",data->sDBHead.d_Dinfo.d_nServiceNo);
+//				data->sDBHead.nLen = 0;
+//				data->sDBHead.a_Ainfo.a_nRetCode = ERR_BPU_DATA;
+//				data->sDBHead.cNextFlag = 0;//无后续包
+//				AnsData(data);
+//				return -1;
+//			}
+//			data->sDBHead.nLen = nlen;
+//			data->sDBHead.cNextFlag = 0;//无后续包
+//			AnsData(data);
+//		}
+//	}
+//	catch (...)
+//	{
+//		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"调用功能异常出错 %d",pFunc.nFuncNo);
+//		return -1;
+//	}
+//	return nRes;
+//}
 
 
 bool CBuModule::BuInit()
@@ -243,13 +243,13 @@ int CBuModule::BpuCall(PBPCCOMMSTRU data, LIST_BPC_RSMSG &ansdata)
 	return m_pPcLink->BpuCall(data,ansdata);
 }
 
-void CBuModule::BindOldFunc()
-{
-	S_TBL_FUNC_OLD func;
-	bool bRet = m_pFuncTblOld.First(func);
-	while (bRet)
-	{
-		InitFuncInfo(func.nFuncNo,(FuncPointer)&CBuModule::RunXml,func.sFuncName,func.dVersion,func.sAuthor,func.nLevel,func.bRepealFlag,func.bIsTxUnit,func.bIsStop);
-		bRet = m_pFuncTblOld.Next(func);
-	}
-}
+//void CBuModule::BindOldFunc()
+//{
+//	S_TBL_FUNC_OLD func;
+//	bool bRet = m_pFuncTblOld.First(func);
+//	while (bRet)
+//	{
+//		InitFuncInfo(func.nFuncNo,(FuncPointer)&CBuModule::RunXml,func.sFuncName,func.dVersion,func.sAuthor,func.nLevel,func.bRepealFlag,func.bIsTxUnit,func.bIsStop);
+//		bRet = m_pFuncTblOld.Next(func);
+//	}
+//}

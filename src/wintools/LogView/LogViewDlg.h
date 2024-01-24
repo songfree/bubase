@@ -94,8 +94,8 @@ typedef struct
 #define  BPCLOGHEADLEN  sizeof(SL_LOG_BPCDATA)
 
 
-typedef vector<S_DREBHEADLIST>  V_DREBHEADLIST;
-typedef vector<S_BPCHEADLIST>   V_BPCHEADLIST;
+typedef std::vector<S_DREBHEADLIST>  V_DREBHEADLIST;
+typedef std::vector<S_BPCHEADLIST>   V_BPCHEADLIST;
 
 
 

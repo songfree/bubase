@@ -139,6 +139,6 @@ void CGateWay::Monitor()
 	int used;
 	int size;
 	m_pDrebapi.GetBufferPoolInfo(total,used,size);
-	m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "总线api缓存使用总共:%d 使用:%d 大小:%d] 发送队列数:%d 请求队列数:%d", total,used,size, m_pSendData.GetSize(), m_pPoolData.GetSize());
+	m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "总线api缓存使用总共:%d 使用:%d 大小:%d 发送队列数:%d 请求队列数:%d", total,used,size, m_pSendData.GetSize(), m_pPoolData.GetSize());
 
 }

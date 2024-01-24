@@ -581,13 +581,17 @@ bool CMemDB::GetAllDreb(std::vector<S_DREB_ROUTE *> &dp,bool inclocal)
 	}
 	for (unsigned int i=0; i<dreblist.size() ; i++)
 	{
-		if (!inclocal)
-		{
-			if (dreblist[i]->nIndex>0)
-			{
+        if (dreblist[i]->nIndex > 0)  //大于0表示外连节点
+        {
+            dp.push_back(dreblist[i]);
+        }
+        else  //本节点
+        {
+            if (inclocal)
+            {
 				dp.push_back(dreblist[i]);
-			}
-		}
+            }
+        }
 	}
 	return true;
 }
@@ -797,19 +801,21 @@ bool CMemDB::GetAllRouteBc(std::vector<S_DREB_ROUTE *> &rt)
 	//取所有直连的总线信息，不包括本节点
 	GetAllDreb(rt,false);
 
+	CPkeyIntUnordered<2> kk;
+	unsigned int i;
+	for (i = 0; i < rt.size(); i++)
+	{
+		kk.Add(i,rt[i]->nNodeId, rt[i]->cNodePrivateId);
+	}
 	std::vector<S_DREB_ROUTE*> dreblist;
 	m_routeTbl.SelectById(dreblist);
-	unsigned short nodeid=0;
-	char  privateid=0;
-	
-	for (unsigned int i=0;  i< dreblist.size(); i++) 
+
+	for (i=0;  i< dreblist.size(); i++) 
 	{
-		//过滤掉相同的
-		if (dreblist[i]->nNodeId != nodeid || dreblist[i]->cNodePrivateId != privateid)
+		if (!kk.Find(dreblist[i]->nNodeId, dreblist[i]->cNodePrivateId))//没有找到，加入
 		{
 			rt.push_back(dreblist[i]);
-			nodeid = dreblist[i]->nNodeId;
-			privateid = dreblist[i]->cNodePrivateId;
+			kk.Add(i, dreblist[i]->nNodeId, dreblist[i]->cNodePrivateId);
 		}
 	}
 	return true;	

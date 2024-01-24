@@ -154,6 +154,11 @@ public:
 	std::string GetDrebSockType(int socktype);
 	std::string GetIndexFlag(int index);
 
+	UINT64_   m_nTotalAbc;//总共发送广播数
+	UINT64_   m_nTotalUs;//转发广播总共耗时
+
+	UINT64_   t_nBeginUs;//开始us
+	UINT64_   t_nEndUs;//结束us
 protected:
 
 	// 函数名: TransBroadCast

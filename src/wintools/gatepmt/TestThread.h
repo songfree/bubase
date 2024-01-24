@@ -57,7 +57,7 @@ public:
 	/// 参数  : int datalen
 	/// 参数  : vector<_SVAROFFSET>&result
 	/// 描述  : 获取定义的变量在发送数据中的位置
-	int GetVarOffset(CIVarDefine *var,const char *databuf,int datalen,vector<_SVAROFFSET>&result);
+	int GetVarOffset(CIVarDefine *var,const char *databuf,int datalen, std::vector<_SVAROFFSET>&result);
 
 	/// 函数名: ThreadInit
 	/// 编程  : 王明松 2009-7-17 17:46:14
@@ -121,7 +121,7 @@ protected:
 	CGATE_COMMSTRU     m_pCgateLogin;
 
 
-	vector<_SVAROFFSET>m_varList;
+	std::vector<_SVAROFFSET>m_varList;
 
 private:
 	/// 函数名: Run

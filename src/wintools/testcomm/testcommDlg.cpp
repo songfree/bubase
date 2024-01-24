@@ -324,7 +324,7 @@ BOOL CTestcommDlg::OnInitDialog()
 		m_commparaxml.toFile("testcomm.xml");
 	}
 
-	string ss;
+	std::string ss;
 	m_commparaxml.getPackValue("IP",ss);
 	m_edtIp.SetWindowText(ss.c_str());
 	m_commparaxml.getPackValue("PORT",ss);
@@ -764,7 +764,7 @@ void CTestcommDlg::OnButtonModiAdd()
 	}
 	if (m_rdoModiPack.GetCheck()==1)
 	{
-		string ss;
+		std::string ss;
 		ret = m_sendData.m_packxml.getPackValue(csname.GetBuffer(csname.GetLength()),ss);
 		if (ret==0)
 		{
@@ -791,7 +791,7 @@ void CTestcommDlg::OnButtonModiAdd()
 	}
 	else
 	{
-		string ss;
+		std::string ss;
 		ret = m_sendData.m_headxml.getPackValue(csname.GetBuffer(csname.GetLength()),ss);
 		if (ret==0)
 		{
@@ -876,7 +876,7 @@ void CTestcommDlg::OnButtonSend()
 	HTREEITEM	hRoot, hHead, hPack;
 	CXmlPack xmlpack;
 	char tmpchar[20];
-	string ss;
+	std::string ss;
 	int ret;
 	char filename[300];
 
@@ -1094,7 +1094,7 @@ void CTestcommDlg::OnButtonSend()
 					
 					if (!xmlpack.fromBuf(s_reqans.buffer))
 					{
-						ss = (string)"["+(string)s_reqans.buffer+(string)"]";
+						ss = (std::string)"["+(std::string)s_reqans.buffer+(std::string)"]";
 						hHead = m_treeAns.InsertItem(ss.c_str(),hRoot);
 						m_treeAns.SelectItem(hRoot);
 						m_treeAns.Expand(hRoot,TVE_EXPAND);
@@ -1115,7 +1115,7 @@ void CTestcommDlg::OnButtonSend()
 						}
 					}
 					s_reqans.buffer[s_reqans.bufferlen]=0;
-					ss = (string)"["+(string)s_reqans.buffer+(string)"]";
+					ss = (std::string)"["+(std::string)s_reqans.buffer+(std::string)"]";
 					hHead = m_treeAns.InsertItem(ss.c_str(),hRoot);
 					m_treeAns.SelectItem(hRoot);
 					m_treeAns.Expand(hRoot,TVE_EXPAND);
@@ -1152,7 +1152,7 @@ void CTestcommDlg::OnButtonSend()
 					s_reqans.buffer[s_reqans.bufferlen]=0;
 					if (!xmlpack.fromBuf(s_reqans.buffer))
 					{
-						ss = (string)"["+(string)s_reqans.buffer+(string)"]";
+						ss = (std::string)"["+(std::string)s_reqans.buffer+(std::string)"]";
 						hHead = m_treeAns.InsertItem(ss.c_str(),hRoot);
 						m_treeAns.SelectItem(hRoot);
 						m_treeAns.Expand(hRoot,TVE_EXPAND);
@@ -1174,7 +1174,7 @@ void CTestcommDlg::OnButtonSend()
 						}
 					}
 					s_reqans.buffer[s_reqans.bufferlen]=0;
-					ss = (string)"["+(string)s_reqans.buffer+(string)"]";
+					ss = (std::string)"["+(std::string)s_reqans.buffer+(std::string)"]";
 					hHead = m_treeAns.InsertItem(ss.c_str(),hRoot);
 					m_treeAns.SelectItem(hRoot);
 					m_treeAns.Expand(hRoot,TVE_EXPAND);
@@ -1319,7 +1319,7 @@ void CTestcommDlg::InitPackSelect()
 		}
 		m_sendData.m_packxml.m_xml.getRoot();
 		m_sendData.m_packxml.m_xml.getFirstChildItem("package");
-		string fname;
+		std::string fname;
 		if (!m_sendData.m_packxml.m_xml.getAttribute("name",fname))
 		{
 			continue;
@@ -1361,7 +1361,7 @@ void CTestcommDlg::InitHeadSelect()
 		}
 		m_sendData.m_headxml.m_xml.getRoot();
 		m_sendData.m_headxml.m_xml.getFirstChildItem("package");
-		string fname;
+		std::string fname;
 		if (!m_sendData.m_headxml.m_xml.getAttribute("name",fname))
 		{
 			continue;
@@ -1684,12 +1684,12 @@ void CTestcommDlg::UpdateHeadFromFile(char *filename)
 		MessageBox(m_sendData.m_headxml.m_errMsg, "´íÎó", MB_ICONSTOP);
 		return;
 	}
-	string name;
-	string value;
-	string sdec;
-	string slength;
-	string stype;
-	string salign;
+	std::string name;
+	std::string value;
+	std::string sdec;
+	std::string slength;
+	std::string stype;
+	std::string salign;
 	char serial[10];
 	memset(serial,0,sizeof(serial));
 	int ltype;
@@ -1819,12 +1819,12 @@ void CTestcommDlg::UpdatePackFromFile(char *filename)
 		MessageBox(m_sendData.m_packxml.m_errMsg, "´íÎó", MB_ICONSTOP);
 		return;
 	}
-	string name;
-	string value;
-	string sdec;
-	string slength;
-	string stype;
-	string salign;
+	std::string name;
+	std::string value;
+	std::string sdec;
+	std::string slength;
+	std::string stype;
+	std::string salign;
 	char serial[10];
 	memset(serial,0,sizeof(serial));
 	int ltype;

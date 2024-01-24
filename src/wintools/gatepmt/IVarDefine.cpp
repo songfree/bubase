@@ -44,7 +44,7 @@ __int64 CIVarDefine::GetVarValue()
 	}
 	return m_lValue;
 }
-string CIVarDefine::GetVarValueS()
+std::string CIVarDefine::GetVarValueS()
 {
 	CBF_PMutex pp(&m_mutex);
 	if (m_varType == 1) //Ëæ»úÑ¡Ôñ
@@ -78,13 +78,13 @@ string CIVarDefine::GetVarValueS()
 	}
 	return "";
 }
-void CIVarDefine::IntVarInit(string fmt, __int64 initvalue)
+void CIVarDefine::IntVarInit(std::string fmt, __int64 initvalue)
 {
 	m_fmt = fmt;
 	m_lValue = initvalue;
 }
 
-string & CIVarDefine::GetVarName()
+std::string & CIVarDefine::GetVarName()
 {
 	return m_sVarName;
 }
@@ -94,7 +94,7 @@ int CIVarDefine::GetVarType()
 	return m_varType;
 }
 
-bool CIVarDefine::PushVarValue(string svalue)
+bool CIVarDefine::PushVarValue(std::string svalue)
 {
 	if (m_varType>0)
 	{
@@ -107,7 +107,7 @@ bool CIVarDefine::PushVarValue(string svalue)
 	}
 }
 
-void CIVarDefine::SetVarPara(string name,int type,int len)
+void CIVarDefine::SetVarPara(std::string name,int type,int len)
 {
 	m_sVarName = name;
 	if (type<0 || type>2)
@@ -122,7 +122,7 @@ void CIVarDefine::SetVarPara(string name,int type,int len)
 	m_maxVarValue = (__int64)pow((double)10, m_varLen+1)-1;
 }
 
-string & CIVarDefine::GetFmt()
+std::string & CIVarDefine::GetFmt()
 {
 	return m_fmt;
 }

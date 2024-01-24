@@ -59,16 +59,16 @@ BOOL CFileXdp::OnInitDialog()
 	m_lstXdpDefine.SetExtendedStyle(LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES|LVS_EX_HEADERDRAGDROP);
 	
 	
-	m_lstXdpDefine.InsertColumn(0, "序号", LVCFMT_LEFT, 40);
-	m_lstXdpDefine.InsertColumn(1, "类型", LVCFMT_LEFT, 80);
-	m_lstXdpDefine.InsertColumn(2, "名称", LVCFMT_LEFT, 80);
-	m_lstXdpDefine.InsertColumn(3, "长度", LVCFMT_LEFT, 50);
+	m_lstXdpDefine.InsertColumn(0, "序号", LVCFMT_LEFT, 80);
+	m_lstXdpDefine.InsertColumn(1, "类型", LVCFMT_LEFT, 160);
+	m_lstXdpDefine.InsertColumn(2, "名称", LVCFMT_LEFT, 160);
+	m_lstXdpDefine.InsertColumn(3, "长度", LVCFMT_LEFT, 100);
 
 	m_lstXdp.SetExtendedStyle(LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES|LVS_EX_HEADERDRAGDROP);
 	
 	
-	m_lstXdp.InsertColumn(0, "序号", LVCFMT_LEFT, 40);
-	m_lstXdp.InsertColumn(1, "类型", LVCFMT_LEFT, 90);
+	m_lstXdp.InsertColumn(0, "序号", LVCFMT_LEFT, 80);
+	m_lstXdp.InsertColumn(1, "类型", LVCFMT_LEFT, 180);
 	m_lstXdp.InsertColumn(2, "值", LVCFMT_LEFT, 500);
 
 	char errmsg[256];
@@ -93,6 +93,8 @@ BOOL CFileXdp::OnInitDialog()
 // #define  XDP_CHAR      6    //固定长度字符串 最大255
 // #define  XDP_VARCHAR   7    //变长字符串 最大255   最前面有一个字节长度  1+data
 // #define  XDP_BINDATA   8    //二进制类型 最大4096  最前面有两个字节长度  2+data 
+//#define  XDP_INT64     9    //64位整型 INT64_
+//#define  XDP_UINT64    10    //无符号64位整型	UINT64_
 	for (int i=0; i< num; i++)
 	{
 		fld = m_pXdp->m_pXdpFmt.At(i);
@@ -116,6 +118,12 @@ BOOL CFileXdp::OnInitDialog()
 			case XDP_INT:
 				m_lstXdpDefine.SetItemText(nItem,1,"整型");
 				break;
+            case XDP_UINT64:
+                m_lstXdpDefine.SetItemText(nItem, 1, "64位无符号整型");
+                break;
+            case XDP_INT64:
+                m_lstXdpDefine.SetItemText(nItem, 1, "64位整型");
+                break;
 			case XDP_DOUBLE:
 				m_lstXdpDefine.SetItemText(nItem,1,"浮点型");
 				break;
@@ -132,7 +140,7 @@ BOOL CFileXdp::OnInitDialog()
 				break;
 		}
 		
-		m_lstXdpDefine.SetItemText(nItem,2,fld->f_name.c_str());
+		m_lstXdpDefine.SetItemText(nItem,2,fld->f_name);
 		sprintf(tmpchar,"%d",fld->f_length);
 		m_lstXdpDefine.SetItemText(nItem,3,tmpchar);
 		
@@ -198,6 +206,7 @@ void CFileXdp::OnButtonAdd()
 	unsigned int pui;
 	int  pi;
 	double pd;
+	INT64_ pin64;
 	switch (fld->f_type)
 	{
 	case XDP_USHORT:
@@ -216,6 +225,11 @@ void CFileXdp::OnButtonAdd()
 		pi = atoi(fldvalue);
 		m_pDataXdp.SetFieldValue(fld->f_index,pi,errmsg);
 		break;
+	case XDP_UINT64:
+    case XDP_INT64:
+		pin64 = atoll(fldvalue);
+        m_pDataXdp.SetFieldValue(fld->f_index, pin64, errmsg);
+        break;
 	case XDP_DOUBLE:
 		pd = atof(fldvalue);
 		m_pDataXdp.SetFieldValue(fld->f_index,pd,errmsg);
@@ -403,6 +417,7 @@ bool CFileXdp::UpdateLstXdp(CXdp *xdp)
 	unsigned int  *puint=NULL;
 	int  *pint=NULL;
 	double *pdvalue=NULL;
+	INT64_ *pin64=NULL;
 	int fieldtype;
 	for (int i=0 ; i< xdp->m_pXdpFmt.GetFieldNum() ; i++)
 	{
@@ -427,47 +442,58 @@ bool CFileXdp::UpdateLstXdp(CXdp *xdp)
 		switch (field->f_type)
 		{
 		case XDP_USHORT:
-			m_lstXdp.SetItemText(nItem,1,field->f_name.c_str());
+			m_lstXdp.SetItemText(nItem,1,field->f_name);
 			pushort = (unsigned short *)fielddata;
 			sprintf(tmpchar,"%d",*pushort);
 			m_lstXdp.SetItemText(nItem,2,tmpchar);
 			break;
 		case XDP_SHORT:
-			m_lstXdp.SetItemText(nItem,1,field->f_name.c_str());
+			m_lstXdp.SetItemText(nItem,1,field->f_name);
 			pshort = (short *)fielddata;
 			sprintf(tmpchar,"%d",*pshort);
 			m_lstXdp.SetItemText(nItem,2,tmpchar);
 			break;
 		case XDP_UINT:
-			m_lstXdp.SetItemText(nItem,1,field->f_name.c_str());
+			m_lstXdp.SetItemText(nItem,1,field->f_name);
 			puint = (unsigned int *)fielddata;
 			sprintf(tmpchar,"%d",*puint);
 			m_lstXdp.SetItemText(nItem,2,tmpchar);
 			break;
 		case XDP_INT:
-			m_lstXdp.SetItemText(nItem,1,field->f_name.c_str());
+			m_lstXdp.SetItemText(nItem,1,field->f_name);
 			pint = (int *)fielddata;
 			sprintf(tmpchar,"%d",*pint);
 			m_lstXdp.SetItemText(nItem,2,tmpchar);
 			break;
 		case XDP_DOUBLE:
-			m_lstXdp.SetItemText(nItem,1,field->f_name.c_str());
+			m_lstXdp.SetItemText(nItem,1,field->f_name);
 			pdvalue = (double *)fielddata;
 			sprintf(tmpchar,"%f",*pdvalue);
 			m_lstXdp.SetItemText(nItem,2,tmpchar);
 			break;
+		case XDP_UINT64:
+        case XDP_INT64:
+            m_lstXdp.SetItemText(nItem, 1, field->f_name);
+			pin64 = (INT64_*)fielddata;
+#ifdef _WINDOWS
+            sprintf(tmpchar, "%I64d", *pin64);
+ #else
+			sprintf(tmpchar, "%lld", *pin64);
+ #endif
+            m_lstXdp.SetItemText(nItem, 2, tmpchar);
+            break;
 		case XDP_CHAR:
-			m_lstXdp.SetItemText(nItem,1,field->f_name.c_str());
+			m_lstXdp.SetItemText(nItem,1,field->f_name);
 			sprintf(tmpchar,"%s",fielddata);
 			m_lstXdp.SetItemText(nItem,2,tmpchar);
 			break;
 		case XDP_VARCHAR:
-			m_lstXdp.SetItemText(nItem,1,field->f_name.c_str());
+			m_lstXdp.SetItemText(nItem,1,field->f_name);
 			sprintf(tmpchar,"%s",fielddata);
 			m_lstXdp.SetItemText(nItem,2,tmpchar);
 			break;
 		case XDP_BINDATA:
-			m_lstXdp.SetItemText(nItem,1,field->f_name.c_str());
+			m_lstXdp.SetItemText(nItem,1,field->f_name);
 			//转成16进制
 			
 			break;

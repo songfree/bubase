@@ -656,18 +656,51 @@ bool CXdpRecord::GetFieldData(unsigned short index,int &idata,char *errmsg)
 		sprintf(errmsg,"无此字段 index[%d]",index);
 		return false;
 	}
-	if (field->f_type != XDP_INT && field->f_type != XDP_UINT)
-	{
-		sprintf(errmsg,"字段index[%d] 非 XDP_INT或XDP_UINT",index);
-		return false;
-	}
+	//if (field->f_type != XDP_INT && field->f_type != XDP_UINT)
+	//{
+	//	sprintf(errmsg,"字段index[%d] 非 XDP_INT或XDP_UINT",index);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((int *)data);
+	if (field->f_type == XDP_USHORT)
+	{
+		idata = *((unsigned short *)data);
+	}
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double *)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_ *)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_ *)data);
+    }
+	else
+	{
+		sprintf(errmsg, "字段index[%d] f_type[%d] 非数值型", index, field->f_type);
+		return false;
+	}
+	//idata = *((int *)data);
 	return true;
 }
 bool CXdpRecord::GetFieldData(unsigned short index,unsigned int &idata,char *errmsg)
@@ -678,18 +711,51 @@ bool CXdpRecord::GetFieldData(unsigned short index,unsigned int &idata,char *err
 		sprintf(errmsg,"无此字段 index[%d]",index);
 		return false;
 	}
-	if (field->f_type != XDP_UINT && field->f_type != XDP_INT)
-	{
-		sprintf(errmsg,"字段index[%d] 非 XDP_UINT或XDP_INT",index);
-		return false;
-	}
+	//if (field->f_type != XDP_UINT && field->f_type != XDP_INT)
+	//{
+	//	sprintf(errmsg,"字段index[%d] 非 XDP_UINT或XDP_INT",index);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((unsigned int *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段index[%d] f_type[%d] 非数值型", index, field->f_type);
+        return false;
+    }
+	//idata = *((unsigned int *)data);
 	return true;
 }
 bool CXdpRecord::GetFieldData(unsigned short index, INT64_& idata, char* errmsg)
@@ -700,18 +766,51 @@ bool CXdpRecord::GetFieldData(unsigned short index, INT64_& idata, char* errmsg)
         sprintf(errmsg, "无此字段 index[%d]", index);
         return false;
     }
-    if (field->f_type != XDP_INT64 && field->f_type != XDP_UINT64)
-    {
-        sprintf(errmsg, "字段index[%d] 非 XDP_INT64或XDP_UINT64", index);
-        return false;
-    }
+    //if (field->f_type != XDP_INT64 && field->f_type != XDP_UINT64)
+    //{
+    //    sprintf(errmsg, "字段index[%d] 非 XDP_INT64或XDP_UINT64", index);
+    //    return false;
+    //}
     char data[50];
     unsigned int datalen = sizeof(data);
     if (!GetFieldData(field, data, datalen, errmsg))
     {
         return false;
     }
-    idata = *((INT64_ *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段index[%d] f_type[%d] 非数值型", index, field->f_type);
+        return false;
+    }
+    //idata = *((INT64_ *)data);
     return true;
 }
 bool CXdpRecord::GetFieldData(unsigned short index, UINT64_& idata, char* errmsg)
@@ -722,18 +821,51 @@ bool CXdpRecord::GetFieldData(unsigned short index, UINT64_& idata, char* errmsg
         sprintf(errmsg, "无此字段 index[%d]", index);
         return false;
     }
-    if (field->f_type != XDP_UINT64 && field->f_type != XDP_INT64)
-    {
-        sprintf(errmsg, "字段index[%d] 非 XDP_UINT64或XDP_INT64", index);
-        return false;
-    }
+    //if (field->f_type != XDP_UINT64 && field->f_type != XDP_INT64)
+    //{
+    //    sprintf(errmsg, "字段index[%d] 非 XDP_UINT64或XDP_INT64", index);
+    //    return false;
+    //}
     char data[50];
     unsigned int datalen = sizeof(data);
     if (!GetFieldData(field, data, datalen, errmsg))
     {
         return false;
     }
-    idata = *((UINT64_*)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段index[%d] f_type[%d] 非数值型", index, field->f_type);
+        return false;
+    }
+    //idata = *((UINT64_*)data);
     return true;
 }
 bool CXdpRecord::GetFieldData(unsigned short index,short &idata,char *errmsg)
@@ -744,18 +876,51 @@ bool CXdpRecord::GetFieldData(unsigned short index,short &idata,char *errmsg)
 		sprintf(errmsg,"无此字段 index[%d]",index);
 		return false;
 	}
-	if (field->f_type != XDP_SHORT && field->f_type != XDP_USHORT)
-	{
-		sprintf(errmsg,"字段index[%d] 非 XDP_SHORT或XDP_USHORT",index);
-		return false;
-	}
+	//if (field->f_type != XDP_SHORT && field->f_type != XDP_USHORT)
+	//{
+	//	sprintf(errmsg,"字段index[%d] 非 XDP_SHORT或XDP_USHORT",index);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((short *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段index[%d] f_type[%d] 非数值型", index, field->f_type);
+        return false;
+    }
+	//idata = *((short *)data);
 	return true;
 }
 bool CXdpRecord::GetFieldData(unsigned short index,unsigned short &idata,char *errmsg)
@@ -766,18 +931,51 @@ bool CXdpRecord::GetFieldData(unsigned short index,unsigned short &idata,char *e
 		sprintf(errmsg,"无此字段 index[%d]",index);
 		return false;
 	}
-	if (field->f_type != XDP_USHORT && field->f_type != XDP_SHORT)
-	{
-		sprintf(errmsg,"字段index[%d] 非 XDP_USHORT或XDP_SHORT",index);
-		return false;
-	}
+	//if (field->f_type != XDP_USHORT && field->f_type != XDP_SHORT)
+	//{
+	//	sprintf(errmsg,"字段index[%d] 非 XDP_USHORT或XDP_SHORT",index);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((unsigned short *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段index[%d] f_type[%d] 非数值型", index, field->f_type);
+        return false;
+    }
+	//idata = *((unsigned short *)data);
 	return true;
 }
 bool CXdpRecord::GetFieldData(unsigned short index,double &idata,char *errmsg)
@@ -788,18 +986,51 @@ bool CXdpRecord::GetFieldData(unsigned short index,double &idata,char *errmsg)
 		sprintf(errmsg,"无此字段 index[%d]",index);
 		return false;
 	}
-	if (field->f_type != XDP_DOUBLE)
-	{
-		sprintf(errmsg,"字段index[%d] 非 XDP_DOUBLE",index);
-		return false;
-	}
+	//if (field->f_type != XDP_DOUBLE)
+	//{
+	//	sprintf(errmsg,"字段index[%d] 非 XDP_DOUBLE",index);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((double *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段index[%d] f_type[%d] 非数值型", index, field->f_type);
+        return false;
+    }
+	//idata = *((double *)data);
 	return true;
 }
 bool CXdpRecord::GetFieldData(unsigned short index, char *data,unsigned int &datalen, int &fieldtype, char *errmsg)
@@ -826,18 +1057,51 @@ bool CXdpRecord::GetFieldData(const char *fieldname,int &idata,char *errmsg)
 		sprintf(errmsg,"无此字段fieldname[%s]",fieldname);
 		return false;
 	}
-	if (field->f_type != XDP_INT && field->f_type != XDP_UINT)
-	{
-		sprintf(errmsg,"字段fieldname[%s] 非XDP_INT或XDP_UINT",fieldname);
-		return false;
-	}
+	//if (field->f_type != XDP_INT && field->f_type != XDP_UINT)
+	//{
+	//	sprintf(errmsg,"字段fieldname[%s] 非XDP_INT或XDP_UINT",fieldname);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((int *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段fieldname[%s] f_type[%d] 非数值型", fieldname, field->f_type);
+        return false;			
+    }
+	//idata = *((int *)data);
 	return true;
 }
 
@@ -849,18 +1113,51 @@ bool CXdpRecord::GetFieldData(const char* fieldname, INT64_& idata, char* errmsg
         sprintf(errmsg, "无此字段fieldname[%s]", fieldname);
         return false;
     }
-    if (field->f_type != XDP_INT64 && field->f_type != XDP_UINT64)
-    {
-        sprintf(errmsg, "字段fieldname[%s] 非XDP_INT64或XDP_UINT64", fieldname);
-        return false;
-    }
+    //if (field->f_type != XDP_INT64 && field->f_type != XDP_UINT64)
+    //{
+    //    sprintf(errmsg, "字段fieldname[%s] 非XDP_INT64或XDP_UINT64", fieldname);
+    //    return false;
+    //}
     char data[50];
     unsigned int datalen = sizeof(data);
     if (!GetFieldData(field, data, datalen, errmsg))
     {
         return false;
     }
-    idata = *((INT64_*)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段fieldname[%s] f_type[%d] 非数值型", fieldname, field->f_type);
+        return false;
+    }
+    //idata = *((INT64_*)data);
     return true;
 }
 
@@ -872,18 +1169,51 @@ bool CXdpRecord::GetFieldData(const char* fieldname, UINT64_& idata, char* errms
         sprintf(errmsg, "无此字段fieldname[%s]", fieldname);
         return false;
     }
-    if (field->f_type != XDP_UINT64 && field->f_type != XDP_INT64)
-    {
-        sprintf(errmsg, "字段fieldname[%s] 非XDP_UINT64或XDP_INT64", fieldname);
-        return false;
-    }
+    //if (field->f_type != XDP_UINT64 && field->f_type != XDP_INT64)
+    //{
+    //    sprintf(errmsg, "字段fieldname[%s] 非XDP_UINT64或XDP_INT64", fieldname);
+    //    return false;
+    //}
     char data[50];
     unsigned int datalen = sizeof(data);
     if (!GetFieldData(field, data, datalen, errmsg))
     {
         return false;
     }
-    idata = *((UINT64_*)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段fieldname[%s] f_type[%d] 非数值型", fieldname, field->f_type);
+        return false;
+    }
+    //idata = *((UINT64_*)data);
     return true;
 }
 bool CXdpRecord::GetFieldData(const char *fieldname,unsigned int &idata,char *errmsg)
@@ -894,18 +1224,51 @@ bool CXdpRecord::GetFieldData(const char *fieldname,unsigned int &idata,char *er
 		sprintf(errmsg,"无此字段fieldname[%s]",fieldname);
 		return false;
 	}
-	if (field->f_type != XDP_UINT && field->f_type != XDP_INT)
-	{
-		sprintf(errmsg,"字段fieldname[%s] 非XDP_UINT或XDP_INT",fieldname);
-		return false;
-	}
+	//if (field->f_type != XDP_UINT && field->f_type != XDP_INT)
+	//{
+	//	sprintf(errmsg,"字段fieldname[%s] 非XDP_UINT或XDP_INT",fieldname);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((unsigned int *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段fieldname[%s] f_type[%d] 非数值型", fieldname, field->f_type);
+        return false;
+    }
+	//idata = *((unsigned int *)data);
 	return true;
 }
 bool CXdpRecord::GetFieldData(const char *fieldname,short &idata,char *errmsg)
@@ -916,18 +1279,51 @@ bool CXdpRecord::GetFieldData(const char *fieldname,short &idata,char *errmsg)
 		sprintf(errmsg,"无此字段fieldname[%s]",fieldname);
 		return false;
 	}
-	if (field->f_type != XDP_SHORT && field->f_type != XDP_USHORT)
-	{
-		sprintf(errmsg,"字段fieldname[%s] 非XDP_SHORT或XDP_USHORT",fieldname);
-		return false;
-	}
+	//if (field->f_type != XDP_SHORT && field->f_type != XDP_USHORT)
+	//{
+	//	sprintf(errmsg,"字段fieldname[%s] 非XDP_SHORT或XDP_USHORT",fieldname);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((short *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段fieldname[%s] f_type[%d] 非数值型", fieldname, field->f_type);
+        return false;
+    }
+	//idata = *((short *)data);
 	return true;
 }
 bool CXdpRecord::GetFieldData(const char *fieldname,unsigned short &idata,char *errmsg)
@@ -938,18 +1334,51 @@ bool CXdpRecord::GetFieldData(const char *fieldname,unsigned short &idata,char *
 		sprintf(errmsg,"无此字段fieldname[%s]",fieldname);
 		return false;
 	}
-	if (field->f_type != XDP_USHORT && field->f_type != XDP_SHORT)
-	{
-		sprintf(errmsg,"字段fieldname[%s] 非XDP_USHORT或XDP_SHORT",fieldname);
-		return false;
-	}
+	//if (field->f_type != XDP_USHORT && field->f_type != XDP_SHORT)
+	//{
+	//	sprintf(errmsg,"字段fieldname[%s] 非XDP_USHORT或XDP_SHORT",fieldname);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((unsigned short *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段fieldname[%s] f_type[%d] 非数值型", fieldname, field->f_type);
+        return false;
+    }
+	//idata = *((unsigned short *)data);
 	return true;
 }
 bool CXdpRecord::GetFieldData(const char *fieldname,double &idata,char *errmsg)
@@ -960,18 +1389,51 @@ bool CXdpRecord::GetFieldData(const char *fieldname,double &idata,char *errmsg)
 		sprintf(errmsg,"无此字段fieldname[%s]",fieldname);
 		return false;
 	}
-	if (field->f_type != XDP_DOUBLE)
-	{
-		sprintf(errmsg,"字段fieldname[%s] 非XDP_DOUBLE",fieldname);
-		return false;
-	}
+	//if (field->f_type != XDP_DOUBLE)
+	//{
+	//	sprintf(errmsg,"字段fieldname[%s] 非XDP_DOUBLE",fieldname);
+	//	return false;
+	//}
 	char data[50];
 	unsigned int datalen = sizeof(data);
 	if (!GetFieldData(field,data,datalen,errmsg))
 	{
 		return false;
 	}
-	idata = *((double *)data);
+    if (field->f_type == XDP_USHORT)
+    {
+        idata = *((unsigned short*)data);
+    }
+    else if (field->f_type == XDP_SHORT)
+    {
+        idata = *((short*)data);
+    }
+    else if (field->f_type == XDP_UINT)
+    {
+        idata = *((unsigned int*)data);
+    }
+    else if (field->f_type == XDP_INT)
+    {
+        idata = *((int*)data);
+    }
+    else if (field->f_type == XDP_DOUBLE)
+    {
+        idata = *((double*)data);
+    }
+    else if (field->f_type == XDP_INT64)
+    {
+        idata = *((INT64_*)data);
+    }
+    else if (field->f_type == XDP_UINT64)
+    {
+        idata = *((UINT64_*)data);
+    }
+    else
+    {
+        sprintf(errmsg, "字段fieldname[%s] f_type[%d] 非数值型", fieldname, field->f_type);
+        return false;
+    }
+	//idata = *((double *)data);
 	return true;
 }
 

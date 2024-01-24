@@ -301,10 +301,10 @@ BOOL CVarConfig::OnInitDialog()
 		
 	}
 	m_currNode = NULL;
-	string type;
-	string len;
-	string fmt;
-	string initvalue;
+	std::string type;
+	std::string len;
+	std::string fmt;
+	std::string initvalue;
 	char tmpchar[40];
 
 	CXmlNode *headnode = m_xmlpack.SetNodeValueByPath("/package/head",false,"",false);
@@ -415,7 +415,7 @@ void CVarConfig::OnOK()
 			return ;
 		}
 	}
-	string stemp;
+	std::string stemp;
 	sprintf(nodepathname,"/package/head/%s",csName.GetBuffer(csName.GetLength()));
 	if (m_xmlpack.GetNodeByPath(nodepathname) != NULL)
 	{

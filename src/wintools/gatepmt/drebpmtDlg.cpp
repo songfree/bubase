@@ -959,7 +959,7 @@ void CDrebpmtDlg::OnButtonOpenlist()
 	
 	int recNum;
 	int nItem ;
-	string sss;
+	std::string sss;
 	CXmlNode *tmpnode = xmlpack.GetNodeByPath("/package/pack");
 	if (tmpnode == NULL)
 	{
@@ -1095,7 +1095,7 @@ void CDrebpmtDlg::SaveVarInitData()
 	}
  	char tmpchar[40];
 	int ret;
-	vector<CXmlNode *> nodelist;
+	std::vector<CXmlNode *> nodelist;
  	//将变量的初始值置回
 	for (int i=0;i<m_pShareData.m_varList.size();i++)
 	{

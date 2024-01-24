@@ -4770,6 +4770,7 @@ public:
 //CKeyField<Index_tuple<tuple<UINT64_,std::string>>> m_key; 
 //Index_tuple<tuple<UINT64_,std::string>> aa ;
 //        aa.data = {info.user_id,info.mac};
+//        aa.data = std::make_tuple(info.user_id,info.mac);
 //        if (m_key.Find(aa)) {
 
 

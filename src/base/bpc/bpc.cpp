@@ -347,6 +347,7 @@ int main(int argc, char* argv[])
 	frun.m_pRes.m_pSerial = (S_SHM_PUBLIC *)(g_pExitFlag+4);
 	if (!frun.Init(confile))
 	{
+		printf("Init ß∞‹\n");
 		return -1;
 	}
 	

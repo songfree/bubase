@@ -102,7 +102,7 @@ public:
 	char m_errMsg[256];
 	char m_seg[10];//·Ö¸ô·û
 	
-	vector <S_REQANS> m_reqans;
+	std::vector <S_REQANS> m_reqans;
 	int m_nSuccessNum;
 	int m_nFaildNum;
 

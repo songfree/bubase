@@ -595,10 +595,10 @@ int CBF_DrebSocketInfo::PutSendMsg(S_BPC_RSMSG msg)
 	if (ret <0 )
 	{
 #ifdef _ENGLISH_
-		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"queue already full,discard, index[%d] flag[%d %d %d] queuesize[%d]",\
+		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"queue already full,discard, index[%d] flag[%d %d %d] queuesize[%d]",\
 				m_index,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial, m_pSendQueue.m_nQueueSize);
 #else
-		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"队列已满，丢弃 index[%d] 标识[%d %d %d]  队列大小[%d]",\
+		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"队列已满，丢弃 index[%d] 标识[%d %d %d]  队列大小[%d]",\
 				m_index,msg.s_nNodeId,msg.s_cNodePrivateId,msg.s_nDrebSerial, m_pSendQueue.m_nQueueSize);
 #endif
 		m_pMemPool->PoolFree(msg.sMsgBuf);
@@ -735,10 +735,10 @@ int CBF_DrebSocketInfo::GetRecvData(S_BPC_RSMSG *msg)
 	else if (m_nRcvBufLen>0)
 	{
 #ifdef _ENGLISH_
-		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"warn, index[%d] DREB[%d %d] type[%s] receive part data %d",\
+		m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"warn, index[%d] DREB[%d %d] type[%s] receive part data %d",\
 			m_index,m_nDrebId,m_nDrebPrivateId,"BPCSOCK_DREB",m_nRcvBufLen);
 #else
-		m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"警告 index[%d] DREB[%d %d] type[%s] 收到数据%d,但不完整",\
+		m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"警告 index[%d] DREB[%d %d] type[%s] 收到数据%d,但不完整",\
 			m_index,m_nDrebId,m_nDrebPrivateId,"BPCSOCK_DREB",m_nRcvBufLen);
 #endif
 	}

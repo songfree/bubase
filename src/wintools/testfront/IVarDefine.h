@@ -11,7 +11,7 @@
 
 #include "public.h"
 #include "BF_Mutex.h"
-
+using namespace std;
 class CIVarDefine  
 {
 public:
@@ -21,7 +21,7 @@ public:
 	/// 编程  : 王明松 2009-7-17 17:11:33
 	/// 返回  : string & 
 	/// 描述  : 获取整型变量的格式字串
-	string & GetFmt();
+	std::string & GetFmt();
 
 	/// 函数名: SetVarPara
 	/// 编程  : 王明松 2009-7-17 17:10:28

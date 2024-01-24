@@ -324,7 +324,7 @@ bool CSendData::GetValue(CNode *node, char *value)
 	{
 		__int64 lvalue = _atoi64(value+1);
 		sprintf(value,"%I64d",lvalue+1);
-		node->m_value = (string)"~"+(string)value;
+		node->m_value = (std::string)"~"+(std::string)value;
 	}
 	else if (strncmp(value,"##",2)==0) //½»Ò×Âë
 	{

@@ -35,6 +35,8 @@ CGlobalVar::CGlobalVar()
 	
 	g_nMaxRouteStep = 16;
 	g_nMsgProcThread = 0;
+
+	g_nCpuCore =0;
 }
 
 CGlobalVar::~CGlobalVar()
@@ -76,10 +78,13 @@ bool CGlobalVar::Init(const char *confile)
 	}
 	if (xmlconf.GetNodeValueByPath("package/head/crc",false,g_nCrcFlag) == NULL)
 	{
-		
 		g_nCrcFlag=0;
 	}
-
+    if (xmlconf.GetNodeValueByPath("package/head/cpucores", false, g_nCpuCore) == NULL)
+    {
+		g_nCpuCore = 0;
+    }
+	
 	//先停止日志线程
 	if (!g_pLog.IsStopedThread())
 	{

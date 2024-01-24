@@ -30,7 +30,7 @@ bool CBpcRun::Init(const char *confile)
 	m_pLog = m_pDrebApi.GetLogPoint();
 	if (!m_pRes.Init((char *)confile, m_pLog))
 	{
-		printf("%s\n",m_pRes.GetMsg().c_str());
+		printf("m_pRes.Init error:%s\n",m_pRes.GetMsg().c_str());
 		return false;
 	}
 	m_pDrebSpi.Init(&m_pDrebApi,&m_pRes);

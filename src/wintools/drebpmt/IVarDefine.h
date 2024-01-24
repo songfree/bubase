@@ -11,6 +11,7 @@
 
 #include "public.h"
 #include "BF_Mutex.h"
+using namespace std;
 
 class CIVarDefine  
 {

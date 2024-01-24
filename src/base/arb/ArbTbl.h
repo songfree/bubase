@@ -81,7 +81,7 @@ public:
 	CIErrlog    *m_pLog;
 
 protected:
-	CMemTable <ARB_S_APPINFO> m_table;        //服务内存表
+	CMemTableNew <ARB_S_APPINFO> m_table;        //服务内存表
 
 	CIndexUInt<1>             m_index_appid;   //服务id索引
 	CPkeyUInt<2>              m_pkey;         //服务id+私有id索引，唯一索引

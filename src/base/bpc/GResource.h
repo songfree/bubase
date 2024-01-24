@@ -317,7 +317,7 @@ protected:
 	long   m_nSerial_getMax;//最大流水序号
 
 
-	CMemTable <S_BPUGROUP_TBL> m_table;               //组名表
+	CMemTableNew <S_BPUGROUP_TBL> m_table;               //组名表
 	CPkeyCharF<21,1>           m_pkey;                //组名
 };
 

@@ -34,14 +34,7 @@
 class KERNEL_EXPORT CIErrlog  
 {
 public:
-	CIErrlog()
-	{
 
-	}
-	virtual ~CIErrlog()
-	{
-
-	}
 	// 函数名: isWrite
 	// 编程  : 王明松 2009-6-29 14:28:34
 	// 返回  : int 
