@@ -11,12 +11,24 @@
 CSubScribeInfo::CSubScribeInfo()
 {
 	m_pLog = NULL;
+	m_nSubscribFlag = 1;
 }
 
 CSubScribeInfo::~CSubScribeInfo()
 {
 }
-
+bool CSubScribeInfo::SubscribeAll(bool allflag, char* msg)
+{
+	if (allflag)
+	{
+		m_nSubscribFlag = 2;
+	}
+	else
+	{
+		m_nSubscribFlag = 1;
+	}
+	return true;
+}
 bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 {
 	if (datalen < sizeof(S_GATE_SUBSCRIBE))
@@ -27,7 +39,7 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 	}
 	PS_GATE_SUBSCRIBE sub = (PS_GATE_SUBSCRIBE)data;
 	
-	if (sub->flag <0 || sub->flag >1)
+	if (sub->flag <0 || sub->flag >2)
 	{
 		sprintf(msg,"订阅标志不符 %d",sub->flag);
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"%s",msg);
@@ -38,10 +50,18 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 	{
 		case 0:
 		    //m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "取消订阅");
-			break;;
+			SubscribeAll(false, msg);
+			break;
 		case 1:
 			//m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "订阅");
+			SubscribeAll(false, msg);
 			break;
+        case 2:
+            //订阅所有
+			return SubscribeAll(true,msg);
+        case 3:
+            //订阅所有
+            return SubscribeAll(false,msg);
 		default:
 			return true;
 	}  
@@ -128,6 +148,10 @@ void CSubScribeInfo::Clear()
 }
 bool CSubScribeInfo::IsSubscribe(unsigned int funcno, unsigned int key)
 {
+	if (m_nSubscribFlag == 2)
+	{
+		return true;
+	}
 	CBF_PMutex pp(&m_mutex);
 	return m_key.Find(funcno,key);
 }

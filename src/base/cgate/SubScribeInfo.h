@@ -16,33 +16,12 @@
 #include "IErrLog.h"
 #include "BF_Mutex.h"
 //订阅信息  每个连接一个实例。
-
-
-
-class CTbl_Subscribe
-{
-protected:
-
-	CMemTableNew<S_SUBSCRIBE_>     m_table;
-	CPkeyUInt<2>         m_key;//功能号+key
-	CBF_Mutex                      m_mutex;//互斥锁
-public:
-	CTbl_Subscribe()
-	{
-	}
-	virtual ~CTbl_Subscribe()
-	{
-
-	}
-
-};
-
 class CSubScribeInfo  
 {
 protected:
 
     CMemTableNew<S_SUBSCRIBE_>     m_table;
-    CPkeyUInt<2>         m_key;//功能号+key
+    CPkeyUIntUnordered<2>         m_key;//功能号+key
 
 	void Clear();
 public:
@@ -63,7 +42,7 @@ public:
 	// 参数  : char *msg   失败信息
 	// 描述  : 行情订阅
 	bool Subscribe(const char *data,int datalen,char *msg);
-
+	bool SubscribeAll(bool allflag,char* msg);
 
 	int Select(std::vector<S_SUBSCRIBE_*>& reslist);
 	int Subscribe(unsigned int funcno, unsigned int key);
@@ -72,6 +51,8 @@ public:
 	virtual ~CSubScribeInfo();
 	
 	CIErrlog   *m_pLog;
+
+	int    m_nSubscribFlag;		  //1按key funcno订阅  2订阅所有
 	
 protected:
 	CDrebEndian   m_pEndian;

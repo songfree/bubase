@@ -56,7 +56,7 @@ public:
 	CPoolData();
 	virtual ~CPoolData();
 
-protected:
+private:
 
 	LIST_POOLDATA m_poolDataList;//处理数据列表  
 	CBF_Mutex m_mutex;//取连接互斥量
