@@ -24,6 +24,8 @@ CGateResource::CGateResource()
 	g_nQuoteQueueDeleteTime = 10;
 	g_nSendQueThreadNum  = 2;
 	g_nQuoSubScribe = 1;
+	g_nCloseBc =0;
+	g_nCloseBcFunc = 99002;
 }
 
 CGateResource::~CGateResource()
@@ -177,7 +179,25 @@ bool CGateResource::Init(const char *confile, CIErrlog* log)
 		g_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,m_sErrMsg);
 		g_nQuoSubScribe = 1;
 	}
-
+    if (g_pXml.GetNodeValueByPath("/package/head/public/closebc2dreb", false, g_nCloseBc) == NULL)
+    {
+        sprintf(m_sErrMsg, "xml配置文件节点[/package/head/public/closebc2dreb]未配置 默认不发送");
+        g_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, m_sErrMsg);
+		g_nCloseBc = 0;
+    }
+	if (g_nCloseBc != 1)
+	{
+		g_nCloseBc = 0;
+	}
+	else
+	{
+        if (g_pXml.GetNodeValueByPath("/package/head/public/closebcfunc", false, g_nCloseBcFunc) == NULL)
+        {
+            sprintf(m_sErrMsg, "xml配置文件节点[/package/head/public/closebcfunc]未配置 默认99002");
+            g_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, m_sErrMsg);
+			g_nCloseBcFunc = 99002;
+        }
+	}
 	if (g_pXml.GetNodeValueByPath("/package/head/public/clientsendthreadnum",false,g_nSendQueThreadNum) == NULL) 
 	{
 		sprintf(m_sErrMsg,"xml配置文件节点[/package/head/public/clientsendthreadnum]未配置 默认1个，最大50个");

@@ -101,6 +101,9 @@ public:
 
 	int   g_nQuoSubScribe;//是否行情订阅   0不用订阅  1需订阅
 
+    int   g_nCloseBc;//关闭连接是否发送广播至总线
+    int   g_nCloseBcFunc;//关闭连接发送广播至总线的交易码
+
 	//std::vector<int>  g_lBCFuncList;//广播配置 需要向总线订阅的广播
     CTbl_BcInfo    g_lBCFuncList;    //广播配置 需要向总线订阅的广播
 

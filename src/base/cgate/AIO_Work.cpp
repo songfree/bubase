@@ -234,6 +234,37 @@ void CAIO_Work::OnConnectBack(PSOCKET_POOL_DATA info,int status)
 // 描述  : AIO通知，发现一个连接关闭，AIO并没有对此连接进行关闭处理，要求在这里对此连接进行后续处理，然后调用Close方法通知AIO关闭等
 void CAIO_Work::OnClose(PSOCKET_POOL_DATA info,std::string msg)
 {
+	if (m_pRes->g_nCloseBc == 1)
+	{
+		//发送关闭连接广播到总线
+		m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "准备发送连接关闭广播 s_cCheckFlag[%d] s_nIndex[%d] s_nTimestamp[%d]", info->s_cCheckFlag, info->s_nIndex, info->s_nTimestamp);
+		if (info->s_cCheckFlag == CHECKFLAG_NORMAL)
+		{
+            S_BPC_RSMSG drebdata;
+            drebdata.sMsgBuf = NULL;
+            drebdata.index = info->s_nIndex;
+            drebdata.nRtime = time(NULL);
+            drebdata.sMsgBuf = (PBPCCOMMSTRU)m_pMemPool->PoolMalloc();
+            if (drebdata.sMsgBuf != NULL)
+            {
+                bzero(&(drebdata.sMsgBuf->sBpcHead), sizeof(S_BPC_HEAD));
+                bzero(&(drebdata.sMsgBuf->sDBHead), DREBHEADLEN);
+				sprintf(drebdata.sMsgBuf->sBuffer,"%s", inet_ntoa(info->s_pSocketAddr.sin_addr));
+				drebdata.sMsgBuf->sDBHead.nLen = strlen(drebdata.sMsgBuf->sBuffer);
+                drebdata.nTotalLen = BPCHEADLEN + DREBHEADLEN + drebdata.sMsgBuf->sDBHead.nLen;
+                //报文头
+                drebdata.sMsgBuf->sDBHead.cCmd = CMD_DPABC;
+                //目的信息、服务号交易码等
+                drebdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo = m_pRes->g_nCloseBcFunc;
+                //取后续包的信息
+                //连接信息、客户端流水、连接时间戳
+                drebdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex = info->s_nIndex;	//连接index
+                drebdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook = info->s_nTimestamp;//时间戳
+                //放入队列，由消息线程来处理
+                m_pDataPool->PushData(drebdata);
+            }
+		}
+	}
 	//清空发送队列是在AIO里面进行的
  	
 	//将订阅实例销毁
