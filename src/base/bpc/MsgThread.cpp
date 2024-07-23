@@ -118,6 +118,9 @@ void CMsgThread::DispatchExtCall(S_BPC_RSMSG &rcvdata)
 	rcvdata.sMsgBuf->sBpcHead.nIndex=100;
 	if (m_pDrebApi->SendMsg(rcvdata)<0)
 	{
+		m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__,"发送功能号[%d]失败", rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo);
+        m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+		rcvdata.sMsgBuf = NULL;
 	}
 	return;
 	
@@ -131,9 +134,11 @@ void CMsgThread::DispatchTrans(S_BPC_RSMSG &rcvdata)
 	//add end
 
     rcvdata.sMsgBuf->sBpcHead.nIndex = 100;
-    if (m_pDrebApi->SendMsg(rcvdata))
+    if (m_pDrebApi->SendMsg(rcvdata)<0)
     {
-
+        m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "发送功能号[%d]失败", rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo);
+        m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+        rcvdata.sMsgBuf = NULL;
     }
 	
 }
@@ -173,7 +178,7 @@ void CMsgThread::DispatchBpuReg(S_BPC_RSMSG &rcvdata)
 	//注册功能
 	S_BPU_FUNC_REG *regdata=NULL;
 	S_BPU_FUNCINFO *funcdata=NULL;
-	
+	int nRet;
 	if (m_pRes->g_nRegisterMode == REGISTERMODE_STATIC  )
 	{
 		//静态注册直接返回
@@ -183,7 +188,12 @@ void CMsgThread::DispatchBpuReg(S_BPC_RSMSG &rcvdata)
 		rcvdata.sMsgBuf->sDBHead.cZip = 0;
 		rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_BPC_REGTX;
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+		nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+        if (nRet == -101)
+        {
+            m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+        }
 		return;
 	}
 	regdata = (S_BPU_FUNC_REG *)rcvdata.sMsgBuf->sBuffer;
@@ -206,7 +216,12 @@ void CMsgThread::DispatchBpuReg(S_BPC_RSMSG &rcvdata)
 		rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_BPC_REGTX;
 		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->m_bChecked = true;
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+		nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+        if (nRet == -101)
+        {
+            m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+        }
 		return;
 	}
 
@@ -223,7 +238,12 @@ void CMsgThread::DispatchBpuReg(S_BPC_RSMSG &rcvdata)
 		rcvdata.sMsgBuf->sDBHead.cZip = 0;
 		rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_BPC_REGTX;
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+		nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+        if (nRet == -101)
+        {
+            m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+        }
 		return;
 	}
 	int len = sizeof(S_BPU_FUNC_REG)-sizeof(S_BPU_FUNCINFO);
@@ -257,8 +277,12 @@ void CMsgThread::DispatchBpuReg(S_BPC_RSMSG &rcvdata)
 	rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
 	m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->m_bChecked = true;
 	m_pRes->g_vBpuGroupInfo[m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->m_nBpuGroupIndex].g_bIsReg = true;
-	m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
-	
+	nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+    if (nRet == -101)
+    {
+        m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+        rcvdata.sMsgBuf = NULL;
+    }
 	
 	if (regdata->nFuncNum>0)
 	{
@@ -359,6 +383,7 @@ void CMsgThread::Dispatch2BpuGroupGetNext(S_BPC_RSMSG &rcvdata)
 {
 	int flag=0;
 	S_FUNCINFO_TBL fn;
+	int nRet;
 	//取交易的优先级,找到交易对应的BPU组，然后交给此BPU组,放入队列
 	bool isfind = m_pFuncTbl->Select(rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,fn);
 	if (!isfind) //没有找到
@@ -381,7 +406,12 @@ void CMsgThread::Dispatch2BpuGroupGetNext(S_BPC_RSMSG &rcvdata)
 			rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_FUNCNOTFUND;
 			rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
 			rcvdata.sMsgBuf->sDBHead.nLen = 0;
-			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
+			nRet  = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
+            if (nRet == -101)
+            {
+                m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                rcvdata.sMsgBuf = NULL;
+            }
 		}
 		return;
 	}
@@ -407,6 +437,7 @@ void CMsgThread::Dispatch2BpuGroup(S_BPC_RSMSG &rcvdata)
 {
 	int flag=0;
 	S_FUNCINFO_TBL fn;
+	int nRet ;
 	//取交易的优先级,然后放入队列
 	fn = m_pFuncTbl->FindFunc(rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,flag);
 	if (flag == 0) //没有找到
@@ -421,7 +452,12 @@ void CMsgThread::Dispatch2BpuGroup(S_BPC_RSMSG &rcvdata)
 		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_FUNCNOTFUND;
 		rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
 		rcvdata.sMsgBuf->sDBHead.nLen = 0;
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
+		nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
+        if (nRet == -101)
+        {
+            m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+        }
 		return;
 	}
 	

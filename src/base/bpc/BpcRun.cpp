@@ -150,6 +150,7 @@ bool CBpcRun::Init(const char *confile)
 		disthread->m_nBegin = m_pRes.g_vBpuGroupInfo[i].g_nBeginSocketIndex;
 		disthread->m_nEnd = m_pRes.g_vBpuGroupInfo[i].g_nEndSocketIndex;
 		disthread->m_nBpugroupindex = i;
+		disthread->m_pDrebApi = &m_pDrebApi;
 		m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"BPU组[%s %d]分派线程 起始socket 连接池[%d %d],不包含%d",\
 			m_pRes.g_vBpuGroupInfo[i].g_sBpuGroupName.c_str(),i,disthread->m_nBegin,\
 			disthread->m_nEnd,disthread->m_nEnd);
@@ -163,7 +164,7 @@ bool CBpcRun::Init(const char *confile)
 			m_pBuThread.m_nBegin,m_pBuThread.m_nEnd,m_pBuThread.m_nEnd);
 
 	//启动线程
-	m_pBpuLinkThread.CreateThread();//侦听dreb线程
+	m_pBpuLinkThread.CreateThread();//侦听线程
 	m_pBuThread.CreateThread();
 	m_pDrebApi.Start();
 
@@ -236,7 +237,7 @@ void CBpcRun::Monitor()
 	int i,j,k;
 	if (m_pBpuLinkThread.IsStoped())
 	{
-		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"重启DREB连接及BPU侦听线程[%s]","CLinkThread");
+		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"重启BPU侦听线程[%s]","CLinkThread");
 		m_pBpuLinkThread.CreateThread();
 	}
 	if (m_pMsgThread.IsStoped())
@@ -257,6 +258,11 @@ void CBpcRun::Monitor()
 			m_pDispath[i]->CreateThread();
 		}
 	}
+	int ntotal;
+	int nunuse;
+	int nsize;
+	m_pDrebApi.GetBufferPoolInfo(ntotal, nunuse,nsize);
+	m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "总线总分配内存[%d] 未使用[%d] 每个大小[%d]", ntotal,nunuse,nsize);
 
 	S_PROCESS_NODE node;
 	int bpugnum=0;

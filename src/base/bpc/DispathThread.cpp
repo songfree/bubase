@@ -20,6 +20,7 @@ CDispathThread::CDispathThread()
 
 	m_pLog = NULL;
 	m_nCurBpuIndex = 0;
+	m_pDrebApi = NULL;
 }
 
 CDispathThread::~CDispathThread()
@@ -69,7 +70,7 @@ void CDispathThread::Dispatch()
 {
 	int flag;
 	S_FUNCINFO_TBL func;
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始分派[%d]",m_pDataBuf.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始分派msgtype[%d] d_nServiceNo[%d]", m_pDataBuf.sMsgBuf->sBpcHead.cMsgType,m_pDataBuf.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo);
 	switch (m_pDataBuf.sMsgBuf->sBpcHead.cMsgType)
 	{
 		case MSG_BPCCALL://bpu过来
@@ -105,7 +106,8 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 			rcvdata.sMsgBuf->sDBHead.cNextFlag = 0;
 			rcvdata.sMsgBuf->sDBHead.nLen = 0;
 			rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_TIMEOUT;
-			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
+			m_pDrebApi->SendMsg(rcvdata); //应答给总线
+			//m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
 		}
 		else if (rcvdata.sMsgBuf->sBpcHead.cMsgType == MSG_BPCMONITOR) //monitor
 		{
@@ -119,7 +121,12 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 			rcvdata.sMsgBuf->sDBHead.nLen = 0;
 			rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 			rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_TIMEOUT;
-			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+			nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+			if (nRet == -101)
+			{
+                m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                rcvdata.sMsgBuf = NULL;
+			}
 		}
 
 		return;
@@ -140,6 +147,8 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 		{
 			if (m_pRes->g_bToExit)
 			{
+                m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                rcvdata.sMsgBuf = NULL;
 				return;
 			}
 			int i;
@@ -152,13 +161,14 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 					if (nRet == -101)  //数据解密解压缩出错
 					{
 						//应答回去
-						if (rcvdata.sMsgBuf->sBpcHead.cMsgType == MSG_REQ)
+						if (rcvdata.sMsgBuf->sBpcHead.cMsgType == MSG_REQ)	//总线
 						{
 							rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
 							rcvdata.sMsgBuf->sDBHead.cNextFlag = 0;
 							rcvdata.sMsgBuf->sDBHead.nLen = 0;
 							rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_DATA_ENCRYPTZIP;
-							m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
+							m_pDrebApi->SendMsg(rcvdata); //应答给总线
+							//m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
 						}
 						else if (rcvdata.sMsgBuf->sBpcHead.cMsgType == MSG_BPCMONITOR) //monitor
 						{
@@ -172,7 +182,12 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 							rcvdata.sMsgBuf->sDBHead.nLen = 0;
 							rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 							rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_DATA_ENCRYPTZIP;
-							m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+							nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+                            if (nRet == -101)
+                            {
+                                m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                                rcvdata.sMsgBuf = NULL;
+                            }
 						}
 					}
 					return;
@@ -218,7 +233,8 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 							rcvdata.sMsgBuf->sDBHead.cNextFlag = 0;
 							rcvdata.sMsgBuf->sDBHead.nLen = 0;
 							rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_DATA_ENCRYPTZIP;
-							m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
+							m_pDrebApi->SendMsg(rcvdata); //应答给总线
+							//m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
 						}
 						else if (rcvdata.sMsgBuf->sBpcHead.cMsgType == MSG_BPCMONITOR) //monitor
 						{
@@ -232,7 +248,12 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 							rcvdata.sMsgBuf->sDBHead.nLen = 0;
 							rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 							rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_DATA_ENCRYPTZIP;
-							m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+							nRet == m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+                            if (nRet == -101)
+                            {
+                                m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                                rcvdata.sMsgBuf = NULL;
+                            }
 						}
 					}
 					
@@ -265,7 +286,8 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 		rcvdata.sMsgBuf->sDBHead.cNextFlag = 0;
 		rcvdata.sMsgBuf->sDBHead.nLen = 0;
 		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_NOBPUFREE;
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
+		m_pDrebApi->SendMsg(rcvdata); //应答给总线
+		//m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nIndex)->SendMsg(rcvdata);
 	}
 	else if (rcvdata.sMsgBuf->sBpcHead.cMsgType == MSG_BPCMONITOR) //monitor
 	{
@@ -279,7 +301,12 @@ void CDispathThread::DispatchBpu(S_BPC_RSMSG &rcvdata)
 		rcvdata.sMsgBuf->sDBHead.nLen = 0;
 		rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_NOBPUFREE;
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+		nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+        if (nRet == -101)
+        {
+            m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+        }
 	}
 
 	return;

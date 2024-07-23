@@ -40,6 +40,13 @@ CSocketInfo::~CSocketInfo()
 	{
 		closesocket(m_sock);
 	}
+    RDQUEUE::iterator iter;
+    for (iter = m_pSendQueue.m_qSendData.datas.begin(); iter != m_pSendQueue.m_qSendData.datas.end(); iter++)
+    {
+        m_pMemPool->PoolFree(iter->sMsgBuf);
+        iter->sMsgBuf = NULL;
+    }
+    m_pSendQueue.Clear();
 	m_pMemPool = NULL;
 	m_gRes = NULL;
 	m_log= NULL;
@@ -184,6 +191,12 @@ void CSocketInfo::OnClose(const char *msg,const char *filename,int fileline)
 	else
 	{
 		m_bNeedConnect = false;
+        RDQUEUE::iterator iter;
+        for (iter = m_pSendQueue.m_qSendData.datas.begin(); iter != m_pSendQueue.m_qSendData.datas.end(); iter++)
+        {
+            m_pMemPool->PoolFree(iter->sMsgBuf);
+			iter->sMsgBuf = NULL;
+        }
 		m_pSendQueue.Clear();
 		
 	}
@@ -423,8 +436,9 @@ int CSocketInfo::SendMsg(S_BPC_RSMSG &msg,bool sendimmediate)
 						msg.sMsgBuf->sDBHead.cRaflag,msg.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,msg.sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
 						msg.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,msg.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 						msg.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,msg.sMsgBuf->sDBHead.s_Sinfo.s_nHook,msg.sMsgBuf->sDBHead.cZip,msg.sMsgBuf->sDBHead.nLen);
-// 					m_pMemPool->PoolFree(msg.sMsgBuf);
-// 					msg.sMsgBuf = NULL;
+					//解压出错，在外面有判断释放
+                    //m_pMemPool->PoolFree(msg.sMsgBuf);
+                    //msg.sMsgBuf = NULL;
 					return -101;
 				}
 			}
@@ -666,192 +680,93 @@ int CSocketInfo::GetRecvData(S_BPC_RSMSG *msg)
 	{
 		return -100;
 	}
-	if (m_nType == BPCSOCK_DREB) //dreb收到的数据
+	
+	m_log->LogMp(LOG_DEBUG+2,__FILE__,__LINE__,"BPU[%s %d %d] type[%s] 收到数据%d",\
+		m_sBpuGroupName.c_str(),m_index,m_nBpuGroupIndex,"BPU_SOCKET",m_nRcvBufLen);
+	//收到的数据大于包头
+	if (m_nRcvBufLen >= BPCHEADLEN+DREBHEADLEN)
 	{
-		//收到的数据大于包头
-		if (m_nRcvBufLen >= DREBHEADLEN )
+		memcpy(&(msg->sMsgBuf->sBpcHead),m_sRcvBuffer,BPCHEADLEN);
+		if (msg->sMsgBuf->sBpcHead.nMsgFlag != LMSGID)
 		{
-//			m_gRes->PutTime();
-			//进行字节序处理并校验CRC
-			memcpy(&(msg->sMsgBuf->sDBHead),m_sRcvBuffer,DREBHEADLEN);
-			if (m_gRes->g_nCrcFlag == 1)
-			{
-				if (!m_pDrebEndian.Endian2LocalHostChkCrc(&(msg->sMsgBuf->sDBHead)) )
-				{
-					OnClose("错误 CRC错",__FILE__,__LINE__);
-					return -1;
-				}
-			}
-			else
-			{
-				m_pDrebEndian.Endian2LocalHost(&(msg->sMsgBuf->sDBHead));
+			m_pBpcEndian.SetCommEndian(false);//对方使用网络序
+		}
+		else
+		{
+			m_pBpcEndian.SetCommEndian(true);
+		}
+		memcpy(&(msg->sMsgBuf->sDBHead),m_sRcvBuffer+BPCHEADLEN,DREBHEADLEN);
+		//字节序处理
+		m_pBpcEndian.Endian2LocalHost(msg->sMsgBuf);
 
-			}
-			if (m_nRcvBufLen < msg->sMsgBuf->sDBHead.nLen + DREBHEADLEN)
+		//以sDBHead.nLen为准来算长度
+		if (m_nRcvBufLen < BPCHEADLEN+DREBHEADLEN+msg->sMsgBuf->sDBHead.nLen)
+		{
+			if (m_nRcvBufLen >= BPCBUFSIZE || msg->sMsgBuf->sBpcHead.nBpcLen>BPUDATASIZE+DREBHEADLEN || msg->sMsgBuf->sDBHead.nLen>BPUDATASIZE)
 			{
-				//说明数据没有接收完整
-				return 0;
-			}
-			if (msg->sMsgBuf->sDBHead.nLen >=0 && msg->sMsgBuf->sDBHead.nLen <= BPUDATASIZE ) 
-			{
-				if (msg->sMsgBuf->sDBHead.nLen >0)
-				{
-					memcpy(msg->sMsgBuf->sBuffer,m_sRcvBuffer+DREBHEADLEN,msg->sMsgBuf->sDBHead.nLen);
-				}
-			}
-			else
-			{
-				OnClose("错误 连接非DREB",__FILE__,__LINE__);
+				OnClose("错误 连接非BPU,报文头过大",__FILE__,__LINE__);
 				return -1;
 			}
-//			m_gRes->PutTime();
-			
-			msg->sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN+msg->sMsgBuf->sDBHead.nLen;
-			msg->sMsgBuf->sBpcHead.nBpuIndex = 0;
-			msg->sMsgBuf->sBpcHead.nConnectTime = m_nConntime;
-			msg->sMsgBuf->sBpcHead.nIndex = m_index; 
-			msg->sMsgBuf->sBpcHead.cMsgType = MSG_REQ;
-			msg->sMsgBuf->sBpcHead.nRtime = time(NULL);
-			
-			//统计数据
-			g_pBpcTime.ReportRcv(msg->sMsgBuf->sBpcHead.nBpcLen);
-			if (msg->sMsgBuf->sDBHead.cCmd != CMD_PING && msg->sMsgBuf->sDBHead.cCmd != CMD_CONNECT && msg->sMsgBuf->sDBHead.cCmd != CMD_REGSERVICE)
-			{
-				if (m_log->isWrite(LOG_DEBUG))
-				{
-					m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"从index[%d] DREB[%d %d] 收到源DREB[%d %d]收到的消息 DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-						m_index,m_nDrebId,m_nDrebPrivateId,msg->sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,msg->sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,\
-						GetDrebCmdType(msg->sMsgBuf->sDBHead.cCmd).c_str(),msg->sMsgBuf->sDBHead.cNextFlag,\
-						msg->sMsgBuf->sDBHead.cRaflag,msg->sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,msg->sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
-						msg->sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,msg->sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
-						msg->sMsgBuf->sDBHead.s_Sinfo.s_nSerial,msg->sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
-						msg->sMsgBuf->sDBHead.cZip,msg->sMsgBuf->sDBHead.nLen);
-				}
-				
-			}
-			else
-			{
-				if (m_log->isWrite(LOG_DEBUG+1))
-				{
-					m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"接收到index[%d] DREB[%d %d]的消息 DREB命令[%s]  业务数据长度[%d]",\
-						m_index,m_nDrebId,m_nDrebPrivateId,GetDrebCmdType(msg->sMsgBuf->sDBHead.cCmd).c_str(),msg->sMsgBuf->sDBHead.nLen);
-				}
-			}
-			//若是应答且为不可靠推送或全域广播消息，直接丢弃
-			if (msg->sMsgBuf->sDBHead.cRaflag == 1 && (msg->sMsgBuf->sDBHead.cCmd == CMD_DPPUSH || msg->sMsgBuf->sDBHead.cCmd == CMD_DPABC))
-			{
-//				m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"CMD_DPPUSH或CMD_DPABC的应答，丢弃");
-			}
-			else
-			{
-
-			}
-			
-
-			//收多了，将原包重新给m_sRcvBuffer
-			m_nRcvBufLen=m_nRcvBufLen - DREBHEADLEN-msg->sMsgBuf->sDBHead.nLen;
-			for (int i=0; i<m_nRcvBufLen; i++)
-			{
-				m_sRcvBuffer[i]=m_sRcvBuffer[i+DREBHEADLEN+msg->sMsgBuf->sDBHead.nLen];
-			}
-			
-//			m_gRes->PutTime();
-			return DREBHEADLEN+msg->sMsgBuf->sDBHead.nLen;
+			m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"警告 BPU[%s  %d] 数据没有接收完整[%d] < HEADLEN[%d]+nLen[%d]",\
+				m_sBpuGroupName.c_str(),m_index,m_nRcvBufLen,BPCHEADLEN+DREBHEADLEN,msg->sMsgBuf->sDBHead.nLen);
+			//说明数据没有接收完整
+			return 0;
 		}
-		else if (m_nRcvBufLen>0)
+		if (msg->sMsgBuf->sDBHead.nLen>0 && msg->sMsgBuf->sDBHead.nLen<BPUDATASIZE)
 		{
-			m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"警告 index[%d] DREB[%d %d] type[%s] 收到数据%d,但不完整",\
-				m_index,m_nDrebId,m_nDrebPrivateId,"BPCSOCK_DREB",m_nRcvBufLen);
+			memcpy(msg->sMsgBuf->sBuffer,m_sRcvBuffer+(BPCHEADLEN+DREBHEADLEN),msg->sMsgBuf->sDBHead.nLen);
+			msg->sMsgBuf->sBuffer[msg->sMsgBuf->sDBHead.nLen]=0;
 		}
+		else if (msg->sMsgBuf->sDBHead.nLen >= BPUDATASIZE)
+		{
+			OnClose("错误 连接非BPU,报文体过大",__FILE__,__LINE__);
+			return -1;
+		}
+		if (msg->sMsgBuf->sBpcHead.cMsgType != MSG_FREE && msg->sMsgBuf->sBpcHead.cMsgType != MSG_BPUISREG && msg->sMsgBuf->sBpcHead.cMsgType != MSG_BPUREG)
+		{
+			m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"接收到BPU[%s %d]的消息[%s]  DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
+				m_sBpuGroupName.c_str(),m_index,GetBpcMsgType(msg->sMsgBuf->sBpcHead.cMsgType).c_str(),\
+				GetDrebCmdType(msg->sMsgBuf->sDBHead.cCmd).c_str(),msg->sMsgBuf->sDBHead.cNextFlag,\
+				msg->sMsgBuf->sDBHead.cRaflag,msg->sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,\
+				msg->sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
+				msg->sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,msg->sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
+				msg->sMsgBuf->sDBHead.s_Sinfo.s_nSerial,msg->sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
+				msg->sMsgBuf->sDBHead.cZip,msg->sMsgBuf->sDBHead.nLen);
+		}
+		else
+		{
+			m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"接收到BPU[%s %d]的消息[%s] 业务数据长度[%d]",\
+				m_sBpuGroupName.c_str(),m_index,GetBpcMsgType(msg->sMsgBuf->sBpcHead.cMsgType).c_str(),msg->sMsgBuf->sDBHead.nLen);
+		}
+		CBF_Tools::StringCopy(msg->sBpuGroupName,20,m_sBpuGroupName.c_str());
+		msg->nBpuGroupIndex = m_nBpuGroupIndex;
+		//若是请求的话将接收到请求的连接index放到bpc头的nBpuIndex中
+		if (msg->sMsgBuf->sDBHead.cRaflag == 0) 
+		{
+			msg->sMsgBuf->sBpcHead.nBpuIndex = m_index;//只有在请求时才要更新，因为有内调，内调根据此值返回给调用的bpu
+			//m_gRes->m_pBpcCallDataLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
+		}
+		else
+		{
+			//m_gRes->m_pDrebDataLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
+		}
+		//g_pBpcLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
+		//收多了，将原包重新给m_sRcvBuffer
+		for (int i=0; i<m_nRcvBufLen-BPCHEADLEN-DREBHEADLEN-msg->sMsgBuf->sDBHead.nLen; i++)
+		{
+			m_sRcvBuffer[i]=m_sRcvBuffer[i+BPCHEADLEN+DREBHEADLEN+msg->sMsgBuf->sDBHead.nLen];
+		}
+		m_nRcvBufLen = m_nRcvBufLen - BPCHEADLEN -DREBHEADLEN-msg->sMsgBuf->sDBHead.nLen;
+			
+			
+		return BPCHEADLEN+DREBHEADLEN+msg->sMsgBuf->sDBHead.nLen;
 	}
-	else  // if (m_nType == BPCSOCK_BPU || m_nType == BPCSOCK_CLI) //收BPU数据
+	else if (m_nRcvBufLen>0)
 	{
-	    m_log->LogMp(LOG_DEBUG+2,__FILE__,__LINE__,"BPU[%s %d %d] type[%s] 收到数据%d",\
-			m_sBpuGroupName.c_str(),m_index,m_nBpuGroupIndex,"BPU_SOCKET",m_nRcvBufLen);
-		//收到的数据大于包头
-		if (m_nRcvBufLen >= BPCHEADLEN+DREBHEADLEN)
-		{
-			memcpy(&(msg->sMsgBuf->sBpcHead),m_sRcvBuffer,BPCHEADLEN);
-			if (msg->sMsgBuf->sBpcHead.nMsgFlag != LMSGID)
-			{
-				m_pBpcEndian.SetCommEndian(false);//对方使用网络序
-			}
-			else
-			{
-				m_pBpcEndian.SetCommEndian(true);
-			}
-			memcpy(&(msg->sMsgBuf->sDBHead),m_sRcvBuffer+BPCHEADLEN,DREBHEADLEN);
-			//字节序处理
-			m_pBpcEndian.Endian2LocalHost(msg->sMsgBuf);
-
-			//以sDBHead.nLen为准来算长度
-			if (m_nRcvBufLen < BPCHEADLEN+DREBHEADLEN+msg->sMsgBuf->sDBHead.nLen)
-			{
-				if (m_nRcvBufLen >= BPCBUFSIZE || msg->sMsgBuf->sBpcHead.nBpcLen>BPUDATASIZE+DREBHEADLEN || msg->sMsgBuf->sDBHead.nLen>BPUDATASIZE)
-				{
-					OnClose("错误 连接非BPU,报文头过大",__FILE__,__LINE__);
-					return -1;
-				}
-				m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"警告 BPU[%s  %d] 数据没有接收完整[%d] < HEADLEN[%d]+nLen[%d]",\
-					m_sBpuGroupName.c_str(),m_index,m_nRcvBufLen,BPCHEADLEN+DREBHEADLEN,msg->sMsgBuf->sDBHead.nLen);
-				//说明数据没有接收完整
-				return 0;
-			}
-			if (msg->sMsgBuf->sDBHead.nLen>0 && msg->sMsgBuf->sDBHead.nLen<BPUDATASIZE)
-			{
-				memcpy(msg->sMsgBuf->sBuffer,m_sRcvBuffer+(BPCHEADLEN+DREBHEADLEN),msg->sMsgBuf->sDBHead.nLen);
-				msg->sMsgBuf->sBuffer[msg->sMsgBuf->sDBHead.nLen]=0;
-			}
-			else if (msg->sMsgBuf->sDBHead.nLen >= BPUDATASIZE)
-			{
-				OnClose("错误 连接非BPU,报文体过大",__FILE__,__LINE__);
-				return -1;
-			}
-			if (msg->sMsgBuf->sBpcHead.cMsgType != MSG_FREE && msg->sMsgBuf->sBpcHead.cMsgType != MSG_BPUISREG && msg->sMsgBuf->sBpcHead.cMsgType != MSG_BPUREG)
-			{
-				m_log->LogMp(LOG_DEBUG,__FILE__,__LINE__,"接收到BPU[%s %d]的消息[%s]  DREB命令[%s] 后续[%d] RA标志[%d] 交易码[%d]  标识[%d %d %d] 源[%d %d] cZip[%d] 业务数据长度[%d]",\
-					m_sBpuGroupName.c_str(),m_index,GetBpcMsgType(msg->sMsgBuf->sBpcHead.cMsgType).c_str(),\
-					GetDrebCmdType(msg->sMsgBuf->sDBHead.cCmd).c_str(),msg->sMsgBuf->sDBHead.cNextFlag,\
-					msg->sMsgBuf->sDBHead.cRaflag,msg->sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo,\
-					msg->sMsgBuf->sDBHead.s_Sinfo.s_nNodeId,\
-					msg->sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,msg->sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
-					msg->sMsgBuf->sDBHead.s_Sinfo.s_nSerial,msg->sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
-					msg->sMsgBuf->sDBHead.cZip,msg->sMsgBuf->sDBHead.nLen);
-			}
-			else
-			{
-				m_log->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"接收到BPU[%s %d]的消息[%s] 业务数据长度[%d]",\
-					m_sBpuGroupName.c_str(),m_index,GetBpcMsgType(msg->sMsgBuf->sBpcHead.cMsgType).c_str(),msg->sMsgBuf->sDBHead.nLen);
-			}
-			CBF_Tools::StringCopy(msg->sBpuGroupName,20,m_sBpuGroupName.c_str());
-			msg->nBpuGroupIndex = m_nBpuGroupIndex;
-			//若是请求的话将接收到请求的连接index放到bpc头的nBpuIndex中
-			if (msg->sMsgBuf->sDBHead.cRaflag == 0) 
-			{
-				msg->sMsgBuf->sBpcHead.nBpuIndex = m_index;//只有在请求时才要更新，因为有内调，内调根据此值返回给调用的bpu
-				//m_gRes->m_pBpcCallDataLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
-			}
-			else
-			{
-				//m_gRes->m_pDrebDataLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
-			}
-			//g_pBpcLog.LogBpc(LOG_PROMPT,msg->sMsgBuf,false);
-			//收多了，将原包重新给m_sRcvBuffer
-			for (int i=0; i<m_nRcvBufLen-BPCHEADLEN-DREBHEADLEN-msg->sMsgBuf->sDBHead.nLen; i++)
-			{
-				m_sRcvBuffer[i]=m_sRcvBuffer[i+BPCHEADLEN+DREBHEADLEN+msg->sMsgBuf->sDBHead.nLen];
-			}
-			m_nRcvBufLen = m_nRcvBufLen - BPCHEADLEN -DREBHEADLEN-msg->sMsgBuf->sDBHead.nLen;
-			
-			
-			return BPCHEADLEN+DREBHEADLEN+msg->sMsgBuf->sDBHead.nLen;
-		}
-		else if (m_nRcvBufLen>0)
-		{
-			m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"警告 BPU[%s %d] type[%s] 收到数据%d,但不完整",\
-				m_sBpuGroupName.c_str(),m_index,"BPCSOCK_BPU",m_nRcvBufLen);
-		}
+		m_log->LogMp(LOG_WARNNING,__FILE__,__LINE__,"警告 BPU[%s %d] type[%s] 收到数据%d,但不完整",\
+			m_sBpuGroupName.c_str(),m_index,"BPCSOCK_BPU",m_nRcvBufLen);
 	}
+
 	return 0;
 }
 

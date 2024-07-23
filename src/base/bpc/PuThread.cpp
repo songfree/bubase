@@ -313,6 +313,8 @@ void CPuThread::OnRecv(int conindex)
 			else
 			{
 				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"错误 收错数据了");
+                m_pMemPool->PoolFree(m_pDataRcv.sMsgBuf);
+                m_pDataRcv.sMsgBuf = NULL;
 			}
 
 		}
@@ -414,6 +416,7 @@ void CPuThread::DispatchBuFree(S_BPC_RSMSG &rcvdata)
 	 	rcvdata.sMsgBuf = NULL;
 		return;
 	}
+
 	if (m_pRes->g_vBpuGroupInfo[m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->m_nBpuGroupIndex].g_bIsAnsPing)
 	{
 		rcvdata.sMsgBuf->sDBHead.cZip = 0;
@@ -422,7 +425,12 @@ void CPuThread::DispatchBuFree(S_BPC_RSMSG &rcvdata)
 		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
 		rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN ;
 		m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"应答MSG_FREE");
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+		int nRet =m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+        if (nRet == -101)
+        {
+            m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+        }
 	}
 	else
 	{
@@ -440,7 +448,12 @@ void CPuThread::GetSerial(S_BPC_RSMSG &rcvdata)
 	rcvdata.sMsgBuf->sDBHead.nLen = strlen(rcvdata.sMsgBuf->sBuffer);
 	rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
 	rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
-	m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+	int nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+    if (nRet == -101)
+    {
+        m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+        rcvdata.sMsgBuf = NULL;
+    }
 }
 
 void CPuThread::DispatchSetPara1(S_BPC_RSMSG &rcvdata)
@@ -452,7 +465,12 @@ void CPuThread::DispatchSetPara1(S_BPC_RSMSG &rcvdata)
 	rcvdata.sMsgBuf->sDBHead.nLen = strlen(rcvdata.sMsgBuf->sBuffer);
 	rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
 	rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
-	m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+	int nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+    if (nRet == -101)
+    {
+        m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+        rcvdata.sMsgBuf = NULL;
+    }
 }
 
 void CPuThread::DispatchSetPara2(S_BPC_RSMSG &rcvdata)
@@ -464,7 +482,12 @@ void CPuThread::DispatchSetPara2(S_BPC_RSMSG &rcvdata)
 	rcvdata.sMsgBuf->sDBHead.nLen = strlen(rcvdata.sMsgBuf->sBuffer);
 	rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
 	rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
-	m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+	int nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+    if (nRet == -101)
+    {
+        m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+        rcvdata.sMsgBuf = NULL;
+    }
 }
 
 void CPuThread::DispatchSetPara3(S_BPC_RSMSG &rcvdata)
@@ -476,7 +499,12 @@ void CPuThread::DispatchSetPara3(S_BPC_RSMSG &rcvdata)
 	rcvdata.sMsgBuf->sDBHead.nLen = strlen(rcvdata.sMsgBuf->sBuffer);
 	rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
 	rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
-	m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+	int nRet =  m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+    if (nRet == -101)
+    {
+        m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+        rcvdata.sMsgBuf = NULL;
+    }
 	
 }
 
@@ -491,6 +519,7 @@ void CPuThread::DispatchExtCall(S_BPC_RSMSG &rcvdata)
 
 void CPuThread::DispatchBpcCall(S_BPC_RSMSG &rcvdata)
 {
+	int nRet;
 	//即调用BPC里的交易
 	if (rcvdata.sMsgBuf->sDBHead.cRaflag == 0) //请求
 	{
@@ -514,7 +543,12 @@ void CPuThread::DispatchBpcCall(S_BPC_RSMSG &rcvdata)
 			rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
 			rcvdata.sMsgBuf->sDBHead.cZip = 0;
 	
-			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata,0);
+			nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata,0);
+            if (nRet == -101)
+            {
+                m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                rcvdata.sMsgBuf = NULL;
+            }
 			return;
 		}
 
@@ -551,7 +585,12 @@ void CPuThread::DispatchBpcCall(S_BPC_RSMSG &rcvdata)
 				rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
 				rcvdata.sMsgBuf->sBpcHead.nConnectTime = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->m_nConntime;
 				rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
-				m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+				nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+                if (nRet == -101)
+                {
+                    m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                    rcvdata.sMsgBuf = NULL;
+                }
 				return;
 			}
 		}
@@ -569,7 +608,7 @@ void CPuThread::DispatchBpcCall(S_BPC_RSMSG &rcvdata)
 void CPuThread::DispatchBpuIsReg(S_BPC_RSMSG &rcvdata)
 {
 	bool bRes=false;
-	
+	int nRet;
 	if (rcvdata.sMsgBuf->sDBHead.nLen <1)
 	{
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"BPU注册时无bpu组名称 index=%d",rcvdata.sMsgBuf->sBpcHead.nBpuIndex);
@@ -578,7 +617,12 @@ void CPuThread::DispatchBpuIsReg(S_BPC_RSMSG &rcvdata)
 		rcvdata.sMsgBuf->sDBHead.cZip = 0;
 		rcvdata.sMsgBuf->sDBHead.nLen = 0;
 		rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+		nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+        if (nRet == -101)
+        {
+            m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+        }
 		return;
 	}
 	rcvdata.sMsgBuf->sBuffer[rcvdata.sMsgBuf->sDBHead.nLen]=0;
@@ -616,7 +660,12 @@ void CPuThread::DispatchBpuIsReg(S_BPC_RSMSG &rcvdata)
 			rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 			rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_BPC_BPULIMIT;
 			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->OnClose("此组BPU连接已满",__FILE__,__LINE__);
-			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+			nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+            if (nRet == -101)
+            {
+                m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                rcvdata.sMsgBuf = NULL;
+            }
 			return ;
 		}
 		std::string gpname= m_pRes->g_vBpuGroupInfo[bpuindex].g_sBpuGroupName;
@@ -637,8 +686,12 @@ void CPuThread::DispatchBpuIsReg(S_BPC_RSMSG &rcvdata)
 			rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
 			rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 			rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_BPC_NOREGISTER;
-			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
-			
+			nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+            if (nRet == -101)
+            {
+                m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                rcvdata.sMsgBuf = NULL;
+            }
 			return;
 		}
 		else //返回是否要注册
@@ -653,7 +706,12 @@ void CPuThread::DispatchBpuIsReg(S_BPC_RSMSG &rcvdata)
 			sprintf(rcvdata.sMsgBuf->sBuffer,"%d",bRes);  //1已经注册过,0未注册 需要注册
 			rcvdata.sMsgBuf->sDBHead.nLen = strlen(rcvdata.sMsgBuf->sBuffer);
 			rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN + rcvdata.sMsgBuf->sDBHead.nLen;
-			m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+			nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+            if (nRet == -101)
+            {
+                m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+                rcvdata.sMsgBuf = NULL;
+            }
 		}
 	}
 	else //无此bpu组
@@ -664,7 +722,12 @@ void CPuThread::DispatchBpuIsReg(S_BPC_RSMSG &rcvdata)
 		rcvdata.sMsgBuf->sBpcHead.nBpcLen = DREBHEADLEN;
 		rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_nRetCode = ERR_BPC_NOGROUP;
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"BPU注册时无bpu组名称 %s",rcvdata.sMsgBuf->sBuffer);
-		m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+		nRet = m_pSockMgr->at(rcvdata.sMsgBuf->sBpcHead.nBpuIndex)->SendMsg(rcvdata);
+        if (nRet == -101)
+        {
+            m_pMemPool->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+        }
 	}
 }
 
@@ -727,11 +790,12 @@ void CPuThread::DispatchReq(S_BPC_RSMSG &rcvdata)
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_cNodePrivateId,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nDrebSerial,\
 			rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial,rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook,\
 			rcvdata.sMsgBuf->sDBHead.cZip,rcvdata.sMsgBuf->sDBHead.nLen);
-
-		rcvdata.sMsgBuf->sDBHead.cRaflag =1;
+		rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
+		OnClose(rcvdata.index, "严重错误 接收数据非法，关闭连接", __FILE__, __LINE__);
+		
 		m_pMemPool->PoolFree(rcvdata.sMsgBuf);
 		rcvdata.sMsgBuf = NULL;
-		OnClose(rcvdata.index,"严重错误 接收数据非法，关闭连接",__FILE__,__LINE__);
+		
 		return;
 	}
 	if (rcvdata.sMsgBuf->sDBHead.cNextFlag == 2 || rcvdata.sMsgBuf->sDBHead.cNextFlag == 20)

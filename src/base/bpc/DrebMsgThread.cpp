@@ -521,7 +521,8 @@ void CDrebMsgThread::MonitorReport(S_BPC_RSMSG& rcvdata)
         bzero(mdata.sBpuGroupName, sizeof(mdata.sBpuGroupName));
         m_pPoolData->PushData(mdata);
     }
-
+    m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+    rcvdata.sMsgBuf = NULL;
     return;
 }
 bool CDrebMsgThread::UnzipBuf(BPCCOMMSTRU& data)

@@ -568,33 +568,33 @@ void CLinkThread::OnRecv(int conindex)
 		ret = m_pSockMgr->at(conindex)->GetRecvData(&m_pDataRcv);
 		if (ret>0)
 		{
-			if (m_pSockMgr->at(conindex)->m_nType == BPCSOCK_DREB)
-			{
-				//接收dreb过来的数据
-				if (m_pDataRcv.sMsgBuf->sDBHead.cCmd == CMD_PING) //响应PING应答
-				{
-					m_pDataRcv.sMsgBuf->sDBHead.cRaflag = 1;
-					m_pSockMgr->at(conindex)->SendMsg(m_pDataRcv);
-//					m_pRes->LogTime();
-					return ;
-				}
-				//若是应答且为不可靠推送或全域广播消息，直接丢弃
-				if (m_pDataRcv.sMsgBuf->sDBHead.cRaflag == 1 && (m_pDataRcv.sMsgBuf->sDBHead.cCmd == CMD_DPPUSH || m_pDataRcv.sMsgBuf->sDBHead.cCmd == CMD_DPABC))
-				{
-					m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"CMD_DPPUSH或CMD_DPABC的应答，丢弃");
-					m_pMemPool->PoolFree(m_pDataRcv.sMsgBuf);
-					m_pDataRcv.sMsgBuf = NULL;
-//					m_pRes->LogTime();
-					continue;
-				}
-				//不可能会走到这里了
-                m_pMemPool->PoolFree(m_pDataRcv.sMsgBuf);
-                m_pDataRcv.sMsgBuf = NULL;
-				
-//				m_pRes->PutTime();
-//				m_pRes->LogTime();
-			}
-			else //bpu连接过来的bpuisreq注册消息
+//			if (m_pSockMgr->at(conindex)->m_nType == BPCSOCK_DREB)
+//			{
+//				//接收dreb过来的数据
+//				if (m_pDataRcv.sMsgBuf->sDBHead.cCmd == CMD_PING) //响应PING应答
+//				{
+//					m_pDataRcv.sMsgBuf->sDBHead.cRaflag = 1;
+//					m_pSockMgr->at(conindex)->SendMsg(m_pDataRcv);
+////					m_pRes->LogTime();
+//					return ;
+//				}
+//				//若是应答且为不可靠推送或全域广播消息，直接丢弃
+//				if (m_pDataRcv.sMsgBuf->sDBHead.cRaflag == 1 && (m_pDataRcv.sMsgBuf->sDBHead.cCmd == CMD_DPPUSH || m_pDataRcv.sMsgBuf->sDBHead.cCmd == CMD_DPABC))
+//				{
+//					m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"CMD_DPPUSH或CMD_DPABC的应答，丢弃");
+//					m_pMemPool->PoolFree(m_pDataRcv.sMsgBuf);
+//					m_pDataRcv.sMsgBuf = NULL;
+////					m_pRes->LogTime();
+//					continue;
+//				}
+//				//不可能会走到这里了
+//                m_pMemPool->PoolFree(m_pDataRcv.sMsgBuf);
+//                m_pDataRcv.sMsgBuf = NULL;
+//				
+////				m_pRes->PutTime();
+////				m_pRes->LogTime();
+//			}
+//			else //bpu连接过来的bpuisreq注册消息
 			{
 				if (m_pDataRcv.sMsgBuf->sBpcHead.cMsgType != MSG_BPUISREG)
 				{

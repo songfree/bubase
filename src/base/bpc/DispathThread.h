@@ -14,7 +14,7 @@
 #include "PoolData.h"
 #include "FuncTbl.h"
 #include "dreberrcode.h"
-
+#include "BF_DrebServer.h"
 
 #if _MSC_VER > 1000
 #pragma once
@@ -33,6 +33,8 @@ public:
 	int m_nBpugroupindex;
 
 	int m_nCurBpuIndex;
+
+	CBF_DrebServer* m_pDrebApi;
 protected:
 	
 	void DispatchBpu(S_BPC_RSMSG &rcvdata);
@@ -48,6 +50,8 @@ protected:
 	CGResource  *m_pRes;
 	CSocketMgr  *m_pSockMgr;
 	CBF_BufferPool *m_pMemPool;//内存分配池;
+	
+
 	CPoolData   *m_pPoolData;//处理数据队列
 	CFuncTbl    *m_pFuncTbl;
 	
