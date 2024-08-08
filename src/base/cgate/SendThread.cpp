@@ -303,13 +303,16 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 //			m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"Á¬½Óindex[%d] Î´µÇÂ¼ %d",i,info->s_cCheckFlag );
 			continue;
 		}
+		info->s_mutex.Lock();
         CSubScribeInfo* psub = (CSubScribeInfo*)info->ptr;
 		if (psub == NULL)
 		{
+			info->s_mutex.UnLock();
 			continue;
 		}
         if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey))
         {
+			
             m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "Á¬½Óindex[%d] Î´¶©ÔÄ%d %d", i, msg->data.head.stDest.nServiceNo, msg->nkey);
 #ifdef NDSUBSCRIBE
 			//Ð´ËÀÊÇ·ñ¶©ÔÄÁËLEVEL1µÄÐÐÇé
@@ -317,6 +320,7 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 			{
                 if (!psub->IsSubscribe(FUNC_QUOTATION_LEVEL1, msg->nkey)) //Î´¶©ÔÄlevel1
                 {
+					info->s_mutex.UnLock();
 					continue;
 				}
                 char quobuffer[1000];
@@ -327,6 +331,7 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 					if (!CBF_Tools::Uncompress((unsigned char*)(quobuffer), unziplen, (unsigned char*)(msg->data.buffer), msg->data.head.nLen))
 					{
 						m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "Uncompress error!");
+						info->s_mutex.UnLock();
 						continue;
 					}
 				}
@@ -376,11 +381,18 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 				*/
                 SendSingleBcMsg(&senddata);
 				m_nSendQuoteNum++;
+				info->s_mutex.UnLock();
 				continue;
 			}
 #endif
+			info->s_mutex.UnLock();
             continue;
         }
+		else
+		{
+			info->s_mutex.UnLock();
+		}
+		
 		memcpy(&senddata,msg,sizeof(S_CGATE_SMSG));	
 		senddata.index = i;
 		senddata.timestamp = 0;

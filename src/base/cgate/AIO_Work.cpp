@@ -266,7 +266,7 @@ void CAIO_Work::OnClose(PSOCKET_POOL_DATA info,std::string msg)
 		}
 	}
 	//清空发送队列是在AIO里面进行的
- 	
+	info->s_mutex.Lock();
 	//将订阅实例销毁
 	CSubScribeInfo *pp = (CSubScribeInfo *)info->ptr;
 	if (pp != NULL)
@@ -275,6 +275,7 @@ void CAIO_Work::OnClose(PSOCKET_POOL_DATA info,std::string msg)
 		pp = NULL;
 	}
 	info->ptr = NULL;
+	info->s_mutex.UnLock();
 	CloseClient(info);
 	m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"关闭连接 %s",msg.c_str());
 	
