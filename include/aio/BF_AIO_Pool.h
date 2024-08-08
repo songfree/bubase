@@ -88,6 +88,8 @@ public:
 	// 参数  : PSOCKET_POOL_DATA pp
 	// 描述  : 重置连接信息为初始值
 	void ResetData(PSOCKET_POOL_DATA pp);
+
+	int GetConnInfo(std::vector<PSOCKET_POOL_DATA >&connlist);
 	
 	CBF_AIO_Pool();
 	virtual ~CBF_AIO_Pool();

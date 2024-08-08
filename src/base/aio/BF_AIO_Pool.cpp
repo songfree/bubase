@@ -162,13 +162,28 @@ void CBF_AIO_Pool::CloseFree(PSOCKET_POOL_DATA pp)
 		pp->s_hSocket = INVALID_SOCKET;
 	}
 	ResetData(pp);
+	CBF_PMutex mux(&m_mutex);
 	m_pFreeSocketInfo.push_back(pp);
 }
 void CBF_AIO_Pool::PoolInfo(int &total,int &unused)
 {
+	CBF_PMutex mux(&m_mutex);
 	total=m_vAllSocketInfo.size();
 	unused=m_pFreeSocketInfo.size();
 }
+int CBF_AIO_Pool::GetConnInfo(std::vector<PSOCKET_POOL_DATA>& connlist)
+{
+	CBF_PMutex mux(&m_mutex);
+	for (unsigned int i = 0; i < m_vAllSocketInfo.size(); i++)
+	{
+		if (m_vAllSocketInfo[i]->s_hSocket != INVALID_SOCKET)
+		{
+			connlist.push_back(m_vAllSocketInfo[i]);
+		}
+	}
+	return connlist.size();
+}
+
 
 PSOCKET_POOL_DATA CBF_AIO_Pool::GetDataByIndex(unsigned int index)
 {

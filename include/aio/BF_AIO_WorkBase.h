@@ -214,7 +214,10 @@ public:
 	CBF_AIO_WorkBase();
 	virtual ~CBF_AIO_WorkBase();
 
-	
+	int  GetConnInfo(std::vector<PSOCKET_POOL_DATA>& connlist)
+	{
+		return m_pAioPool->GetConnInfo(connlist);
+	}
 
 protected:
 	CBF_AIO_Base   *m_pAioMethod;  //通过此基类指针调用发送数据、主动连接、将连接加入异步IO集合等
