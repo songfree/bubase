@@ -106,7 +106,7 @@ void CBF_Date_Time::Update()
 	m_hour = stm.wHour;
 	m_minute = stm.wMinute;
 	m_second = stm.wSecond;
-	m_microsec = stm.wMilliseconds;
+	m_microsec = stm.wMilliseconds*1000;
 	m_wday =  stm.wDayOfWeek;
 #else
 	Update(Gettimeofday());

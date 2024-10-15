@@ -1,6 +1,8 @@
 此框架是借鉴KS的开发框架独立研发的面向服务的分布式开发框架 支持windows/linux等平台
 
 感兴趣可加QQ:738651沟通。
+
+202410：版本2.1.4   修改kernel库，CBF_Date_Time类windows下update取微秒的bug(ms当成us)，修改CBF_SocketTcp类的Listen方法增加localip参数，可以针对ip侦听
 202408：版本2.1.3   修改bfcgate的bug，当有连接关闭销毁订阅信息时可能不定时程序退出。
 202407：版本2.1.2   修改bfsap/bpc的处理监控指令的bug，此bug导致内存未释放(修改使用drebapi时导致的)。
 202406：版本2.1.1   修改cgate,优化网关订阅支持全量订阅,并支持在客户端断开时，发断开消息到总线

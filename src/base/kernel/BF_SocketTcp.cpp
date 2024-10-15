@@ -60,7 +60,7 @@ CBF_SocketTcp::CBF_SocketTcp(int addressFamily)
 }
 
 CBF_SocketTcp::~CBF_SocketTcp()
-{
+{	
 	if (m_nSocketType != BF_SOCKET_ATTACH)
 	{
 		Close();
@@ -654,7 +654,7 @@ unsigned short CBF_SocketTcp::GetPort()
 	return m_nPort;
 }
 
-bool CBF_SocketTcp::Listen(unsigned short port, unsigned int queuenum)
+bool CBF_SocketTcp::Listen(unsigned short port, unsigned int queuenum, const char* localip)
 {
 	long blockflag=0;
 	long reuseflag=1;
@@ -673,7 +673,14 @@ bool CBF_SocketTcp::Listen(unsigned short port, unsigned int queuenum)
 		case AF_UNSPEC:	   //增加ipv6的支持
 			memset( &iaddr, 0,sizeof(iaddr) );
 			iaddr.sin_family = m_nAddressFamily;
-			iaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+			if (localip == NULL)
+			{
+				iaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+			}
+			else
+			{
+				inet_pton(m_nAddressFamily, localip, &iaddr.sin_addr);
+			}
 			iaddr.sin_port = htons(port);
 #if defined(_WINDOWS)
 			setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&reuseflag, sizeof(reuseflag));

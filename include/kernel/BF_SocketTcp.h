@@ -173,7 +173,7 @@ public:
 	// 参数  : unsigned short port
 	// 参数  : unsigned int queuenum=5
 	// 描述  : 开始服务端侦听，必先Create
-	bool Listen(unsigned short port,unsigned int queuenum=5);
+	bool Listen(unsigned short port,unsigned int queuenum=5,const char *localip=NULL);
 	
 
 	// 函数名: Close
