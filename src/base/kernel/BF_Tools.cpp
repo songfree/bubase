@@ -879,7 +879,7 @@ int CBF_Tools::RemoveOverdueFile(const char *delpath,const char *fileattr, int o
    
 #ifdef _WINDOWS
 	struct _finddata_t fd;
-	int dh;
+	intptr_t dh;
 	dh = _findfirst(szfile,&fd);
 	if (dh ==-1 ) 
 	{

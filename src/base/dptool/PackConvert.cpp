@@ -925,7 +925,7 @@ std::string CPackConvert::getTransValue(std::string transname,CXmlPack *xmlpack,
 	}
 	return "";
 }
-string CPackConvert::getTransValue(std::string transname,char *buf,int flag,int fieldtype)
+std::string CPackConvert::getTransValue(std::string transname,char *buf,int flag,int fieldtype)
 {
 	for (int i=0;i<m_interfaceConf.m_trans_info.size();i++)
 	{

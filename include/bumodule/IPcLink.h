@@ -96,15 +96,12 @@ public:
 	virtual bool  InitLink(const char *confile) =0;
 	CIPcLink()
 	{
-
+		
 	}
 	virtual ~CIPcLink()
 	{
 
 	}
-
-
-
 };
 
 #endif // !defined(AFX_IPCLINK_H__189DF427_9657_4008_9915_8DA339C13457__INCLUDED_)

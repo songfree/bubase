@@ -155,7 +155,7 @@ int CTransPackNew::Init(CXmlPack *xmlpack)
 	return 0;
 }
 
-CPackConvert * CTransPackNew::GetTransByIp(string sip,int &istrans)
+CPackConvert * CTransPackNew::GetTransByIp(std::string sip,int &istrans)
 {
 	if (!m_bisUse)
 	{
@@ -189,7 +189,7 @@ CPackConvert * CTransPackNew::GetTransByIp(string sip,int &istrans)
 	return NULL;
 }
 
-CPackConvert * CTransPackNew::GetTransByServerId(string sid,int &istrans)
+CPackConvert * CTransPackNew::GetTransByServerId(std::string sid,int &istrans)
 {
 	if (!m_bisUse)
 	{
@@ -222,7 +222,7 @@ CPackConvert * CTransPackNew::GetTransByServerId(string sid,int &istrans)
 	return NULL;
 }
 
-int CTransPackNew::GetServerPara(string sid, string &ip, int &port)
+int CTransPackNew::GetServerPara(std::string sid, std::string &ip, int &port)
 {
 	for (int i=0;i<m_serverList.size();i++)
 	{
@@ -236,7 +236,7 @@ int CTransPackNew::GetServerPara(string sid, string &ip, int &port)
 	return -1;
 }
 
-int CTransPackNew::GetServerId(string ip, string &id)
+int CTransPackNew::GetServerId(std::string ip, std::string &id)
 {
 	for (int i=0;i<m_serverList.size();i++)
 	{

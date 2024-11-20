@@ -147,7 +147,7 @@ public:
 	CBF_MutexEvent();
 	virtual ~CBF_MutexEvent();
 	
-private:
+public:
 #ifdef  _WINDOWS
 	HANDLE m_event;
 	HANDLE m_lock;

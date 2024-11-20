@@ -49,6 +49,10 @@ CBF_LogClient::CBF_LogClient()
 
 CBF_LogClient::~CBF_LogClient()
 {
+	if (m_pQueue.GetDataCount() < 1)
+	{
+		return;
+	}
 	char *data= NULL;
 	while (m_pQueue.GetData(data))
 	{

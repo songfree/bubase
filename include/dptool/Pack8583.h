@@ -25,7 +25,7 @@
 typedef struct _struct8583
 {
 	int idx;
-	string value;
+	std::string value;
 };
 typedef struct _struct8583def
 {
@@ -89,7 +89,7 @@ public:
 	// 参数  : const char *name 位图名称
 	// 参数  : const string value 值
 	// 描述  : 设置字段值
-	bool SetFieldValue(const char *name,const string value);
+	bool SetFieldValue(const char *name,const std::string value);
 
 
 	// 函数名: SetFieldValue
@@ -123,7 +123,7 @@ public:
 	// 参数  : const int idx 位置序号
 	// 参数  : const string value 值
 	// 描述  : 设置字段值
-	bool SetFieldValue(const int idx,const string value);
+	bool SetFieldValue(const int idx,const std::string value);
 
 	// 函数名: SetFieldValue
 	// 编程  : 王明松 2007-9-8 17:49:38

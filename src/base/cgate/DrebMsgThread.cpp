@@ -229,6 +229,8 @@ void CDrebMsgThread::OnMsgRequest(S_BPC_RSMSG& rcvdata)
                 data.nkey = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nHook;
                 data.isBC = 1;
                 data.index = 0;
+                data.ndate = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial;
+                data.ntime = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex;
                 data.timestamp = 0;
                 m_pSendData->PushData(data, level);
                 m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
@@ -250,6 +252,8 @@ void CDrebMsgThread::OnMsgRequest(S_BPC_RSMSG& rcvdata)
             data.isBC = 1;
             data.index = 0;
             data.timestamp = 0;
+            data.ndate = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nSerial;
+            data.ntime = rcvdata.sMsgBuf->sDBHead.s_Sinfo.s_nGateIndex;
             m_pSendData->PushData(data, level);
             m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
             rcvdata.sMsgBuf = NULL;

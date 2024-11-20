@@ -69,13 +69,13 @@ public:
 	// 返回  : bool 
 	// 参数  : PSOCKET_SEND_DATA senddata
 	// 描述  : 发送数据
-	bool Send2Client(SOCKET_SEND_DATA senddata,bool isimmediate=false)
+	bool Send2Client(SOCKET_SEND_DATA senddata,bool isimmediate=false, bool islock=true)
 	{
 		if (m_pAioMethod == NULL)
 		{
 			return false;
 		}
-		return m_pAioMethod->Send(senddata,isimmediate);
+		return m_pAioMethod->Send(senddata,isimmediate, islock);
 	}
 
 	// 函数名: AddAio

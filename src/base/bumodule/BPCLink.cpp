@@ -367,6 +367,11 @@ int CBPCLink::ConnectBPC()
 				m_nConnNum++;
 				m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"注册BpuGroup:%s 失败,BPC返回码:%d",m_sBpuGroupName.c_str(),data.sDBHead.a_Ainfo.a_nRetCode); 
 				OnClose(__FILE__,__LINE__,"注册BpuGroup失败");
+                if (data.sDBHead.a_Ainfo.a_nRetCode == ERR_BPC_BPULIMIT) //连接已满，退出spu
+                {
+					m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__,"注册BpuGroup:%s 失败,BPC返回码:%d 为连接已满，退出spu", m_sBpuGroupName.c_str(), data.sDBHead.a_Ainfo.a_nRetCode);
+					exit(0);
+				}
 				return -1;
 			}
 			//是否可注册返回0表示可注册，1为已注册，2为bpu组不符
@@ -399,6 +404,7 @@ int CBPCLink::ConnectBPC()
 //					printf("BpuGroup:%s 连接已满\n",m_sBpuGroupName.c_str());
 					m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"BpuGroup:%s 连接已满",m_sBpuGroupName.c_str()); 
 					OnClose(__FILE__,__LINE__,"BpuGroup连接已满");
+					exit(0);
 					return -1;
 				}
 				else
@@ -1014,8 +1020,6 @@ int CBPCLink::ExtCall(PBPCCOMMSTRU calldata,LIST_BPC_RSMSG &ansdata,unsigned int
 	}
 	return 0;
 }
-
-
 
 // 函数名: GetRcvData
 // 编程  : 王明松 2013-4-23 14:57:54

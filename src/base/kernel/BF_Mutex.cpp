@@ -171,7 +171,11 @@ CBF_MutexEvent::CBF_MutexEvent()
 	}
 	pthread_mutexattr_destroy(&mattr);
 
-	pthread_cond_init(&m_event,NULL);
+	if (pthread_cond_init(&m_event,NULL) !=0)
+	{
+		printf("pthread_cond_init error\n");
+	}
+
 #endif
 #ifdef LINUX
 	sem_init(&m_sid, 0, 1);
@@ -185,6 +189,10 @@ CBF_MutexEvent::~CBF_MutexEvent()
 	CloseHandle(m_event);
 #else
 	pthread_mutex_destroy(&m_lock);
+	if (pthread_cond_broadcast(&m_event) != 0)
+	{
+		 printf("pthread_cond_broadcast err\n");
+	}
 	pthread_cond_destroy(&m_event);
 #endif
 #ifdef LINUX
@@ -244,9 +252,7 @@ void CBF_MutexEvent::WaitEventTime(unsigned int wait_ms)
 //	addt.Set(wait_ms/1000,wait_ms%1000*1000);
 	curt += addt ;
 	timespec_t mytime = (timespec_t)curt;
-
 	ret = pthread_cond_timedwait(&m_event,&m_lock,&mytime);
-
 #endif
 }
 

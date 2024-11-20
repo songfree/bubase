@@ -1286,10 +1286,11 @@ void CAIO_Work::ProcessRcvMsg(PSOCKET_POOL_DATA info, CGATE_COMMSTRU &data)
 			{
 				return;
 			}
+			m_pLog->LogMp(LOG_INFO, __FILE__, __LINE__, "index[%d] 来自ip[%s] 开始行情订阅", info->s_nIndex,inet_ntoa(info->s_pSocketAddr.sin_addr));
 			if (!psub->Subscribe(data.buffer,data.head.nLen,errmsg))
 			{
 				data.head.nRetCode = 111;
-				m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"行情订阅失败 %s",errmsg);
+				m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"index[%d] 来自ip[%s] 行情订阅失败 %s", info->s_nIndex,inet_ntoa(info->s_pSocketAddr.sin_addr), errmsg);
 				if (info->s_cCheckFlag != CHECKFLAG_NORMAL) //未验证通过，暂不发送
 				{
 					data.head.nLen = 0;

@@ -9,7 +9,7 @@ CGateLink::CGateLink()
 }
 CGateLink::~CGateLink()
 {
-	
+	m_bIsRunThread = false;
 }
 
 // º¯ÊıÃû: Logout

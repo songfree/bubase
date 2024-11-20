@@ -24,17 +24,17 @@
 
 typedef struct _S_SERVER_INFO_
 {
-	string sip;///服务IP
+	std::string sip;///服务IP
 	int    nport;///服务端口
-	string sid;///服务ID
-	string sname;///服务名
-	string stransname;///转换配置名称
+	std::string sid;///服务ID
+	std::string sname;///服务名
+	std::string stransname;///转换配置名称
 	bool    bisTrans;///是否包转换
 };
 typedef struct _S_TRANS_INFO_
 {
-	string stransname;///转换配置名称
-	string sfilename; ///转换配置文件
+	std::string stransname;///转换配置名称
+	std::string sfilename; ///转换配置文件
 	CPackConvert *packTrans;///包转换类
 };
 class DPTOOL_EXPORT CTransPackNew  
@@ -59,7 +59,7 @@ public:
 	/// 参数  : string ip
 	/// 参数  : string &id
 	/// 描述  : 根据IP地址获取服务ID
-	int GetServerId(string ip,string &id);
+	int GetServerId(std::string ip, std::string &id);
 
 	/// 函数名: GetServerPara
 	/// 编程  : 王明松 2008-4-27 15:11:46
@@ -68,7 +68,7 @@ public:
 	/// 参数  : string &ip
 	/// 参数  : int &port
 	/// 描述  : 根据服务ID获取IP及端口
-	int GetServerPara(string sid,string &ip,int &port);
+	int GetServerPara(std::string sid, std::string &ip,int &port);
 
 	/// 函数名: GetTransByServerId
 	/// 编程  : 王明松 2008-4-27 15:10:35
@@ -76,7 +76,7 @@ public:
 	/// 参数  : string sid
 	/// 参数  : int &istrans 是否要转换，1要0否-1未找到配置
 	/// 描述  : 通过服务ID来获取转换类实例 
-	CPackConvert * GetTransByServerId(string sid,int &istrans);
+	CPackConvert * GetTransByServerId(std::string sid,int &istrans);
 
 	/// 函数名: GetTransByIp
 	/// 编程  : 王明松 2008-4-27 15:10:31
@@ -84,7 +84,7 @@ public:
 	/// 参数  : string sip
 	/// 参数  : int &istrans 是否要转换，1要0否-1未找到配置
 	/// 描述  : 通过连接的IP获取转换类实例
-	CPackConvert * GetTransByIp(string sip,int &istrans);
+	CPackConvert * GetTransByIp(std::string sip,int &istrans);
 
 	/// 函数名: Init
 	/// 编程  : 王明松 2008-4-27 15:10:12
@@ -95,8 +95,8 @@ public:
 
 protected:
 
-	vector <_S_SERVER_INFO_> m_serverList;//接入配置
-	vector <_S_TRANS_INFO_> m_transList;//转换配置
+	std::vector <_S_SERVER_INFO_> m_serverList;//接入配置
+	std::vector <_S_TRANS_INFO_> m_transList;//转换配置
 };
 #undef DPTOOL_EXPORT
 #endif /// !defined(AFX_TRANSPACKNEW_H__C279BF91_1D35_4A2B_B76E_F9BF45B56C62__INCLUDED_)

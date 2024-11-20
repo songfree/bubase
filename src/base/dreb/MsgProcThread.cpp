@@ -3165,7 +3165,7 @@ void CMsgProcThread::TransBroadCast(S_DREB_RSMSG *msg, bool isaffirm)
 		        msg->message.head.d_Dinfo.d_nSvrMainId,msg->message.head.d_Dinfo.d_cSvrPrivateId,msg->message.head.nLen);
 		}
 		
-		if (dreb.pSendQueue->PutSendMsg(msg)!=0)
+		if (dreb.pSendQueue->PutSendMsg(data)!=0)
 		{
 			m_log->LogMp(LOG_ERROR,__FILE__,__LINE__,"入发送队列失败");
 		}

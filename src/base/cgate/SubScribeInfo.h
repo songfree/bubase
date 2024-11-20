@@ -20,7 +20,7 @@ class CSubScribeInfo
 {
 protected:
 
-    CMemTableNew<S_SUBSCRIBE_>     m_table;
+    CMemTableNew<S_SUBSCRIBE_TBL>     m_table;
     CPkeyUIntUnordered<2>         m_key;//功能号+key
 
 	void Clear();
@@ -32,7 +32,7 @@ public:
 	// 参数  : int funcno
 	// 参数  : unsigned int key
 	// 描述  : 是否订阅
-	bool IsSubscribe(unsigned int funcno,unsigned int key);
+	bool IsSubscribe(unsigned int funcno,unsigned int key,int ndate,int ntime);
 
 	// 函数名: Subscribe
 	// 编程  : 王明松 2014-10-22 10:55:12
@@ -44,7 +44,7 @@ public:
 	bool Subscribe(const char *data,int datalen,char *msg);
 	bool SubscribeAll(bool allflag,char* msg);
 
-	int Select(std::vector<S_SUBSCRIBE_*>& reslist);
+	int Select(std::vector<S_SUBSCRIBE_TBL*>& reslist);
 	int Subscribe(unsigned int funcno, unsigned int key);
 	int UnSubscribe(unsigned int funcno, unsigned int key);
 	CSubScribeInfo();

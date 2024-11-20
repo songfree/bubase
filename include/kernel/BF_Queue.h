@@ -12,6 +12,7 @@
 #include <functional>
 #include <atomic>
 #include "BF_Mutex.h"
+#include "typedefine.h"
 
 #ifdef _WINDOWS
 #define CAS(a_ptr, a_oldVal, a_newVal) InterlockedCompareExchange(a_ptr, a_newVal , a_oldVal)
@@ -83,8 +84,8 @@ public:
 
             // 2. 更新可读的位置，按着m_maximumReadIndex+1的操作
  		    bret = false;
-            while (!bret)
-            {
+            while (!bret)   //队尾，一定要按顺序增加，如果不成功，可能是上一个写入的还没有写完成，要sleep一下
+            {   
 			    UINT64_ res = CAS(&m_maximumReadIndex, currentWriteIndex, (currentWriteIndex + 1));
 #ifdef _WINDOWS
                 if (res == currentWriteIndex)
@@ -159,6 +160,7 @@ private:
 	}
 };
 
+//使用deque的队列 
 template<typename Record>
 class CBF_Stack
 {
@@ -276,6 +278,12 @@ public:
         CBF_PMutex pp(&m_mutex);//主要是有可能多个线程同时写入
         return m_qLogList.size();
     }
+
+    void Clear()
+    {
+        CBF_PMutex pp(&m_mutex);
+        m_qLogList.clear();
+    }
 private:
     typedef typename std::deque<Record> T_LOGQUEUE;//队列
     T_LOGQUEUE  m_qLogList;   //队列
@@ -284,6 +292,7 @@ private:
 };
 
 
+//CBF_Queue是使用list作为队列
 template<typename Record, int PRIO>
 class CBF_Queue
 {
@@ -426,7 +435,7 @@ private:
 
 
 
-
+//CBF_Deque是使用deque作为队列，可定义多个deque，按顺序从多个队列取数据，从而实现优先级
 template<typename Record, int PRIO>
 class CBF_Deque
 {
@@ -440,15 +449,12 @@ public:
 
     CBF_Deque()
     {
-
+        m_nExitFlag = NULL;
     }
     virtual ~CBF_Deque()
     {
 
     }
-
-
-
     // 函数名: PushData
     // 编程  : 王明松 2012-5-16 9:03:20
     // 返回  : int 
@@ -457,8 +463,9 @@ public:
     // 描述  : 放入数据，线程安全
     int PushData(Record data, int prio = 0)
     {
-        if (prio > PRIO || prio < 1)
+        if (prio >= PRIO || prio < 0)
         {
+            printf("队列优先级%d不符\n",prio);
             return -1;
         }
         CBF_PMutex pp(&m_qDeque[prio].m_mutex);//主要是有可能多个线程同时写入
@@ -469,6 +476,14 @@ public:
         return 0;
     }
 
+    void Clear()
+    {
+        for (int i = 0; i < PRIO; i++)
+        {
+            CBF_PMutex pp(&m_qDeque[i].m_mutex);//主要是有可能多个线程同时写入
+            m_qDeque[i].datas.clear();
+        }
+    }
 
 
     // 函数名: GetData
@@ -480,6 +495,10 @@ public:
     int GetData(Record& data, unsigned int waitetms = 1000)
     {
         int i;
+        if (m_nExitFlag != NULL && *m_nExitFlag)
+        {
+            return -1;
+        }
         m_pEvent.Lock();
         for (i = 0; i < PRIO; i++)
         {
@@ -492,6 +511,11 @@ public:
             }
         }
         m_pEvent.WaitEventTime(waitetms);
+        if (m_nExitFlag != NULL && *m_nExitFlag)
+        {
+            m_pEvent.UnLock();
+            return -1;
+        }
         for (i = 0; i < PRIO; i++)
         {
             if (m_qDeque[i].datas.size() > 0)
@@ -518,6 +542,7 @@ public:
 public:
     RDEQUEDATA      m_qDeque[PRIO];
 
+    bool            *m_nExitFlag; //是否退出，1时退出GetData
 private:
 
     CBF_MutexEvent  m_pEvent;//数据消息事件

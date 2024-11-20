@@ -308,7 +308,7 @@ void CBF_AIO::ScanPool()
 	//m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"扫描连接池完成 sendqueue:%d quoqueue:%d",nSendQueueNum,nQuoSendQueueNum);
 }
 
-bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate)
+bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate, bool islock)
 {
 	int ret=0;
 	senddata.s_nSendLen = 0;
@@ -320,7 +320,10 @@ bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate)
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,m_sErrMsg);
 		return false;
 	}
-	CBF_PMutex pp(&info->s_mutex);
+	if (islock)
+	{
+		CBF_PMutex pp(&info->s_mutex);
+	}
 	if (senddata.s_nTimestamp != 0)
 	{
 		if (info->s_nTimestamp != senddata.s_nTimestamp)
@@ -341,7 +344,7 @@ bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate)
 	
 	senddata.s_nTime = time(NULL);
 	CBF_SocketTcp pTcpSocket;
-	if (isimmediate) //立即发送，登录验证等
+	if (isimmediate) //立即发送，登录验证等  你
 	{
 		pTcpSocket.AttachSocket(info->s_hSocket,inet_ntoa(info->s_pSocketAddr.sin_addr));
 		m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"开始发送数据 %d",senddata.s_nTotalLen);

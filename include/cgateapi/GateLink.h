@@ -148,7 +148,7 @@ public:
 
 
 	CGlobalResource m_pRes;
-private:
+protected:
 
 	
 

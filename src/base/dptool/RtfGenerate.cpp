@@ -193,7 +193,7 @@ int CRtfGenerate::SetTitle(const char *title, int ntitle, int font, int fontsize
 		sprintf(m_errMsg,"RTF文件未打开");
 		return -1;
 	}
-	string stitle;
+	std::string stitle;
 	switch (ntitle)
 	{
 		case 0:

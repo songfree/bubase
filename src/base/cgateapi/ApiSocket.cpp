@@ -225,6 +225,10 @@ int CApiSocket::Send2Gate(PCGATE_COMMSTRU data)
 
 void CApiSocket::OnClose(const char *filename, int fileline, const char *msg,int loglevel)
 {
+	if (m_pSocketTcp.GetSocket() == INVALID_SOCKET)
+	{
+		return;
+	}
 	m_pSocketTcp.Close();
 	m_pLog->LogMp(loglevel,filename,fileline,"关闭连接 %s",msg);
 	bzero(m_sRcvBuffer,sizeof(m_sRcvBuffer));  //接收数据缓冲

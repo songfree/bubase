@@ -115,10 +115,11 @@ void CMsgThread::DispatchExtCall(S_BPC_RSMSG &rcvdata)
     {
         m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "发送监控通知");
     }
+	int fundno = rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo;
 	rcvdata.sMsgBuf->sBpcHead.nIndex=100;
 	if (m_pDrebApi->SendMsg(rcvdata)<0)
 	{
-		m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__,"发送功能号[%d]失败", rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo);
+		m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__,"发送功能号[%d]失败", fundno);
         m_pMemPool->PoolFree(rcvdata.sMsgBuf);
 		rcvdata.sMsgBuf = NULL;
 	}
@@ -132,11 +133,11 @@ void CMsgThread::DispatchTrans(S_BPC_RSMSG &rcvdata)
 	//songfree 20180328 add 转移使用a_cNodePrivateId来标识，总线收到判断此标识，不对s_info进行重置
 	rcvdata.sMsgBuf->sDBHead.a_Ainfo.a_cNodePrivateId = 100;
 	//add end
-
+	int fundno= rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo;
     rcvdata.sMsgBuf->sBpcHead.nIndex = 100;
     if (m_pDrebApi->SendMsg(rcvdata)<0)
     {
-        m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "发送功能号[%d]失败", rcvdata.sMsgBuf->sDBHead.d_Dinfo.d_nServiceNo);
+        m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "发送功能号[%d]失败", fundno);
         m_pMemPool->PoolFree(rcvdata.sMsgBuf);
         rcvdata.sMsgBuf = NULL;
     }

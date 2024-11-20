@@ -140,5 +140,27 @@ void CGateWay::Monitor()
 	int size;
 	m_pDrebapi.GetBufferPoolInfo(total,used,size);
 	m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "总线api缓存使用总共:%d 使用:%d 大小:%d 发送队列数:%d 请求队列数:%d", total,used,size, m_pSendData.GetSize(), m_pPoolData.GetSize());
-
+    unsigned int i;
+	std::vector<PSOCKET_POOL_DATA>reslist;
+	g_pAioWork.GetConnInfo(reslist);
+    if (reslist.size() > 0)
+    {
+        FILE* fp = fopen("cgate_connlist.csv", "wb");
+        if (fp != NULL)
+        {
+            char tmpchar[300];
+            sprintf(tmpchar, "序号,连接索引,对方ip\n");
+            fwrite(tmpchar, 1, strlen(tmpchar), fp);
+            for (i = 0; i < reslist.size(); i++)
+            {
+                if (reslist[i]->s_hSocket != INVALID_SOCKET)
+                {
+                    sprintf(tmpchar, "%d,%d,%s\n", i, reslist[i]->s_nIndex, inet_ntoa(reslist[i]->s_pSocketAddr.sin_addr));
+                    fwrite(tmpchar, 1, strlen(tmpchar), fp);
+                }
+            }
+            fclose(fp);
+            fp = NULL;
+        }
+    }
 }

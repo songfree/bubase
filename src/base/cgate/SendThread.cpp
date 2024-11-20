@@ -193,7 +193,7 @@ void CSendThread::SendMsg(S_CGATE_SMSG *msg)
 }
 
 
-void CSendThread::SendSingleBcMsg(S_CGATE_SMSG *msg)
+void CSendThread::SendSingleBcMsg(S_CGATE_SMSG *msg,bool islock)
 {
 	int nRet;
 	PSOCKET_POOL_DATA info = m_pAioWork->GetPoolData(msg->index);
@@ -262,7 +262,7 @@ void CSendThread::SendSingleBcMsg(S_CGATE_SMSG *msg)
 	dd.s_serial  = msg->s_nDrebSerial;
 	dd.s_nTimestamp = msg->timestamp;
 	dd.s_nSendLen = 0;
-	if (!m_pAioWork->Send2Client(dd))
+	if (!m_pAioWork->Send2Client(dd,false, islock))
 	{
 		m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"发送广播失败 标识[%d %d %d %d] ",msg->d_nNodeId,msg->d_cNodePrivateId,msg->s_nDrebSerial,msg->data.head.stDest.nSerial);
 		return ;
@@ -310,15 +310,14 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 			info->s_mutex.UnLock();
 			continue;
 		}
-        if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey))
+        if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey, msg->ndate, msg->ntime))
         {
-			
-            m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅%d %d", i, msg->data.head.stDest.nServiceNo, msg->nkey);
+			m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅 func[%d] key[%d] date[%d] time[%d]", i, msg->data.head.stDest.nServiceNo, msg->nkey, msg->ndate, msg->ntime);
 #ifdef NDSUBSCRIBE
 			//写死是否订阅了LEVEL1的行情
 			if (msg->data.head.stDest.nServiceNo == FUNC_QUOTATION)  //是证券level2行情，需要查看是否订阅了level1行情，若订阅了，将报文截短，发送
 			{
-                if (!psub->IsSubscribe(FUNC_QUOTATION_LEVEL1, msg->nkey)) //未订阅level1
+                if (!psub->IsSubscribe(FUNC_QUOTATION_LEVEL1, msg->nkey, msg->ndate, msg->ntime)) //未订阅level1
                 {
 					info->s_mutex.UnLock();
 					continue;
@@ -379,7 +378,7 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
                 senddata.index = i;
                 senddata.timestamp = 0;
 				*/
-                SendSingleBcMsg(&senddata);
+                SendSingleBcMsg(&senddata,false);
 				m_nSendQuoteNum++;
 				info->s_mutex.UnLock();
 				continue;
@@ -388,15 +387,13 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 			info->s_mutex.UnLock();
             continue;
         }
-		else
-		{
-			info->s_mutex.UnLock();
-		}
-		
+
 		memcpy(&senddata,msg,sizeof(S_CGATE_SMSG));	
 		senddata.index = i;
 		senddata.timestamp = 0;
-		SendSingleBcMsg(&senddata);
+		SendSingleBcMsg(&senddata,false);
+		m_nSendQuoteNum++;
+		info->s_mutex.UnLock();
 
 	}
 	m_nSendQuoteNum++;
@@ -832,9 +829,9 @@ void CSendThread::SendSubscribeMsg(S_CGATE_SMSG* msg)
 		{
 			continue;
 		}
-        if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey))
+        if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey,msg->ndate,msg->ntime))
         {
-            m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅 func[%d] key[%d]", i, msg->data.head.stDest.nServiceNo, msg->nkey);
+            m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅 func[%d] key[%d] date[%d] time[%d]", i, msg->data.head.stDest.nServiceNo, msg->nkey, msg->ndate, msg->ntime);
             continue;
         }
 

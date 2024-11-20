@@ -40,7 +40,7 @@
 #define      XDP_BITMAPSIZE     16      //位图大小  16字节
 #define      XDP_FIELD_NAMELEN  20       //字段名称长度
 #define      XDP_FIELD_CHARLEN  255      //字符串最大长度
-#define      XDP_FIELD_BINLEN   4096     //二进制数据最大长度
+#define      XDP_FIELD_BINLEN   49152     //二进制数据最大长度  48k
 
 
 

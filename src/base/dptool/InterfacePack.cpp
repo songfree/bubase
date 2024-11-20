@@ -717,7 +717,7 @@ std::string CInterfacePack::getTransString(std::string transname, std::string so
 	return ss;
 }
 
-std::string CInterfacePack::getTransConv(string transname)
+std::string CInterfacePack::getTransConv(std::string transname)
 {
 	for (int i=0;i<m_trans_info.size();i++)
 	{

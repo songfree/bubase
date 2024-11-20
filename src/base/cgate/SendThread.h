@@ -79,7 +79,7 @@ protected:
 	char          m_sDestBuffer[CLIENTDATASIZE+2];//针对客户端数据的解密解压缩的目的
 
 	void SendBCMsg(S_CGATE_SMSG *msg);	       //发送行情广播
-	void SendSingleBcMsg(S_CGATE_SMSG *msg);   //发送一条
+	void SendSingleBcMsg(S_CGATE_SMSG *msg,bool islock=true);   //发送一条
 	void SendMsg(S_CGATE_SMSG *msg);		   //发送应答及推送
 	void SendSubscribeMsg(S_CGATE_SMSG* msg);	 //发送订阅信息
 

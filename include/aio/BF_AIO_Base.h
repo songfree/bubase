@@ -36,8 +36,10 @@ public:
 	// 编程  : 王明松 2012-5-21 16:52:24
 	// 返回  : bool 
 	// 参数  : PSOCKET_SEND_DATA senddata
+    // 参数  : bool isimmediate=false	 是否立即发送
+    // 参数  : bool islock=true	  是否加锁  
 	// 描述  : 发送数据
-	virtual bool Send(SOCKET_SEND_DATA senddata,bool isimmediate=false)=0;
+	virtual bool Send(SOCKET_SEND_DATA senddata,bool isimmediate=false, bool islock=true)=0;
 	
 	// 函数名: AddAio
 	// 编程  : 王明松 2012-5-21 10:03:52

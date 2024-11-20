@@ -72,6 +72,7 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 		m_pLog->LogMp(LOG_ERROR,__FILE__,__LINE__,"%s",msg);
 		return false;
 	}
+	
 	S_SUBSCRIBE_ *subitem= NULL;
 	subitem = &sub->subinfo;
     m_pEndian.Endian2LocalHost((unsigned char*)&(subitem->nServiceNo), sizeof(subitem->nServiceNo));
@@ -80,7 +81,7 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 	{
 		if (UnSubscribe(subitem->nServiceNo,subitem->nKey)<0)
         {
-			//m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "取消订阅 [%d %d]失败，未订阅", subitem->nServiceNo, subitem->nKey);
+			m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "取消订阅 [%d %d]失败，未订阅", subitem->nServiceNo, subitem->nKey);
         }
         else
         {
@@ -89,14 +90,16 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
 	}
 	else
 	{
+		m_pLog->LogMp(LOG_INFO, __FILE__,__LINE__, "订阅数目:%d",sub->datanum);
         if (Subscribe(subitem->nServiceNo, subitem->nKey) < 0)
         {
-            //m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "订阅 [%d %d]失败，已订阅", subitem->nServiceNo, subitem->nKey);
+            m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "订阅 [%d %d]失败，已订阅", subitem->nServiceNo, subitem->nKey);
         }
         else
         {
             //m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "订阅 [%d %d]完成", subitem->nServiceNo, subitem->nKey);
         }
+		//m_pLog->LogMp(LOG_INFO, __FILE__, __LINE__, "订阅明细 %d-%d", subitem->nServiceNo, subitem->nKey);
 	}
 	for (unsigned int i=1 ; i< sub->datanum; i++)
 	{
@@ -107,7 +110,7 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
         {
             if (UnSubscribe(subitem->nServiceNo, subitem->nKey) < 0)
             {
-                //m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "取消订阅 [%d %d]失败，未订阅", subitem->nServiceNo, subitem->nKey);
+                m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "取消订阅 [%d %d]失败，未订阅", subitem->nServiceNo, subitem->nKey);
             }
             else
             {
@@ -118,19 +121,19 @@ bool CSubScribeInfo::Subscribe(const char *data,int datalen, char *msg)
         {
             if (Subscribe(subitem->nServiceNo, subitem->nKey) < 0)
             {
-                //m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "订阅 [%d %d]失败，已订阅", subitem->nServiceNo, subitem->nKey);
+                m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "订阅 [%d %d]失败，已订阅", subitem->nServiceNo, subitem->nKey);
             }
 			else
 			{
 				//m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "订阅 [%d %d]完成", subitem->nServiceNo, subitem->nKey);
 			}
-			
+			//m_pLog->LogMp(LOG_INFO, __FILE__, __LINE__, "订阅明细 %d-%d", subitem->nServiceNo, subitem->nKey);
         }
 	}
 	if (m_pLog->isWrite(LOG_DEBUG+1))
 	{
 		std::string info;
-		std::vector<S_SUBSCRIBE_ *>reslist;
+		std::vector<S_SUBSCRIBE_TBL*>reslist;
 		Select(reslist);
 		for (unsigned int i = 0; i < reslist.size(); i++)
 		{
@@ -146,20 +149,67 @@ void CSubScribeInfo::Clear()
 	m_table.Clear();
 	m_key.Clear();
 }
-bool CSubScribeInfo::IsSubscribe(unsigned int funcno, unsigned int key)
+bool CSubScribeInfo::IsSubscribe(unsigned int funcno, unsigned int key, int ndate, int ntime)
 {
+	int rid;
 	if (m_nSubscribFlag == 2)
 	{
+        CBF_PMutex pp(&m_mutex);
+        if (!m_key.Select(rid,funcno, key))
+        {
+			S_SUBSCRIBE_TBL  sub;
+            sub.nServiceNo = funcno;
+            sub.nKey = key;
+            sub.s_nSerial = ndate;
+            sub.s_nGateIndex = ntime;
+            rid = m_table.Add(sub);
+            m_key.Add(rid, m_table.m_table[rid].nServiceNo, m_table.m_table[rid].nKey);
+            return true;
+        }
+        if (m_table.m_table[rid].s_nSerial > ndate) //日期未更新
+        {
+            return false;
+        }
+        else if (m_table.m_table[rid].s_nSerial == ndate && m_table.m_table[rid].s_nGateIndex > ntime) //日期未更新但时间戳小于上一个
+        {
+            return false;
+        }
+        else  //日期相同，但时间戳大于等于，要发送，日期大于也要发送
+        {
+            m_table.m_table[rid].s_nSerial = ndate;
+            m_table.m_table[rid].s_nGateIndex = ntime;
+            return true;
+        }
 		return true;
 	}
 	CBF_PMutex pp(&m_mutex);
-	return m_key.Find(funcno,key);
+	if (!m_key.Select(rid, funcno, key))
+	{
+		return false;
+	}
+    if (m_table.m_table[rid].s_nSerial > ndate) //日期未更新
+    {
+        return false;
+    }
+    else if (m_table.m_table[rid].s_nSerial == ndate && m_table.m_table[rid].s_nGateIndex > ntime) //日期未更新但时间戳小于上一个
+    {
+        return false;
+    }
+    else  //日期相同，但时间戳大于等于，要发送，日期大于也要发送
+    {
+        m_table.m_table[rid].s_nSerial = ndate;
+        m_table.m_table[rid].s_nGateIndex = ntime;
+        return true;
+    }
+    return true;
 }
 int CSubScribeInfo::Subscribe(unsigned int funcno, unsigned int key)
 {
-	S_SUBSCRIBE_  sub;
+	S_SUBSCRIBE_TBL  sub;
 	sub.nServiceNo = funcno;
 	sub.nKey = key;
+	sub.s_nSerial=0;
+	sub.s_nGateIndex =0;
 	CBF_PMutex pp(&m_mutex);
 	if (!m_key.Find(funcno, key))
 	{
@@ -182,7 +232,7 @@ int CSubScribeInfo::UnSubscribe(unsigned int funcno, unsigned int key)
 	m_table.Delete(rid);
 	return rid;
 }
-int  CSubScribeInfo::Select(std::vector<S_SUBSCRIBE_*>&reslist)
+int  CSubScribeInfo::Select(std::vector<S_SUBSCRIBE_TBL*>&reslist)
 {
 	CBF_PMutex pp(&m_mutex);
     int id;

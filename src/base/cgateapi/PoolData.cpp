@@ -10,7 +10,7 @@
 
 CPoolData::CPoolData()
 {
-	
+
 }
 
 CPoolData::~CPoolData()
