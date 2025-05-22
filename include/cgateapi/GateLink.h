@@ -272,7 +272,6 @@ extern "C"
 	// 参数  : unsigned int timeout 超时时间秒
 	// 描述  : 取推送或广播请求
 	CGATEAPI_EXPORT int BFCGATE_GetReqData(void *data,unsigned int timeout);
-	CGATEAPI_EXPORT int BFCGATE_GetReqDataNdQuo(void* data, unsigned int timeout);
 	
 	// 函数名: GetAnsData
 	// 编程  : 王明松 2013-5-23 15:14:47
@@ -381,7 +380,7 @@ extern "C"
 	// 参数  : int timeout 超时时间秒
 	// 描述  : 取推送或广播请求
 	CGATEAPI_EXPORT int BFCGATE_TS_GetReqData(void *pClass,void *data,int timeout);
-	CGATEAPI_EXPORT int BFCGATE_TS_GetReqDataNdQuo(void* pClass, void* data, int timeout);
+	
 
     // 函数名: BFCGATE_TSI_GetConnectStatus
     // 编程  : 王明松 2013-12-4 14:19:35
