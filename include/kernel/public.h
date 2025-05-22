@@ -196,8 +196,11 @@
 #endif
 //在Windows下，我们使用_stat来获取文件状态
 #ifdef _WINDOWS
-#define struct_stat struct _stat
-#define FSTAT    _stat
+//#define struct_stat struct _stat
+//#define FSTAT    _stat
+#define struct_stat struct _stat64
+#define FSTAT   _stat64
+
 #endif
 
 
@@ -304,7 +307,8 @@
 //在Windows下，使用h_error来获取最近的socket错误，而在其他系统下，直接使用errno。
 //我们同意成GET_LAST_SOCK_ERROR()
 #ifdef _WINDOWS
-#define GET_LAST_SOCK_ERROR()  h_errno
+//#define GET_LAST_SOCK_ERROR()  h_errno
+#define GET_LAST_SOCK_ERROR()  WSAGetLastError()
 #else
 #define GET_LAST_SOCK_ERROR()  errno
 #endif

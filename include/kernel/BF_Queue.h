@@ -535,7 +535,7 @@ public:
         int datanum = 0;
         for (int i = 0; i < PRIO; i++)
         {
-            datanum += m_qDeque[i].size();
+            datanum += m_qDeque[i].datas.size();
         }
         return datanum;
     }

@@ -26,8 +26,8 @@ extern "C"
 	// 编程  : 王明松 2014-10-30 11:31:20
 	// 返回  : unsigned short 
 	// 参数  : void *CXdpClass   xdp类的实例指针，由InitXdp获得
-	// 描述  : 取得当前实际报文的大小
-	CXDP_EXPORT unsigned short XDP_GetRealPackSize(void *CXdpClass);
+    // 描述  : 取得当前实际报文的大小
+    CXDP_EXPORT unsigned short XDP_GetRealPackSize(void* CXdpClass);
 
 	// 函数名: CancelField
 	// 编程  : 王明松 2014-10-30 11:17:16
@@ -366,7 +366,7 @@ extern "C"
 
     // 函数名: InitXdp
     // 编程  : 王明松 2014-10-27 14:14:55
-    // 返回  : int >0成功,xdpindex <0失败
+    // 返回  : int >=0成功,xdpindex <0失败
     // 参数  : const char *datafile   xml配置文件
     // 参数  : char *errmsg      出错信息
     // 描述  : 初始化报文，

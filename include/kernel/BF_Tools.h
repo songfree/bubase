@@ -253,4 +253,15 @@ private:
 	static unsigned int  m_sReverseMode;//本机字节序 0未知 1 BE   2LE
 };
 
+extern "C"
+{
+	//3des加密 密码明文，返回密文	 0成功 其它失败
+	KERNEL_EXPORT int bf_Des3Buffer(char* pwdbuffer, int pwdbuffersize, const char* des3key);
+	//des加密 密码明文，返回密文	 0成功 其它失败
+	KERNEL_EXPORT int bf_DesBuffer(char* pwdbuffer, int pwdlen, const char* des3key);
+	//3des解密 密码密文，返回明文	 0成功 其它失败
+	KERNEL_EXPORT int bf_Des3UncryptBuffer(char* pwdbuffer, int pwdlen, const char* des3key);
+	//des解密 密码密文，返回明文	 0成功 其它失败
+	KERNEL_EXPORT int bf_DesUncryptBuffer(char* pwdbuffer, int pwdlen, const char* deskey);
+}
 #endif // !defined(AFX_BF_TOOLS_H__42367B68_92BE_4995_83EA_475E113120FA__INCLUDED_)
