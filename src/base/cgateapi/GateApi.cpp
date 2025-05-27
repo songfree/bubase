@@ -276,6 +276,10 @@ int BFCGATE_TSI_InitApi(const char* apixml)
         return -1;
     }
 	g_GateApiArray.push_back(pClass);
+    if (!pClass->InitApi(apixml))
+    {
+        return -1;
+    }
     return g_GateApiArray.size() - 1;
 }
 
