@@ -214,7 +214,7 @@ std::string CBPCLink::GetBpcIp()
 	{
 		return "";
 	}
-	if (m_pConfXml->GetNodeValueByPath("package/head/PU配置/BPCIP",false,sip) == NULL)
+	if (m_pConfXml->GetNodeValueByPath("package/head/bpc/bpcip",false,sip) == NULL)
 	{
 		return "";
 	}
@@ -228,7 +228,7 @@ int CBPCLink::GetBpcPort()
 	{
 		return 0;
 	}
-	if (m_pConfXml->GetNodeValueByPath("package/head/PU配置/BPCPORT",false,nport) == NULL)
+	if (m_pConfXml->GetNodeValueByPath("package/head/bpc/bpcport",false,nport) == NULL)
 	{
 		return 0;
 	}
@@ -324,6 +324,8 @@ int CBPCLink::ConnectBPC()
 		OnClose(__FILE__,__LINE__,"发送MSG_BPUISREG失败");
 		return -1;
 	}
+	//在连接置为当前时间
+	m_nReadtime = time(NULL);
 	while (true)
 	{
 		//是否可读
@@ -417,7 +419,7 @@ int CBPCLink::ConnectBPC()
 	}
 	if (OnFree())
 	{
-		m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"连接BPC %s %d 成功",(char *)(char *)GetBpcIp().c_str(),GetBpcPort());
+		m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"连接BPC %s %d 成功",(char *)GetBpcIp().c_str(),GetBpcPort());
 	}
 	else
 	{

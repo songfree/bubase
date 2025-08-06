@@ -17,6 +17,7 @@ typedef struct
 	int            nVerietyId;        //合约编号    s_nHook
 	int            nDate;             //行情日期    s_nSerial
 	unsigned int   nSerial;           //行情序号    n_nNextNo
+	int            nLastUpdateTime;   //上次更新时间
 }S_CGATE_QUOTATION;   //行情表
 
 class CMdbQuotation  

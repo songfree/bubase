@@ -338,6 +338,10 @@ bool CShareMemory::Remove(const char *name)
 			return(false);
 		}
 	}
+	else
+	{
+		printf("shmname[%s] shmkey[%d] shm not exist", name, shmkey);
+	}
 	return(true);
 #endif
 }

@@ -288,7 +288,7 @@ CIXmlNode * CXmlParse::ParseNodeNameAttr(CIXmlNode *parentnode, std::string name
 		//解析属性
 		if (ParseNodeAttribute(nameattr.substr(nBoffset,nEndLen-nBoffset),tmpnode)!=0)
 		{
-			LogMp(4,__FILE__,__LINE__,"",0,"属性[%s]配置出错",nameattr.substr(nBoffset,nEndLen-nBoffset).c_str());
+			LogMp(4,__FILE__,__LINE__,"",0,"节点[%s]属性[%s]配置出错", tmpnode->GetNodeName().c_str(),nameattr.substr(nBoffset,nEndLen-nBoffset).c_str());
 		}
 		return tmpnode;
 	}
@@ -493,7 +493,7 @@ int CXmlParse::ParseNodeAttribute(std::string sattr, CIXmlNode *addnode)
 					if (aValueEnd>=attrlen)
 					{
 						addnode->AddAttribute(attrname,false,"",false);
-						sprintf(m_errMsg,"遇到非法的属性了 =\"后无内容");
+						sprintf(m_errMsg,"属性[%s]错,遇到非法的属性了 =\"后无内容", attrname.c_str());
 						LogMp(4,__FILE__,__LINE__,sattr.c_str(),sattr.length(),m_errMsg);
 						return -1;
 					}
