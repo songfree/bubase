@@ -119,6 +119,9 @@ public:
 	virtual int  GetSerial()=0;
 	//取递增的本地号 报单号
 	virtual UINT64_ GetLocalNo()=0;
+	//取递增的本地号 做市报单号
+	virtual UINT64_ GetBilateralSerial()=0;
+
 
 };
 

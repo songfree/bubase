@@ -20,43 +20,53 @@ typedef struct
 	char sCertType[2];//证件类型
 	char sCertNo[41];//证件号码
 	char sMobile[21];//手机
+	char sTradePwd[33];//交易密码
+	char sFundPwd[33];//资金密码
+	char sLastModiPwdTime[18];//上次修改密码时间
+	int  nPwdFaildNum;//密码失败次数
 	char sChannleOpen[61];//开通渠道
 	char sPkiCertNo[41];//证书序列号
 	char sPkiCertDate[9];//证书有效期
 	char sStatus[2];//客户状态
-	double dLastRisk;//上日风险
-	double dCurRisk;//当日风险
-	double dNetValue;//单位净值
-	double dPosiTotal;//持仓总价值
-	double dMarginRate;//保证金占比
-	double dContractRate;//合约轧差占比
+	char sLastPwdFaildDate[9];	//上次密码失败日期
+	int  nLastPwdFaildTime;//上次密码失败时间
 }S_MDB_CUSTINFO;
 typedef struct 
 {
-	char sTxAcc[21];//资金账号
+	char sTxAcc[21];//交易账号
 	char sCustNo[13];//客户编号
 	char sAcctype[2];//账户类型
+	char sAccName[41];//账户名称
 	char sCustSimpleName[41];//客户简称
-	char sCustName[41];//客户简称
 	char sSignOrg[13];//开户机构 所属机构  银行
 	char sMgrOrg[13];//所属代理机构   代理经纪机构
 	char sFutureFlag[2];//期货业务签约标志
 	char sAccLevel[3];//账户级别
 	char sExchFareModel[14];//交易所费率模板
 	char sMemberFareModel[14];//会员费率模板
+	char sAffirmFlag[2];//日结单确认标志
+	char sAffirmDate[9];//日结单确认日期
+	char sAddDateTime[18];//创建日期时间
+	char sAddTerm[3];//创建来源
+	char sAddOper[17];//创建操作员
+    char sModiDateTime[18];//修改日期时间
+    char sModiTerm[3];//修改来源
+    char sModiOper[17];//修改操作员
 	unsigned int nSysId;//所属经纪公司
 	char sCurrency[2];//币种
-	char sFsFeeModel[14];//fs手续费模板
 	char sParentTxAcc[21];//父资金账号
-}S_MDB_CUST_FUNDACC_INFO;
+	char sAccStatus[2];//账户状态
+}S_MDB_TRADEACC_INFO;
+
+
 
 typedef struct 
 {
-	int  nFundRowid[20];//资金表ROWID 下标为币种
+	int  nFundRowid;//资金表ROWID   一个交易账户只对应一个币种
 	char sTxAcc[21];//资金账号
 	int  nLockRowid;//在本表中的rowid
 	int  nCustRowid;//客户表rowid
-	int  nFundAccRowid;//资金账号表rowid
+	int  nTradeAccRowid;//交易账号表rowid
 	CBF_Mutex  *mutex;//互斥锁
 }S_MDB_TXACC_LOCK;
 
@@ -66,10 +76,7 @@ class  CTbl_Cust
 protected:
 	
 	CMemTableNew <S_MDB_CUSTINFO>   m_table;
-//	CPkeyCharF<13,1>             m_pkey;//客户编号的key
-	CPkeyCharV<1>             m_pkey;//客户编号的key
-//	CPkeyCharV<2>             m_key_cert;//证件类型，证件号码的KEY
-//	CPkeyCharV<1>             m_key_phone;//手机号码的key
+	CPkeyCharVUnordered<1>             m_pkey;//客户编号的key
 	CBF_Mutex                 m_mutex;//互斥锁
 public:
 	CTbl_Cust()
@@ -88,22 +95,13 @@ public:
 	// 描述  : 写入客户表 客户编号、手机号、证件三个唯一索引
 	int Insert(S_MDB_CUSTINFO cust)  //只有在初始化时使用，所以可以不加锁
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(cust.sCustNo))
 		{
 			return -1;
 		}
-// 		if (m_key_phone.Find(cust.sMobile))
-// 		{
-// 			return -1;
-// 		}
-// 		if (m_key_cert.Find(cust.sCertType,cust.sCertNo))
-// 		{
-// 			return -1;
-// 		}
 		int rid = m_table.Add(cust);
 		m_pkey.Add(rid,m_table.m_table[rid].sCustNo);
-//		m_key_phone.Add(rid,m_table.m_table[rid].sMobile);
-//		m_key_cert.Add(rid,m_table.m_table[rid].sCertType,m_table.m_table[rid].sCertNo);
 		return rid;
 	}
 
@@ -133,38 +131,6 @@ public:
 		return rid;
 	}
 
-	// 函数名: *SelectByPhone
-	// 编程  : 王明松 2017-8-3 10:22:17
-	// 返回  : S_CUST_INFO 
-	// 参数  : char *phone
-	// 描述  : 根据客户手机号查询客户信息
-// 	S_MDB_CUSTINFO *SelectByPhone(char *phone)
-// 	{
-// 		int rid;
-// 		CBF_PMutex pp(&m_mutex);
-// 		if (!m_key_phone.GetRowId(rid,phone))
-// 		{
-// 			return NULL;
-// 		}
-// 		return &(m_table.m_table[rid]);
-// 	}
-
-	// 函数名: *SelectByCert
-	// 编程  : 王明松 2017-8-3 10:22:41
-	// 返回  : S_CUST_INFO 
-	// 参数  : char *certtype
-	// 参数  : char *certno
-	// 描述  : 根据证件类型、证件号码查询客户信息
-// 	S_MDB_CUSTINFO *SelectByCert(char *certtype,char *certno)
-// 	{
-// 		int rid;
-// 		CBF_PMutex pp(&m_mutex);
-// 		if (!m_key_cert.GetRowId(rid,certtype,certno))
-// 		{
-// 			return NULL;
-// 		}
-// 		return &(m_table.m_table[rid]);
-// 	}
 	S_MDB_CUSTINFO *At(int rowid)
 	{
 		if (rowid<0 || rowid > m_table.AllSize()-1)
@@ -174,34 +140,30 @@ public:
 		return &(m_table.m_table[rowid]);
 	}
 };
-//客户资金账号
-class CTbl_Cust_TX_Acc
+//交易账号表
+class CTbl_Trade_Acc
 {
 protected:
 	
-	CMemTableNew <S_MDB_CUST_FUNDACC_INFO>   m_table;
-// 	CPkeyCharF<21,1>               m_pkey;//资金账号
-// 	CIndexCharF<13,1>            m_index_accorg;//所属机构索引
-// 	CIndexCharF<13,1>            m_index_mgrorg;//代理机构索引
-// 	CIndexCharF<21,1>            m_index_parent;//父资金账号索引
-// 	CIndexCharF<13,1>            m_index_custno;//客户号索引
-	CPkeyCharV<1>               m_pkey;//资金账号
+	CMemTableNew <S_MDB_TRADEACC_INFO>   m_table;
+	CPkeyCharVUnordered<1>               m_pkey;//交易账号
 	CIndexVarChar<1>            m_index_accorg;//所属机构索引
 	CIndexVarChar<1>            m_index_mgrorg;//代理机构索引
 	CIndexVarChar<1>            m_index_parent;//父资金账号索引
 	CIndexVarChar<1>            m_index_custno;//客户号索引
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
-	CTbl_Cust_TX_Acc()
+	CTbl_Trade_Acc()
 	{
 		
 	}
-	virtual ~CTbl_Cust_TX_Acc()
+	virtual ~CTbl_Trade_Acc()
 	{
 		
 	}
 	void Clear()
 	{
+		CBF_PMutex pp(&m_mutex);
 		m_pkey.Clear();//资金账号
 		m_index_accorg.Clear();//所属机构索引
 		m_index_mgrorg.Clear();//代理机构索引
@@ -214,7 +176,7 @@ public:
 	// 返回  : bool 
 	// 参数  : S_MDB_CUST_FUNDACC_INFO custacc
 	// 描述  : 写入交易账户表，交易账户、客户编号/交易所/席位、交易所/席位/交易编码三个唯一索引，交易编码索引
-	int Insert(S_MDB_CUST_FUNDACC_INFO custacc)  
+	int Insert(S_MDB_TRADEACC_INFO custacc)
 	{
 		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(custacc.sTxAcc))
@@ -229,13 +191,12 @@ public:
 		m_index_custno.Add(rid,m_table.m_table[rid].sCustNo);
 		return rid;
 	}
-	int Update(S_MDB_CUST_FUNDACC_INFO custacc)  
+	int Update(S_MDB_TRADEACC_INFO custacc)
 	{
 		CBF_PMutex pp(&m_mutex);
 		int rid;
 		if (m_pkey.GetRowId(rid,custacc.sTxAcc))
 		{
-			strcpy(m_table.m_table[rid].sFsFeeModel,custacc.sFsFeeModel);
 			strcpy(m_table.m_table[rid].sExchFareModel,custacc.sExchFareModel);
 			strcpy(m_table.m_table[rid].sMemberFareModel,custacc.sMemberFareModel);
 			strcpy(m_table.m_table[rid].sFutureFlag,custacc.sFutureFlag);
@@ -254,7 +215,7 @@ public:
 	// 返回  : S_MDB_CUST_FUNDACC_INFO 
 	// 参数  : char *txacc
 	// 描述  : 根据交易账户查询交易账户信息
-	S_MDB_CUST_FUNDACC_INFO *SelectByAcc(char *txacc)
+	S_MDB_TRADEACC_INFO*SelectByAcc(char *txacc)
 	{
 		CBF_PMutex pp(&m_mutex);
 		int rid;
@@ -275,7 +236,7 @@ public:
 		}
 		return rid;
 	}
-	bool SelectAll(std::vector<S_MDB_CUST_FUNDACC_INFO *> &acclist)
+	bool SelectAll(std::vector<S_MDB_TRADEACC_INFO*> &acclist)
 	{
 		CBF_PMutex pp(&m_mutex);
 		int rid;
@@ -325,7 +286,7 @@ public:
 	// 参数  : char *org
 	// 参数  : std::vector<S_MDB_CUST_FUNDACC_INFO *> &acclist
 	// 描述  : 查找签约机构下的所有客户
-	bool SelectByAccOrg(char *org,std::vector<S_MDB_CUST_FUNDACC_INFO *> &acclist)
+	bool SelectByAccOrg(char *org,std::vector<S_MDB_TRADEACC_INFO*> &acclist)
 	{
 		CBF_PMutex pp(&m_mutex);
 		std::vector<int> iset;
@@ -363,7 +324,7 @@ public:
 	// 参数  : char *custno
 	// 参数  : std::vector<S_MDB_CUST_FUNDACC_INFO *> &acclist
 	// 描述  : 查找签约机构下的所有客户
-	bool SelectByCust(char *custno,std::vector<S_MDB_CUST_FUNDACC_INFO *> &acclist)
+	bool SelectByCust(char *custno,std::vector<S_MDB_TRADEACC_INFO*> &acclist)
 	{
 		CBF_PMutex pp(&m_mutex);
 		std::vector<int> iset;
@@ -384,7 +345,7 @@ public:
 	// 参数  : char *org
 	// 参数  : std::vector<S_MDB_CUST_FUNDACC_INFO *> &acclist
 	// 描述  : 查找代理机构下的所有客户
-	bool SelectByMgrOrg(char *org,std::vector<S_MDB_CUST_FUNDACC_INFO *> &acclist)
+	bool SelectByMgrOrg(char *org,std::vector<S_MDB_TRADEACC_INFO*> &acclist)
 	{
 		CBF_PMutex pp(&m_mutex);
 		std::vector<int> iset;
@@ -415,7 +376,7 @@ public:
 		}
 		return true;
 	}
-	S_MDB_CUST_FUNDACC_INFO *At(int rowid)
+	S_MDB_TRADEACC_INFO *At(int rowid)
 	{
 		if (rowid<0 || rowid > m_table.AllSize()-1)
 		{
@@ -431,8 +392,7 @@ class CTbl_TX_Acc_Lock
 protected:
 	
 	CMemTableNew <S_MDB_TXACC_LOCK>   m_table;
-//	CPkeyCharF<21,1>               m_pkey;//资金账号
-	CPkeyCharV<1>               m_pkey;//资金账号
+	CPkeyCharVUnordered<1>               m_pkey;//资金账号
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTbl_TX_Acc_Lock()
@@ -506,7 +466,7 @@ public:
 
 	}
 	CTbl_Cust         m_pCustom;//客户信息表
-	CTbl_Cust_TX_Acc  m_pCustFundAcc;//资金账号信息表
+	CTbl_Trade_Acc    m_pTradeAcc;//交易账号信息表
 	
 };
 

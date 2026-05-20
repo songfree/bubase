@@ -32,6 +32,16 @@ public:
 	CMemDb         *m_pMemDb;//内存表
 	CIErrlog       *m_pLog;
 
+    // 函数名: GetOrderFeeAmt
+    // 编程  : 王明松 2022-07-15 09:38:33
+    // 返回  : int  0成功 
+    // 参数  : S_MDB_ORDER_INFO& order   报单信息
+    // 参数  : S_MDB_CONTRACT_INFO* pc   合约信息
+	// 参数  : S_MDB_TRADEACC_INFO* pcustacc  交易账户信息
+    // 描述  : 获取报单所需要的手续费、冻结金额  调用GetFeeMargin
+	int GetOrderFeeAmt(S_MDB_ORDER_INFO& order, S_MDB_CONTRACT_INFO* pc, S_MDB_TRADEACC_INFO* pcustacc);
+	int GetFeeMargin(S_MDB_ORDER_INFO* porder, S_MDB_CONTRACT_INFO* pc, S_MDB_TRADEACC_INFO* pcust, double& exfee, double& memberfee, double& exmargin, double& membermargin);
+
 	// 函数名: ProcPosition
 	// 编程  : 王明松 2018-3-6 16:16:33
 	// 返回  : bool 
@@ -77,7 +87,7 @@ public:
 	// 输出参数  : double &exmargin  交易所保证金
 	// 输出参数  : double &membermargin   会员保证金
 	// 描述  : 取保证金
-	bool GetMarginValue(S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_INFO *pcust,int flag ,int num, double amt, double &exmargin, double &membermargin);
+	bool GetMarginValue(S_MDB_CONTRACT_INFO *pc, S_MDB_TRADEACC_INFO *pcust,int flag ,int num, double amt, double &exmargin, double &membermargin);
 
 	int GetRiskLevel(S_MDB_CUST_FUND *fund,char *traderight);
 
@@ -92,11 +102,11 @@ public:
 	// 描述  : 取持仓风险级别
 	int GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RELA *templet,S_MDB_CUST_POSITION *custposi,char *traderight,char *warnmsg);
 
-	int GetProdRiskLevel(char *prodid,double unitvalue,double risk,char *traderight,char *warnmsg);
-	int GetProdRiskLevel(char *prodid,double marginrate,double posivalue,double posidiffvalue,char *traderight,char *warnmsg);
+	int GetProdFundRiskLevel(char *prodid,double unitvalue,double risk, double positotal, char *traderight,char *warnmsg);
+	int GetProdPosiRiskLevel(char *prodid,double marginrate,double posivalue,double posidiffvalue,char *traderight,char *warnmsg);
 
-	int GetOrgRiskLevel(char *orgcode,double unitvalue,double risk,char *traderight,char *warnmsg);
-	int GetOrgRiskLevel(char *orgcode,double marginrate,double posivalue,double posidiffvalue,char *traderight,char *warnmsg);
+	int GetOrgFundRiskLevel(char *orgcode,double unitvalue,double risk, double positotal,char *traderight,char *warnmsg);
+	int GetOrgPosiRiskLevel(char *orgcode,double marginrate,double posivalue,double posidiffvalue,char *traderight,char *warnmsg);
 
 	// 函数名: GetTradeFeeValue
 	// 编程  : 王明松 2018-3-21 14:08:49
@@ -109,7 +119,7 @@ public:
 	// 输出参数  : double &exfee  交易所手续费
 	// 输出参数  : double &memberfee   会员手续费
 	// 描述  : 取交易手续费
-	bool GetTradeFeeValue(S_MDB_CONTRACT_INFO *pc ,S_MDB_CUST_FUNDACC_INFO *pcust,int flag,int num,double amt,double &exfee,double &memberfee);
+	bool GetTradeFeeValue(S_MDB_CONTRACT_INFO *pc , S_MDB_TRADEACC_INFO *pcust,int flag,int num,double amt,double &exfee,double &memberfee);
 
 	// 函数名: CheckRight
 	// 编程  : 王明松 2018-6-1 16:49:32
@@ -167,7 +177,7 @@ public:
 	// 描述  : 根据合约取保证金模式
 	int GetMarginMode(S_MDB_CONTRACT_INFO *pc);
 	
-	// 函数名: ProcOrder
+	// 函数名: ComputeNewOrder
 	// 编程  : 王明松 2018-3-6 16:16:33
 	// 返回  : int  0成功 其它失败  >0返回码
 	// 参数  : S_MDB_TXACC_LOCK *lockinfo  客户锁
@@ -175,11 +185,11 @@ public:
 	// 参数  : S_MDB_ORDER_INFO *info      报单信息
 	// 参数  : S_MDB_CONTRACT_INFO *pc     合约信息
 	// 参数  : bool checkfund=false  是否检查资金及仓位
-	// 描述  : 处理一笔报单，计算资金冻结证金
+	// 描述  : 处理一笔新报单，计算资金冻结证金
 	int ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fundinfo,S_MDB_ORDER_INFO *info,S_MDB_CONTRACT_INFO *pc,bool checkfund=false);
-
+	//处理一笔新成交
 	bool ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fundinfo,S_MDB_DONE_INFO *info,S_MDB_ORDER_INFO *po,S_MDB_CONTRACT_INFO *pc);
-
+	//处理一笔撤单
 	int ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO *po,int nCancelNum );
 protected:
 
@@ -245,7 +255,7 @@ public:
 	// 描述  : 处理撤单的净边资金 撤单回报的处理
 	int ProcCancelOrderNetMargin(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fundinfo,S_MDB_ORDER_INFO *po,S_MDB_CONTRACT_INFO *pc);
 
-	int GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_INFO *pcust, double &exfee, double &memberfee,double &exmargin,double &membermargin);
+	
 };
 
 #endif // !defined(AFX_KERNELPUB_H__1E64E06C_1D5F_41AB_8FB8_A16C19C39070__INCLUDED_)

@@ -374,7 +374,7 @@ typedef void * DLLHANDLE;
 #define ISNOTOPEN(b) (b==NULL)
 #else
 //#define LOADDLL(a) dlopen(a,RTLD_NOW)
-#define LOADDLL(a) dlopen(a,RTLD_LAZY | RTLD_GLOBAL)
+#define LOADDLL(a) dlopen(a,RTLD_LAZY | RTLD_LOCAL)
 #define GETINSTANCE(a,b) dlsym(a,b)
 #define FREEDLL(a) dlclose(a)
 #define ISNOTOPEN(b) (dlerror()!=NULL)
@@ -441,9 +441,11 @@ typedef void * DLLHANDLE;
 ///取得当前工作目录的区别
 #ifdef _WINDOWS         //取得当前工作目录
 #define WORKPATH(WorkDir) GetCurrentDirectory(sizeof(WorkDir),WorkDir);
+#define CHPATH(WorkDir) _chdir(WorkDir);
 #endif
 #ifdef UNIX         //取得当前工作目录
 #define WORKPATH(WorkDir) getcwd(WorkDir,sizeof(WorkDir));//strcpy(WorkDir,(char *)getenv("HOME"));
+#define CHPATH(WorkDir)   chdir(WorkDir);
 #endif
 
 ///简化memset

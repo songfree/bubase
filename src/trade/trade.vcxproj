@@ -123,7 +123,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(BUBASE_INCLUDE)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(BUBASE_LIB_X64)</LibraryPath>
-    <OutDir>$(SolutionDir)/bin/$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)\\bin\\$(Platform)\\$(Configuration)\</OutDir>
     <TargetName>tradekerneld</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

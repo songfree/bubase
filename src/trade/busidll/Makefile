@@ -17,7 +17,7 @@ DLLLIB  =  -lbf_kernel -lbf_dbpub -lbf_dbapi -lsqlapi    -lpthread
 .cpp.o:
 	$(CPP) $(CPPFLAGS) -c   $(CPPDEFS)  $(INC)  $< -o $@
 
-OBJL = RiskDll.o  KernelPub.o
+OBJL = RiskDll.o  KernelPub.o PubDb.o PubMethod.o Xdp2Struct.o
 
 ALL: libbusidll.so clean
 

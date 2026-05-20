@@ -15,9 +15,9 @@
 
 typedef struct 
 {
-	unsigned int nContractId;//合约编号
-	char   sContractCode[21];//合约代码
-	char   sContractName[41];//合约名称
+	unsigned int nContractId;//合约编号证券编号
+	char   sContractCode[21];//合约代码	证券代码
+	char   sContractName[41];//合约名称	证券名称
 	char   sExcode[2];//交易所代码
 	char   sProd_type[2];//品种类型
 	char   sProd_code[21];//交割品、标的合约代码
@@ -56,6 +56,7 @@ typedef struct
 	char    sIsOptionCall[2];//是否期权看涨
 	int     nVariety;//品种    
 	char    sCurrency[2];//币种
+	int     nBondRowid;//对应债券扩展信息表的rowid，根据此id可快速找到对应的债券扩展信息
 }S_MDB_CONTRACT_INFO;
 
 typedef struct 
@@ -75,7 +76,35 @@ typedef struct
 	char  sBailMode[2];//保证金收取方式
 }S_MDB_VARIETY_INFO;
 
+typedef struct
+{
+    char   sBondCode[21];//债券代码
+	int    nBondType;//债券类型
+    char   sIssueDate[9];//发行日
+    char   sListDate[9];//上市日
+    double dIssuePrice;//发行价
+    char   sStartDate[9];//起息日
+    char   sMtrDate[9];//到期兑付日
+	double dCoupon;//票面利率
+	double dRemainMaturity;//剩余期限
+	int    nPayFreq;//付息频率
+	double dMarketScope;//市场存续规模
+	char   sTermMaturity[41]; //待偿期
+	char   sIssueOrg[13];//发行人机构6位代码
+	char   sExecDate[9];//行权日
+	double dExecPrice;//行权价
+	double dInitValue;//初始面额
+	double dInitSpread;//初始利差
+	int    nCouponType;//利率方式
+	double dInitCoupon;//初始票面利率
+	char   sFirstPayDate[9];//首次付息日
+	double dDv01;
+	double dAccrInte;//应计利息
+	double dNewValue;//最新面值
+	double dApprValue;//前一日中债中证估值
+	int    nDayCount;//计息基准
 
+}S_MDB_BOND_INFO;
 
 typedef struct
 {
@@ -88,6 +117,7 @@ typedef struct
 	char sClearDate[9];//清算日期
 	char sClearStatus[2];//清算状态 
 	char sOnlyChgDate[2];//是否仅切换交易日
+	int  nMarketRowid;//对应市场表里的rowid
 }S_MDB_EXCH_INFO;
 
 typedef struct  
@@ -100,11 +130,11 @@ typedef struct
 	char sOnlyChgDate[2];//是否仅切换交易日
 }S_MDB_MARKET_INFO;
 
-//交易员对应客户
+//交易员对应交易账户
 typedef struct 
 {
 	char sOperCode[17];//交易员代码
-	char sTxAcc[21];   //资金账号
+	char sTxAcc[21];   //交易账号
 }S_MDB_OPER_CUST_INFO;
 
 typedef struct 
@@ -118,12 +148,11 @@ typedef struct
 	unsigned int nPublishUit;//发行份额
 }S_MDB_FINA_PROD_INFO;
 
-//产品对应资金账号
+//产品对应交易账号
 typedef struct
 {
 	char  sProdNo[13];//产品编号
-	char  sCustNo[13];//客户号
-	char  sTxAcc[21];//资金账号
+	char  sTxAcc[21];//交易账号
 }S_MDB_PROD_CUST;
 
 //操作员对应产品
@@ -137,16 +166,10 @@ typedef struct
 typedef struct
 {
 	char  sTxAcc[21];//资金账号
-	unsigned int nContractNo;//合约编号
+	char  sContractCode[21];//合约代码
 	double   dForceRate;//禁合幅度
 }S_MDB_CONTRACT_LIMIT;
 
-//订阅表
-// typedef struct  
-// {
-// 	char sOper[17];//操作员
-// 	char sMsgType[2];//信息类型
-// }S_MDB_SUBSCRIBE;
 
 typedef struct 
 {
@@ -191,6 +214,15 @@ typedef struct
 	double dGarch;
 }S_MDB_OPTION_CONTRACT_PRICE_MODEL;
 
+typedef struct 
+{
+	char sCodeType[21];	   //代码类型  如EO_FLAG 等
+	char sCharFlag[2];	   //字符类型  ‘0’中文 '1'英文
+	char sCodeId[21];	   //代码id  如 1 2 
+	char sCodeDesc[201];   //中文或英文描述
+	int  nValueType;
+}S_MDB_CODE_TABLE;
+
 //合约表的品种类型+标的合约的索引
 class Index_Contract_type_desno : public CIndex_Field_Base
 {
@@ -227,13 +259,8 @@ class CTbl_Contract
 protected:
 	
 	CMemTableNew <S_MDB_CONTRACT_INFO>  m_table;
-//	CPkeyCharF<21,1>               m_keyCode;//合约代码
-	CPkeyCharV<1>               m_keyCode;//合约代码
-	CPkeyUInt<1>                 m_keyNo;//合约编号
-//	CIndexCharF<2,1>            m_index_ex;//索引-交易所
-//	CIndexCharF<21,1>            m_index_destcode;//索引-标的合约代码
-//	CIndexCharF<2,1>            m_index_type;//索引-品种类别 期货 现货 期权 股票
-
+	CPkeyCharVUnordered<1>              m_keyCode;//合约代码
+	CPkeyUIntUnordered<1>                 m_keyNo;//合约编号
 	CIndexVarChar<1>            m_index_ex;//索引-交易所
 	CIndexVarChar<1>            m_index_destcode;//索引-标的合约代码
 	CIndexVarChar<1>            m_index_type;//索引-品种类别 期货 现货 期权 股票
@@ -252,6 +279,7 @@ public:
 	}
 	void Clear()
 	{
+		CBF_PMutex pp(&m_mutex);
 		m_keyCode.Clear();
 		m_keyNo.Clear();
 		m_index_ex.Clear();
@@ -263,6 +291,7 @@ public:
 	}
 	int Insert(S_MDB_CONTRACT_INFO contract)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_keyCode.Find(contract.sContractCode))
 		{
 			return -1;
@@ -467,16 +496,119 @@ public:
 		return iset.Size();
 	}
 };
+//债券扩展信息表
+class CTbl_Bond
+{
+protected:
 
+    CMemTableNew <S_MDB_BOND_INFO>  m_table;
+    CPkeyCharVUnordered<1>              m_keyCode;//债券代码
+	CInt  m_rid_update;//存放更新的Rowrid
+    CBF_Mutex                   m_mutex;//互斥锁
+public:
+	CTbl_Bond()
+    {
+
+    }
+    virtual ~CTbl_Bond()
+    {
+
+    }
+    void Clear()
+    {
+		CBF_PMutex pp(&m_mutex);
+        m_keyCode.Clear();
+        m_table.Clear();
+    }
+    //设置更新的rowid
+    int SetUpdate(S_MDB_BOND_INFO info)
+    {
+        CBF_PMutex pp(&m_mutex);
+        int rid;
+        if (!m_keyCode.Select(rid, info.sBondCode))
+        {
+            return NULL;
+        }
+        m_rid_update.Add(rid);
+        return rid;
+    }
+    //设置更新表的rowid
+    int SetUpdate(int rid)
+    {
+        CBF_PMutex pp(&m_mutex);
+        if (At(rid) == NULL)
+        {
+            return -1;
+        }
+        m_rid_update.Add(rid);
+        return rid;
+    }
+    int Insert(S_MDB_BOND_INFO contract)
+    {
+		CBF_PMutex pp(&m_mutex);
+        if (m_keyCode.Find(contract.sBondCode))
+        {
+            return -1;
+        }
+        
+        int rid = m_table.Add(contract);
+        m_keyCode.Add(rid, m_table.m_table[rid].sBondCode);
+        
+        return rid;
+    }
+	S_MDB_BOND_INFO* Select(char *bondcode)
+    {
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        if (!m_keyCode.Select(rid, bondcode))
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rid]);
+    }
+	int GetRowId(char* bondcode)
+	{
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        if (!m_keyCode.Select(rid, bondcode))
+        {
+            return -1;
+        }
+		return rid;
+	}
+	S_MDB_BOND_INFO* At(int rowid)
+    {
+        if (rowid<0 || rowid > m_table.AllSize() - 1)
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rowid]);
+    }
+    //获得更新过的表数据
+    void GetUpdateList(std::vector<S_MDB_BOND_INFO*>& reslist, bool dellist = true)
+    {
+        CBF_PMutex pp(&m_mutex);
+        int rid;
+        bool bret = m_rid_update.First(rid);
+        while (bret)
+        {
+            reslist.push_back(&(m_table.m_table[rid]));
+            bret = m_rid_update.Next(rid);
+        }
+        if (dellist)
+        {
+            m_rid_update.Clear();
+        }
+        return;
+    }
+};
 //交易所信息表
 class CTbl_Exch_Info
 {
 protected:
 	
 	CMemTableNew <S_MDB_EXCH_INFO>   m_table;
-//	CPkeyCharF<2,1>               m_pkey;//交易所代码
-//	CIndexCharF<2,1>            m_index_market;//索引-市场
-	CPkeyCharV<1>               m_pkey;//交易所代码
+	CPkeyCharVUnordered<1>           m_pkey;//交易所代码
 	CIndexVarChar<1>            m_index_market;//索引-市场
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
@@ -490,6 +622,7 @@ public:
 	}
 	int Insert(S_MDB_EXCH_INFO exinfo)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(exinfo.sExCode))
 		{
 			return -1;
@@ -602,8 +735,7 @@ class CTbl_Market
 protected:
 	
 	CMemTableNew <S_MDB_MARKET_INFO>   m_table;
-	//CPkeyCharF<2,1>               m_pkey;//市场代码
-	CPkeyCharV<1>               m_pkey;//市场代码
+	CPkeyCharVUnordered<1>               m_pkey;//市场代码
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTbl_Market()
@@ -616,6 +748,7 @@ public:
 	}
 	int Insert(S_MDB_MARKET_INFO info)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(info.sMarket))
 		{
 			return -1;
@@ -633,6 +766,16 @@ public:
 			return NULL;
 		}
 		return &(m_table.m_table[rid]);
+	}
+	int GetRowId(char* market)
+	{
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        if (!m_pkey.GetRowId(rid, market))
+        {
+            return -1;
+        }
+		return rid;
 	}
 	bool Select(std::vector<S_MDB_MARKET_INFO *> &marketlist)
 	{
@@ -713,13 +856,10 @@ class CTbl_Variety
 protected:
 	
 	CMemTableNew <S_MDB_VARIETY_INFO>  m_table;
-// 	CPkeyCharF<21,1>               m_keyCode;//品种代码
-// 	CIndexCharF<2,1>            m_index_ex;//索引-交易所
-// 	CIndexCharF<2,1>            m_index_type;//索引-品种类别 期货 现货 期权 股票
-	CPkeyCharV<1>               m_keyCode;//品种代码
+	CPkeyCharVUnordered<1>               m_keyCode;//品种代码
 	CIndexVarChar<1>            m_index_ex;//索引-交易所
 	CIndexVarChar<1>            m_index_type;//索引-品种类别 期货 现货 期权 股票
-	CPkeyUInt<1>                 m_keyNo;//品种编号
+	CPkeyUIntUnordered<1>       m_keyNo;//品种编号
 	
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
@@ -733,6 +873,7 @@ public:
 	}
 	int Insert(S_MDB_VARIETY_INFO info)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_keyCode.Find(info.sVarietyCode))
 		{
 			return -1;
@@ -833,9 +974,7 @@ class CTbl_Oper_TxAcc
 protected:
 	
 	CMemTableNew <S_MDB_OPER_CUST_INFO>      m_table;
-// 	CPkeyCharF<21,2>               m_pkey;//操作员-客户
-// 	CIndexCharF<17,1>            m_index_oper;//操作员的索引
-	CPkeyCharV<2>               m_pkey;//操作员-客户
+	CPkeyCharVUnordered<2>               m_pkey;//操作员-客户
 	CIndexVarChar<1>            m_index_oper;//操作员的索引
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
@@ -849,6 +988,7 @@ public:
 	}
 	int Insert(S_MDB_OPER_CUST_INFO info)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(info.sOperCode,info.sTxAcc))
 		{
 			return -1;
@@ -908,9 +1048,7 @@ class CTbl_Fina_Prod
 protected:
 	
 	CMemTableNew <S_MDB_FINA_PROD_INFO>  m_table;
-// 	CPkeyCharF<13,1>               m_key;//产品代码
-// 	CIndexCharF<13,1>            m_index_org;//索引-所属机构
-	CPkeyCharV<1>               m_key;//产品代码
+	CPkeyCharVUnordered<1>               m_key;//产品代码
 	CIndexVarChar<1>            m_index_org;//索引-所属机构
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
@@ -924,6 +1062,7 @@ public:
 	}
 	int Insert(S_MDB_FINA_PROD_INFO info)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_key.Find(info.sFinaProdCode))
 		{
 			return -1;
@@ -994,9 +1133,7 @@ class CTbl_Prod_Cust
 protected:
 	
 	CMemTableNew <S_MDB_PROD_CUST>  m_table;
-// 	CPkeyCharF<21,2>               m_key;//产品代码+资金账号
-// 	CIndexCharF<13,1>            m_index;//产品index
-	CPkeyCharV<2>               m_key;//产品代码+资金账号
+	CPkeyCharVUnordered<2>               m_key;//产品代码+交易账户
 	CIndexVarChar<1>            m_index;//产品index
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
@@ -1010,6 +1147,7 @@ public:
 	}
 	int Insert(S_MDB_PROD_CUST info)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_key.Find(info.sProdNo,info.sTxAcc))
 		{
 			return -1;
@@ -1062,8 +1200,7 @@ class CTbl_Oper_Prod
 protected:
 	
 	CMemTableNew <S_MDB_OPER_PROD>  m_table;
-//	CPkeyCharF<17,2>               m_key;//操作员+产品代码
-	CPkeyCharV<2>               m_key;//操作员+产品代码
+	CPkeyCharVUnordered<2>               m_key;//操作员+产品代码
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTbl_Oper_Prod()
@@ -1076,6 +1213,7 @@ public:
 	}
 	int Insert(S_MDB_OPER_PROD info)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_key.Find(info.sOper,info.sProdNo))
 		{
 			return -1;
@@ -1108,42 +1246,12 @@ public:
 	}
 };
 
-
-//冷门合约开仓限制表主键
-class CKey_Cust_Contract_Limit : public CIndex_Field_Base
-{
-public:
-	char sTxAcc[21];//资金账号
-	unsigned  int  nContractNo;//合约编号
-	
-	
-	virtual bool operator<(const CKey_Cust_Contract_Limit& field) const
-	{
-		int ret = strcmp(sTxAcc,field.sTxAcc);
-		if (ret<0)
-		{
-			return true;
-		}
-		else if (ret == 0)
-		{
-			if  (nContractNo < field.nContractNo)
-			{
-				return true;
-			}
-			return false;
-		}
-		else
-		{
-			return false;
-		}
-	}
-};
 class CTbl_Cust_Contract_Limit
 {
 protected:
 	
 	CMemTableNew <S_MDB_CONTRACT_LIMIT>  m_table;
-	CKeyField<CKey_Cust_Contract_Limit> m_key;//资金账号+合约编号
+	CPkeyCharVUnordered<2> m_key;//账户+合约
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTbl_Cust_Contract_Limit()
@@ -1156,32 +1264,26 @@ public:
 	}
 	int Insert(S_MDB_CONTRACT_LIMIT info)
 	{
-		CKey_Cust_Contract_Limit aa;
-		strcpy(aa.sTxAcc,info.sTxAcc);
-		aa.nContractNo = info.nContractNo;
-		if (m_key.Find(aa))
+		CBF_PMutex pp(&m_mutex);
+		if (m_key.Find(info.sTxAcc,info.sContractCode))
 		{
 			return -1;
 		}
 		
 		int rid = m_table.Add(info);
-		aa.m_nRowId = rid;
-		m_key.Add(aa);
+		m_key.Add(rid,m_table.m_table[rid].sTxAcc, m_table.m_table[rid].sContractCode);
 		return rid;
 	}
 	
-	S_MDB_CONTRACT_LIMIT *Select(char *sTxacc,unsigned int nContractNo)
+	S_MDB_CONTRACT_LIMIT *Select(char *sTxacc,char *sContractCode)
 	{
 		int rid;
 		CBF_PMutex pp(&m_mutex);
-		CKey_Cust_Contract_Limit aa;
-		strcpy(aa.sTxAcc,sTxacc);
-		aa.nContractNo = nContractNo;
-		if (!m_key.Find(aa))
+		if (!m_key.Select(rid,sTxacc,sContractCode))
 		{
 			return NULL;
 		}
-		return &(m_table.m_table[aa.m_nRowId]);
+		return &(m_table.m_table[rid]);
 	}
 	
 	
@@ -1195,56 +1297,6 @@ public:
 	}
 };
 
-//订阅表
-// class CTbl_Subscribe
-// {
-// protected:
-// 	
-// 	CMemTableNew <S_MDB_SUBSCRIBE>   m_table;
-// 	CPkeyCharV<2>               m_pkey;//操作员_信息类型
-// 	CBF_Mutex                   m_mutex;//互斥锁
-// public:
-// 	CTbl_Subscribe()
-// 	{
-// 		
-// 	}
-// 	virtual ~CTbl_Subscribe()
-// 	{
-// 		
-// 	}
-// 	int Insert(S_MDB_SUBSCRIBE info)
-// 	{
-// 		if (m_pkey.Find(info.sOper,info.sMsgType))
-// 		{
-// 			return -1;
-// 		}
-// 		int rid= m_table.Add(info);
-// 		m_pkey.Add(rid,m_table.m_table[rid].sOper,m_table.m_table[rid].sMsgType);
-// 		
-// 		return rid;
-// 	}
-// 	S_MDB_SUBSCRIBE *Select(char *oper,char *msgtype)
-// 	{
-// 		int rid;
-// 		CBF_PMutex pp(&m_mutex);
-// 		if (!m_pkey.GetRowId(rid,oper,msgtype))
-// 		{
-// 			return NULL;
-// 		}
-// 		return &(m_table.m_table[rid]);
-// 	}
-// 
-// 	S_MDB_SUBSCRIBE *At(int rowid)
-// 	{
-// 		if (rowid<0 || rowid > m_table.AllSize()-1)
-// 		{
-// 			return NULL;
-// 		}
-// 		return &(m_table.m_table[rowid]);
-// 	}
-// 	
-// };
-
 
 //合约结算价表 只保存当前最新的结算价
 class CTbl_SettlePrice
@@ -1252,9 +1304,8 @@ class CTbl_SettlePrice
 protected:
 	
 	CMemTableNew <S_MDB_CONTRACT_SETTLE_PRICE>   m_table;
-	CPkeyUInt<1>               m_pkey;//合约编号
-//	CPkeyCharF<21,1>               m_pkeycode;//合约代码
-	CPkeyCharV<1>               m_pkeycode;//合约代码
+	CPkeyUIntUnordered<1>               m_pkey;//合约编号
+	CPkeyCharVUnordered<1>               m_pkeycode;//合约代码
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTbl_SettlePrice()
@@ -1267,6 +1318,7 @@ public:
 	}
 	int Insert(S_MDB_CONTRACT_SETTLE_PRICE info)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(info.nContractNo))
 		{
 			return -1;
@@ -1317,9 +1369,7 @@ class CTbl_SpecDate
 protected:
 	
 	CMemTableNew <S_MDB_SPECDATE>   m_table;
-// 	CPkeyCharF<9,3>               m_pkey;//市场+交易所+日期
-// 	CIndexCharF<2,2>           m_index;//市场+交易所
-	CPkeyCharV<3>               m_pkey;//市场+交易所+日期
+	CPkeyCharVUnordered<3>               m_pkey;//市场+交易所+日期
 	CIndexVarChar<2>           m_index;//市场+交易所
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
@@ -1333,6 +1383,7 @@ public:
 	}
 	int Insert(S_MDB_SPECDATE info)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(info.sMarket,info.sExchCode,info.sSpecDate))
 		{
 			return -1;
@@ -1384,7 +1435,7 @@ class CTbl_Option_Model
 protected:
 	
 	CMemTableNew <S_MDB_OPTION_CONTRACT_PRICE_MODEL>   m_table;
-	CPkeyUInt<1>               m_pkey;//合约编号
+	CPkeyUIntUnordered<1>               m_pkey;//合约编号
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTbl_Option_Model()
@@ -1397,6 +1448,7 @@ public:
 	}
 	int Insert(S_MDB_OPTION_CONTRACT_PRICE_MODEL info)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(info.nContractNo))
 		{
 			return -1;
@@ -1428,6 +1480,56 @@ public:
 	
 };
 
+class CTbl_Code_Table
+{
+protected:
+
+    CMemTableNew <S_MDB_CODE_TABLE>   m_table;
+    CPkeyCharVUnordered<3>               m_pkey;//码表类型 标识 ID
+    CBF_Mutex                   m_mutex;//互斥锁
+public:
+	CTbl_Code_Table()
+    {
+
+    }
+    virtual ~CTbl_Code_Table()
+    {
+
+    }
+    int Insert(S_MDB_CODE_TABLE info)
+    {
+        CBF_PMutex pp(&m_mutex);
+        if (m_pkey.Find(info.sCodeType,info.sCharFlag,info.sCodeId))
+        {
+            return -1;
+        }
+
+        int rid = m_table.Add(info);
+        m_pkey.Add(rid, m_table.m_table[rid].sCodeType, m_table.m_table[rid].sCharFlag, m_table.m_table[rid].sCodeId);
+        return rid;
+    }
+	S_MDB_CODE_TABLE* Select(char * sCodeType, char* sCharFlag, char* sCodeId)
+    {
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        if (!m_pkey.Select(rid, sCodeType, sCharFlag, sCodeId))
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rid]);
+    }
+
+	S_MDB_CODE_TABLE* At(int rowid)
+    {
+        if (rowid<0 || rowid > m_table.AllSize() - 1)
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rowid]);
+    }
+
+};
+
 class CDb_BaseInfo  
 {
 public:
@@ -1441,12 +1543,13 @@ public:
 	}
 	CTbl_Variety    m_pVariety;//品种表
 	CTbl_Contract   m_pContract;//合约表
+	CTbl_Bond       m_pBond;//债券扩展信息
 	CTbl_Exch_Info  m_pExchange;//交易所表
 	CTbl_Market     m_pMarket;//市场表
 	CTbl_Fina_Prod  m_pProd;//产品表
-	CTbl_Oper_TxAcc m_pOperTxAcc;//操作员对应资金账号表
+	CTbl_Oper_TxAcc m_pOperTxAcc;//操作员对应交易账号表
 
-	CTbl_Prod_Cust  m_pProdCust;//产品对应资金账号表
+	CTbl_Prod_Cust  m_pProdCust;//产品对应交易账号表
 	CTbl_Oper_Prod  m_pOperProd;//操作员对应产品
 	
 	CTbl_Cust_Contract_Limit m_pCustContractLimit;//冷门合约开仓限制表
@@ -1454,6 +1557,8 @@ public:
 	CTbl_SettlePrice  m_pSettlePrice;//合约结算价表，只保存最新的
 	CTbl_SpecDate     m_pSpecDate;//节假日配置
 	CTbl_Option_Model m_pOptionModel;//期权合约价格模型表
+
+	CTbl_Code_Table   m_pCodeTable;
 
 };
 

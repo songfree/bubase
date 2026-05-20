@@ -330,6 +330,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				m_pSqlCmd->Rollback();
 				return -1;
 			}
+			m_pSqlCmd->Commit();
 		}
 		else //更新
 		{
@@ -343,6 +344,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				m_pSqlCmd->Rollback();
 				return -1;
 			}
+			m_pSqlCmd->Commit();
 		}
 		//内存
 		pXml.GetNodeAttribute("Monitor/主机资源/内存",false,"total",false,nRamTotal);
@@ -365,6 +367,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				m_pSqlCmd->Rollback();
 				return -1;
 			}
+			m_pSqlCmd->Commit();
 		}
 		else
 		{
@@ -379,6 +382,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 				m_pSqlCmd->Rollback();
 				return -1;
 			}
+			m_pSqlCmd->Commit();
 		}
 		//磁盘
 		tmpnode = pXml.GetNodeByPath("Monitor/主机资源/磁盘",false);
@@ -430,6 +434,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 						m_pSqlCmd->Rollback();
 						return -1;
 					}
+					m_pSqlCmd->Commit();
 				}
 				else
 				{
@@ -445,6 +450,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 						m_pSqlCmd->Rollback();
 						return -1;
 					}
+					m_pSqlCmd->Commit();
 				}
 				tmpnode = (CXmlNode *)tmpnode->getNextSibling();
 			}
@@ -536,6 +542,7 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			else //更新
 			{
@@ -569,11 +576,11 @@ int CMoniSvr::NodeReport(PBPCCOMMSTRU data)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			tmpnode = (CXmlNode *)tmpnode->getNextSibling();
 		}
 	}
-	m_pSqlCmd->Commit();
 
 	switch (m_nNodeType)
 	{
@@ -655,6 +662,7 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			else //更新
 			{
@@ -673,6 +681,7 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			tmpnode = (CXmlNode *)tmpnode->getNextSibling();
 		}
@@ -743,6 +752,7 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			else //更新
 			{
@@ -761,11 +771,12 @@ int CMoniSvr::DrebReport(CBF_Xml *xml)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			tmpnode = (CXmlNode *)tmpnode->getNextSibling();
 		}
 	}
-	m_pSqlCmd->Commit();
+	
 	return 0;
 }
 
@@ -901,6 +912,7 @@ int CMoniSvr::BpcReport(CBF_Xml *xml)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			else //更新
 			{
@@ -926,12 +938,13 @@ int CMoniSvr::BpcReport(CBF_Xml *xml)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			tmpnode = (CXmlNode *)tmpnode->getNextSibling();
 		}
 	}
 	
-	m_pSqlCmd->Commit();
+	
 	return 0;
 }
 
@@ -1054,6 +1067,7 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			else //更新
 			{
@@ -1072,12 +1086,12 @@ int CMoniSvr::Bpc2Report(CBF_Xml *xml)
 					m_pSqlCmd->Rollback();
 					return -1;
 				}
+				m_pSqlCmd->Commit();
 			}
 			tmpnode = (CXmlNode *)tmpnode->getNextSibling();
 		}
 	}
-	m_pSqlCmd->Commit();
-	
+
 	return 0;
 }
 
@@ -1131,6 +1145,12 @@ bool CMoniSvr::GetSerial(char *logserial)
         //    UPDATE seq SET val = last_insert_id(val + 1) WHERE name = seq_name;
         //RETURN last_insert_id();
         //END $$
+        //要开通FUNCTION权限	-- 1、查看创建函数是否开启 如果Value处值为OFF，则需将其开启。
+        //show variables like '%func%';
+        //-- 2、开启MySQL函数功能
+        //    set global log_bin_trust_function_creators = 1;
+        //-- 3、关闭MySQL函数功能
+        //    set global log_bin_trust_function_creators = 0;
         sprintf(tmpsql, "select seq('seq')");
         if (!m_pSqlCmd->Execute(tmpsql))
         {
@@ -1209,6 +1229,7 @@ int CMoniSvr::UpdateByLastTime()
 		m_pSqlCmd->Rollback();
 		return -1;
 	}
+	m_pSqlCmd->Commit();
 	sprintf(m_sSql,"update BFM_APP_CONNECT set conn_status=:1 where lasttime<:2 and conn_status=:3");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsLong() = 2;//超时异常
@@ -1220,6 +1241,7 @@ int CMoniSvr::UpdateByLastTime()
 		m_pSqlCmd->Rollback();
 		return -1;
 	}
+	m_pSqlCmd->Commit();
 	//更新表中超时的状态为不正常
 	sprintf(m_sSql,"update BFM_DREB_CONNLIST set conn_status=:1 where  lasttime<:2 and conn_status=:3");
 	m_pSqlCmd->setCommandText(m_sSql);
@@ -1232,7 +1254,7 @@ int CMoniSvr::UpdateByLastTime()
 		m_pSqlCmd->Rollback();
 		return -1;
 	}
-	
+	m_pSqlCmd->Commit();
 	//更新表中超时的状态为不正常
 	sprintf(m_sSql,"update BFM_BPULIST set bpu_status=:1 where  lasttime<:2 and bpu_status=:3");
 	m_pSqlCmd->setCommandText(m_sSql);
@@ -1245,6 +1267,7 @@ int CMoniSvr::UpdateByLastTime()
 		m_pSqlCmd->Rollback();
 		return -1;
 	}
+	m_pSqlCmd->Commit();
 	//更新表中超时的状态为不正常
 	sprintf(m_sSql,"update BFM_BPC2_REPORT set report_status=:1 where lasttime<:2 and report_status=:3");
 	m_pSqlCmd->setCommandText(m_sSql);
@@ -1258,6 +1281,7 @@ int CMoniSvr::UpdateByLastTime()
 		return -1;
 	}
 	m_pSqlCmd->Commit();
+	return 0;
 }
 
 int CMoniSvr::AddPcNode(PBPCCOMMSTRU data)

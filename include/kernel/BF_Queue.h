@@ -21,144 +21,151 @@
 
 #endif
 
-
-template <typename ELEM_T, UINT64_ Q_SIZE,bool onepush=false>
+template <typename ELEM_T, UINT64_ Q_SIZE, bool onepush = false>
 class CBF_QueueNoLock
 {
 public:
+    CBF_QueueNoLock()
+    {
+        m_writeIndex.store(0, std::memory_order_relaxed);
+        m_readIndex.store(0, std::memory_order_relaxed);
+        m_maximumReadIndex.store(0, std::memory_order_relaxed);
+        m_count.store(0, std::memory_order_relaxed);
+    }
 
-	CBF_QueueNoLock()
-	{
-		m_writeIndex=0;
-		m_readIndex=0;
-		m_maximumReadIndex=0;
-		m_count=0;
-	}
-    virtual ~CBF_QueueNoLock()
-	{
-	}
+    virtual ~CBF_QueueNoLock() {}
 
-	UINT64_ size()
-	{
-		return m_count;
-	}
-	//放入数据至无锁队列
+    UINT64_ size() const
+    {
+        return m_count.load(std::memory_order_acquire);
+    }
+
     bool Push(const ELEM_T& a_data)
-	{
-		UINT64_ currentWriteIndex;        // 获取写指针的位置
-		UINT64_ currentReadIndex;
- //       int curtms = CBF_Date_Time::GetTickCount();
-        // 1. 获取可写入的位置
-		bool bret=false;
+    {
+        UINT64_ currentWriteIndex;
+        UINT64_ currentReadIndex;
+        bool bret = false;
+
         while (!bret)
         {
-            currentWriteIndex = m_writeIndex;
-            currentReadIndex = m_readIndex;
+            // 原子读取当前写指针和读指针
+            currentWriteIndex = m_writeIndex.load(std::memory_order_acquire);
+            currentReadIndex = m_readIndex.load(std::memory_order_acquire);
+
+            // 队列满判断（留一空位）
             if (countToIndex(currentWriteIndex + 1) == countToIndex(currentReadIndex))
             {
-                //队列满
-                return false;
+                // 双重检查：如果两个索引在此期间未变化，则确认为真满
+                if (currentWriteIndex == m_writeIndex.load(std::memory_order_relaxed) &&
+                    currentReadIndex == m_readIndex.load(std::memory_order_relaxed))
+                {
+                    return false;   // 真满
+                }
+                // 否则是假满，继续重试
+                continue;
             }
-			UINT64_ res= CAS(&m_writeIndex, currentWriteIndex, (currentWriteIndex + 1));
-#ifdef _WINDOWS
-            if (res == currentWriteIndex)
+
+            // 尝试原子地将写指针 +1
+            UINT64_ expected = currentWriteIndex;
+            if (m_writeIndex.compare_exchange_weak(expected, currentWriteIndex + 1,
+                std::memory_order_release,
+                std::memory_order_relaxed))
             {
-				break;
-			}
-#else
-            if (res == 1)
-			{
-				break;
-			}
-#endif
-            // 目的是为了获取一个能写入的位置
-        } 
-        // 获取写入位置后 currentWriteIndex 是一个临时变量，保存我们写入的位置
-        m_thequeue[countToIndex(currentWriteIndex)] = a_data;  // 把数据更新到对应的位置
+                // 成功获取写入位置 currentWriteIndex
+                break;
+            }
+            // CAS 失败，说明别的线程已修改写指针，继续循环重试
+        }
+
+        // 写入数据到环形缓冲区
+        m_thequeue[countToIndex(currentWriteIndex)] = a_data;
+
         if (onepush)
         {
-            m_maximumReadIndex++;
+            // 单生产者模式：直接增加最大可读索引
+            m_maximumReadIndex.fetch_add(1, std::memory_order_release);
         }
         else
         {
-
-            // 2. 更新可读的位置，按着m_maximumReadIndex+1的操作
- 		    bret = false;
-            while (!bret)   //队尾，一定要按顺序增加，如果不成功，可能是上一个写入的还没有写完成，要sleep一下
-            {   
-			    UINT64_ res = CAS(&m_maximumReadIndex, currentWriteIndex, (currentWriteIndex + 1));
-#ifdef _WINDOWS
-                if (res == currentWriteIndex)
+            // 多生产者模式：顺序推进最大可读索引
+            bret = false;
+            while (!bret)
+            {
+                UINT64_ curMax = m_maximumReadIndex.load(std::memory_order_acquire);
+                if (curMax == currentWriteIndex)
                 {
-				    break;
+                    // 当前线程负责推进
+                    if (m_maximumReadIndex.compare_exchange_weak(curMax, currentWriteIndex + 1,
+                        std::memory_order_release,
+                        std::memory_order_relaxed))
+                    {
+                        break;
+                    }
                 }
-#else
-                if (res == 1)
+                else
                 {
-				    break;
-                }
-#endif
-			    //走到下面是因为后面的在更新，所以要切换线程，等待做完再做
+                    // 有其它线程正在推进，让出 CPU 以等待
 #ifdef _WINDOWS
-			    Sleep(0);//切换到同优先级的线程或高优先级的线程
+                    Sleep(0);
 #else
-                sched_yield();      //先在当前线程所在的核心上遍历合适的任务线程，如果有的话，就切换到该线程 
+                    sched_yield();
 #endif
-            }
+                }
         }
-		m_count++;
+            }
+
+        m_count.fetch_add(1, std::memory_order_release);
         return true;
-	}
-	//从无锁队列取出一条数据
+    }
+
     bool Pop(ELEM_T& a_data)
-	{
-		UINT64_ currentMaximumReadIndex;
-		UINT64_ currentReadIndex;
+    {
+        UINT64_ currentReadIndex;
+        UINT64_ currentMaximumReadIndex;
+
         while (true)
         {
-            currentReadIndex = m_readIndex;
-            currentMaximumReadIndex = m_maximumReadIndex;
+            currentReadIndex = m_readIndex.load(std::memory_order_acquire);
+            currentMaximumReadIndex = m_maximumReadIndex.load(std::memory_order_acquire);
 
-            if (countToIndex(currentReadIndex) ==  countToIndex(currentMaximumReadIndex))      // 如果不为空，获取到读索引的位置
+            if (countToIndex(currentReadIndex) == countToIndex(currentMaximumReadIndex))
             {
-                return false;
+                return false;   // 队列空
             }
-            // retrieve the data from the queue
-            a_data = m_thequeue[countToIndex(currentReadIndex)]; // 从临时位置读取的
-			UINT64_ res = CAS(&m_readIndex, currentReadIndex, (currentReadIndex + 1));
-#ifdef _WINDOWS
-            if (res == currentReadIndex)
+
+            // 先读取数据（此时该位置一定已由生产者完成写入）
+            a_data = m_thequeue[countToIndex(currentReadIndex)];
+
+            // 尝试原子地将读指针 +1
+            UINT64_ expected = currentReadIndex;
+            if (m_readIndex.compare_exchange_weak(expected, currentReadIndex + 1,
+                std::memory_order_release,
+                std::memory_order_relaxed))
             {
-                m_count--;
+                m_count.fetch_sub(1, std::memory_order_release);
                 return true;
             }
-#else
-            if (res == 1)
-            {
-                m_count--;
-                return true;
-            }
-#endif
-			//说明这个数据已经被别人读走了，重新开始
-        } 
+            // CAS 失败，说明别的线程已经读走了，重新尝试
+        }
+
         return false;
-	}
+    }
+
 private:
+    ELEM_T m_thequeue[Q_SIZE];                        // 环形缓冲区
 
-    ELEM_T m_thequeue[Q_SIZE];	 //数组，存放数据
-	std::atomic<UINT64_> m_count;
-    volatile UINT64_ m_writeIndex;   //写的数据计数
+    std::atomic<UINT64_> m_count;                     // 队列中元素个数
+    std::atomic<UINT64_> m_writeIndex;                // 下一次写入的位置计数（单调递增）
+    std::atomic<UINT64_> m_readIndex;                 // 下一次读取的位置计数（单调递增）
+    std::atomic<UINT64_> m_maximumReadIndex;          // 当前已完全写入的最大位置计数
 
-    volatile UINT64_ m_readIndex;	   //读的数据计数
-
-	volatile UINT64_ m_maximumReadIndex;	  //最大的数据记数，即队尾
-
-	//根据计数，获取对应的数组下标
-    inline UINT64_ countToIndex(UINT64_ a_count)  //
-	{
-		return a_count % Q_SIZE;
-	}
+    inline UINT64_ countToIndex(UINT64_ a_count) const
+    {
+        return a_count % Q_SIZE;
+    }
 };
+
+
 
 //使用deque的队列 
 template<typename Record>

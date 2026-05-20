@@ -207,7 +207,7 @@ protected :
 
 	
 	int     m_nLogLevel;
-	string  m_sLogFile;
+	std::string  m_sLogFile;
 	CBF_Mutex  m_mutex;
  	
 };

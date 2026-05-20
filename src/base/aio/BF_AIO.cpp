@@ -437,54 +437,62 @@ bool CBF_AIO::Send(SOCKET_SEND_DATA senddata,bool isimmediate, bool islock)
 		if (senddata.s_nTimestamp != 0)
 		{
 			info->s_pSendQueue.push_back(senddata);
-			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"放入队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d]  交易队列大小[%d] 行情队列大小[%d]",\
-				info->s_nIndex,senddata.s_nHook,senddata.s_serial,senddata.s_nTxCode,0,senddata.s_nTotalLen-senddata.s_nSendLen,info->s_pSendQueue.size(),info->s_pQuoteSendQueue.size());
+			if(m_pLog->isWrite(LOG_DEBUG))
+            {
+                m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "放入队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d]  交易队列大小[%d] 行情队列大小[%d]", \
+                    info->s_nIndex, senddata.s_nHook, senddata.s_serial, senddata.s_nTxCode, 0, senddata.s_nTotalLen - senddata.s_nSendLen, info->s_pSendQueue.size(), info->s_pQuoteSendQueue.size());
+            }
 		}
 		else
 		{
-			info->s_pQuoteSendQueue.push_back(senddata);
-			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"放入行情队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d]，交易队列大小[%d] 行情队列大小[%d]",\
-				info->s_nIndex,senddata.s_nHook,senddata.s_serial,senddata.s_nTxCode,0,senddata.s_nTotalLen-senddata.s_nSendLen,info->s_pSendQueue.size(),info->s_pQuoteSendQueue.size());
-			//移除过期的行情数据
-			SOCKSENDQUEUE::iterator prq,prn;
-			bool bMoved = false;
-			int  quoteNum = info->s_pQuoteSendQueue.size();
-			for (prn=info->s_pQuoteSendQueue.begin() ; prn!=info->s_pQuoteSendQueue.end() ; )
+			if (m_pAioRes->g_nQuoteQueueNum > 0 )	//缓存行情
 			{
-				prq = prn;
-				prn++;
-				if (info->s_nSendQueueFlag == 2 && bMoved==false)
-				{
-					quoteNum--;
-					bMoved = true;
-					continue;//行情发送部分，看后面的数据是否过期
-				}
-				if (quoteNum > m_pAioRes->g_nQuoteQueueNum )
-				{
-					//移除行情
-					info->s_pQuoteSendQueue.erase(prq);//从队列删除
-					quoteNum--;
-					deletenum++;
-					continue;
-				}
-				//队列数小于保留数，查看过期时间
-				delaytime = time(NULL) - prq->s_nTime ;
-				//行情在队列里超过配置的秒超时则丢弃
-				if ( delaytime > m_pAioRes->g_nQuoteQueueDeleteTime )
-				{
-					delaynum++;
-					info->s_pQuoteSendQueue.erase(prq);//从队列删除
-					continue;	
-				}
+                info->s_pQuoteSendQueue.push_back(senddata);
+                if (m_pLog->isWrite(LOG_DEBUG))
+                {
+                    m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "放入行情队列，下次再发 index[%d] 标识[%d] 总线流水[%d] 交易码[%d] 本次发送length[%d] 剩余长度[%d]，交易队列大小[%d] 行情队列大小[%d]", \
+                        info->s_nIndex, senddata.s_nHook, senddata.s_serial, senddata.s_nTxCode, 0, senddata.s_nTotalLen - senddata.s_nSendLen, info->s_pSendQueue.size(), info->s_pQuoteSendQueue.size());
+                }
+                //移除过期的行情数据
+                SOCKSENDQUEUE::iterator prq, prn;
+                bool bMoved = false;
+                int  quoteNum = info->s_pQuoteSendQueue.size();
+                for (prn = info->s_pQuoteSendQueue.begin(); prn != info->s_pQuoteSendQueue.end(); )
+                {
+                    prq = prn;
+                    prn++;
+                    if (info->s_nSendQueueFlag == 2 && bMoved == false)
+                    {
+                        quoteNum--;
+                        bMoved = true;
+                        continue;//行情发送部分，看后面的数据是否过期
+                    }
+                    if (quoteNum > m_pAioRes->g_nQuoteQueueNum)
+                    {
+                        //移除行情
+                        info->s_pQuoteSendQueue.erase(prq);//从队列删除
+                        quoteNum--;
+                        deletenum++;
+                        continue;
+                    }
+                    //队列数小于保留数，查看过期时间
+                    delaytime = time(NULL) - prq->s_nTime;
+                    //行情在队列里超过配置的秒超时则丢弃
+                    if (delaytime > m_pAioRes->g_nQuoteQueueDeleteTime)
+                    {
+                        delaynum++;
+                        info->s_pQuoteSendQueue.erase(prq);//从队列删除
+                        continue;
+                    }
+                }
+                if (delaynum > 0 || deletenum > 0)
+                {
+                    m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "来自[%s]的连接index[%d] 标识[%d] socket[%d] 发送行情队列  移除数据数目[%d] 过期数目[%d] 过期时间[%d]  交易队列大小[%d] 行情队列大小[%d] ", \
+                        inet_ntoa(info->s_pSocketAddr.sin_addr), info->s_nIndex, prq->s_nHook, \
+                        info->s_hSocket, deletenum, delaynum, m_pAioRes->g_nQuoteQueueDeleteTime, \
+                        info->s_pSendQueue.size(), info->s_pQuoteSendQueue.size());
+                }
 			}
-			if (delaynum >0 || deletenum >0)
-			{
-				m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"来自[%s]的连接index[%d] 标识[%d] socket[%d] 发送行情队列  移除数据数目[%d] 过期数目[%d] 过期时间[%d]  交易队列大小[%d] 行情队列大小[%d] ",\
-					inet_ntoa(info->s_pSocketAddr.sin_addr),info->s_nIndex,prq->s_nHook,\
-					info->s_hSocket,deletenum,delaynum,m_pAioRes->g_nQuoteQueueDeleteTime,\
-					info->s_pSendQueue.size(),info->s_pQuoteSendQueue.size());
-			}
-			
 		}
 		//根据不同的模型进行处理
 		if (m_pAioRes->g_nRunMode == MODESELECT ) //select模型，socket是读写都要检查

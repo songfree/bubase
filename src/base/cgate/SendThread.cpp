@@ -310,6 +310,16 @@ void CSendThread::SendBCMsg(S_CGATE_SMSG *msg)
 			info->s_mutex.UnLock();
 			continue;
 		}
+        if (info->s_hSocket == INVALID_SOCKET)
+        {
+            //m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"连接index[%d]已关闭",msg->index);
+            continue;
+        }
+        if (info->s_cCheckFlag != CHECKFLAG_NORMAL) //未验证通过，暂不发送
+        {
+            //m_pLog->LogMp(LOG_DEBUG+1,__FILE__,__LINE__,"连接index[%d] 未登录 %d",i,info->s_cCheckFlag );
+            continue;
+        }
         if (!psub->IsSubscribe(msg->data.head.stDest.nServiceNo,msg->nkey, msg->ndate, msg->ntime))
         {
 			m_pLog->LogMp(LOG_DEBUG + 1, __FILE__, __LINE__, "连接index[%d] 未订阅 func[%d] key[%d] date[%d] time[%d]", i, msg->data.head.stDest.nServiceNo, msg->nkey, msg->ndate, msg->ntime);

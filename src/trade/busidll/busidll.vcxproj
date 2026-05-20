@@ -20,9 +20,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="KernelPub.cpp" />
+    <ClCompile Include="PubDb.cpp" />
+    <ClCompile Include="PubMethod.cpp" />
     <ClCompile Include="RiskDll.cpp" />
+    <ClCompile Include="Xdp2Struct.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\KernelPub.h" />
+    <ClInclude Include="..\include\PubDb.h" />
+    <ClInclude Include="..\include\PubMethod.h" />
+    <ClInclude Include="..\include\Xdp2Struct.h" />
     <ClInclude Include="RiskDll.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

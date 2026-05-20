@@ -15,6 +15,8 @@
 #include "PoolData.h"
 #include "BF_DrebServer.h"
 
+#define  HA_MODE 	  1  //主备模式
+
 class CDrebMsgThread : public CDrebMsgProcBase  
 {
 public:

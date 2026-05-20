@@ -22,6 +22,15 @@ typedef struct
 	char sOperPhone[21];//操作员电话
 	char sOrgCode[13];//所属机构
 	char sOperType[2];//操作员类型
+    char sCreDateTime[18];//创建日期时间
+    char sAddOper[21];//增加操作员代码
+    char sPwd[33];//密码
+    int  nPwdFailNum;//密码失败次数
+    char sLastModiPwdDate[9];//上次密码修改日期
+    char sCertNo[41];//数字证书编号
+    char sCertDate[9];//证书有效期
+    int  nPwdFailDate;//最后一次密码失败日期
+    int  nPwdFailTime;//最后一次密码失败时间
 }S_MDB_OPER_INFO;
 
 
@@ -33,8 +42,13 @@ typedef struct
 	char sOrgLevel[2];//机构级别
 	char sUp1Org[13];//上一级机构
 	char sUpOrg[201];//上级机构  ｜分隔
-	char sOrgCity[5];//城市
-	char sAccNo[24];//结算账号
+    char sOrgaddr[61];//地址
+    char sOrgLader[21];//负责人
+    char sOrgPhone[21];//电话
+    char sOrgContracter[21];//联系人
+    char sOrgCity[5];//城市
+    char sAccNo[24];//结算账号
+    char sMemo[81];//备注
 }S_MDB_ORG_INFO;
 
 
@@ -59,6 +73,7 @@ typedef struct
 	char sParaName[41];//参数名称
 	char sParaValue[41];//参数值
 	char sValueType[2];//值类型
+	char sParaDesc[81];//参数说明
 }S_MDB_SYSTEM_PARA;
 
 //操作员
@@ -67,8 +82,8 @@ class  CTbl_Oper
 protected:
 	
 	CMemTableNew <S_MDB_OPER_INFO> m_table;
-//	CPkeyCharF<21,1>          m_pkey;               //操作员代码
-	CPkeyCharV<1>          m_pkey;               //操作员代码
+	CPkeyCharVUnordered<1>          m_pkey;               //操作员代码
+	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTbl_Oper()
 	{
@@ -80,11 +95,13 @@ public:
 	}
 	void Clear()
 	{
+		CBF_PMutex pp(&m_mutex);
 		m_pkey.Clear();
 		m_table.Clear();
 	}
 	int Insert(S_MDB_OPER_INFO oper) //只有在初始化时使用，所以可以不加锁
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(oper.sOperCode))
 		{
 			return -1;
@@ -102,6 +119,7 @@ public:
 	S_MDB_OPER_INFO *Select(const char *opercode)
 	{
 		int rid;
+		CBF_PMutex pp(&m_mutex);
 		if (!m_pkey.GetRowId(rid,(char *)opercode))
 		{
 			return NULL;
@@ -124,10 +142,7 @@ class CTbl_Org
 protected:
 	
 	CMemTableNew <S_MDB_ORG_INFO>      m_table;
-// 	CPkeyCharF<13,1>               m_pkey;//机构代码
-// 	CIndexCharF<13,1>            m_index_up1org; //按上一级机构进行的索引 即查找下一级机构
-// 	CIndexCharF<201,1>            m_index_uporg;  //按上级机构进行的索引 即查找所有下级机构
-	CPkeyCharV<1>               m_pkey;//机构代码
+	CPkeyCharVUnordered<1>               m_pkey;//机构代码
 	CIndexVarChar<1>            m_index_up1org; //按上一级机构进行的索引 即查找下一级机构
 	CIndexVarChar<1>            m_index_uporg;  //按上级机构进行的索引 即查找所有下级机构
 	CBF_Mutex                   m_mutex;//互斥锁
@@ -142,6 +157,7 @@ public:
 	}
 	void Clear()
 	{
+		CBF_PMutex pp(&m_mutex);
 		m_pkey.Clear();
 		m_index_uporg.Clear();
 		m_index_up1org.Clear();
@@ -149,6 +165,7 @@ public:
 	}
 	int Insert(S_MDB_ORG_INFO org)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(org.sOrgCode))
 		{
 			return -1;
@@ -194,11 +211,11 @@ public:
 	{
 		CBF_PMutex pp(&m_mutex);
 		int rid;
-		bool bRet = m_pkey.First(rid);
+		bool bRet = m_index_uporg.First(rid);
 		while (bRet)
 		{
 			orglist.push_back(&(m_table.m_table[rid]));
-			bRet = m_pkey.Next(rid);
+			bRet = m_index_uporg.Next(rid);
 		}
 		return true;
 	}
@@ -269,11 +286,11 @@ public:
 			ret = 1;
 			if (isinclude) //返回所有下级，即所有机构
 			{
-				bRet = m_pkey.First(rid);
+				bRet = m_index_uporg.First(rid);
 				while (bRet)
 				{
 					orglist.push_back(&(m_table.m_table[rid]));
-					bRet = m_pkey.Next(rid);
+					bRet = m_index_uporg.Next(rid);
 				}
 			}
 			else
@@ -348,8 +365,8 @@ class  CTbl_SystemPara
 protected:
 	
 	CMemTableNew <S_MDB_SYSTEM_PARA> m_table;
-//	CPkeyCharF<41,1>          m_pkey;               //参数代码
-	CPkeyCharV<1>          m_pkey;               //参数代码
+	CPkeyCharVUnordered<1>          m_pkey;               //参数代码
+	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTbl_SystemPara()
 	{
@@ -361,11 +378,13 @@ public:
 	}
 	void Clear()
 	{
+		CBF_PMutex pp(&m_mutex);
 		m_pkey.Clear();
 		m_table.Clear();
 	}
 	int Insert(S_MDB_SYSTEM_PARA para) //只有在初始化时使用，所以可以不加锁
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(para.sParaCode))
 		{
 			return -1;
@@ -382,6 +401,7 @@ public:
 	// 描述  : 根据操作员代码查找操作员信息
 	S_MDB_SYSTEM_PARA *Select(const char *paracode)
 	{
+		CBF_PMutex pp(&m_mutex);
 		int rid;
 		if (!m_pkey.GetRowId(rid,(char *)paracode))
 		{
@@ -405,10 +425,7 @@ class CTbl_Oper_Online
 protected:
 	
 	CMemTableNew <S_MDB_OPER_ONLINE>      m_table;
-// 	CPkeyCharF<21,2>               m_pkey;//操作员+渠道
-// 	CIndexCharF<2,1>            m_index_loginstatus; //按登录状态的索引
-// 	CIndexCharF<21,1>            m_index_oper; //操作员
-	CPkeyCharV<2>               m_pkey;//操作员+渠道
+	CPkeyCharVUnordered<2>               m_pkey;//操作员+渠道
 	CIndexVarChar<1>            m_index_loginstatus; //按登录状态的索引
 	CIndexVarChar<1>            m_index_oper; //操作员
 	CBF_Mutex                   m_mutex;//互斥锁
@@ -423,6 +440,7 @@ public:
 	}
 	void Clear()
 	{
+		CBF_PMutex pp(&m_mutex);
 		m_pkey.Clear();
 		m_index_loginstatus.Clear();
 		m_index_oper.Clear();
@@ -430,6 +448,7 @@ public:
 	}
 	int Insert(S_MDB_OPER_ONLINE operonline)
 	{
+		CBF_PMutex pp(&m_mutex);
 		if (m_pkey.Find(operonline.sOperCode,operonline.sTermType))
 		{
 			return -1;

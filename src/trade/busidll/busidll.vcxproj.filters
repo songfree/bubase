@@ -21,9 +21,30 @@
     <ClCompile Include="RiskDll.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Xdp2Struct.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PubDb.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PubMethod.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RiskDll.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\KernelPub.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\PubDb.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\PubMethod.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Xdp2Struct.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

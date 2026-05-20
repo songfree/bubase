@@ -118,7 +118,7 @@ void CDrebMsgThread::OnMsgConnectBack(S_BPC_RSMSG &rcvdata)
 	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"收到DREB连接成功的响应");
 #endif
 	CTradeResource *res = (CTradeResource *)m_pRes;
-	if (res->m_nArbMode != 1)
+	if (res->m_nArbMode != HA_MODE)
 	{
 #ifdef _ENGLISH_
 		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"Set Living mode");
@@ -126,20 +126,40 @@ void CDrebMsgThread::OnMsgConnectBack(S_BPC_RSMSG &rcvdata)
 		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"设置为负载均衡模式，无须主备仲裁");
 #endif
 		res->m_nSvrHostStatus = ARBSTATUS_MASTER;
+		//注册交易
+		m_pDrebApi->RegisterDreb(rcvdata.sMsgBuf->sBpcHead.nIndex, &((CTradeResource*)m_pRes)->g_lSvrTxList);
+		//订阅广播
+		m_pDrebApi->Subscribe(rcvdata.sMsgBuf->sBpcHead.nIndex, &((CTradeResource*)m_pRes)->g_lBCFuncList);
+		m_pDrebApi->Subscribe(rcvdata.sMsgBuf->sBpcHead.nIndex, &((CTradeResource*)m_pRes)->g_lHAFuncList);
 		m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
 		rcvdata.sMsgBuf = NULL;
-		//注册交易
-		for (int i=0; i< m_pRes->g_vDrebLinkInfo.size(); i++)
-		{
-			m_pDrebApi->RegisterDreb(i,&((CTradeResource *)m_pRes)->g_lArbTxList);
-		}
 		return;
 	}
-	if (((CTradeResource *)m_pRes)->m_nArbMode != 1)
+	if (res->m_nSvrHostStatus != ARBSTATUS_UNKNOW)//已是主机或备机
 	{
-		m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
-		rcvdata.sMsgBuf = NULL;
-		return;
+		//状态不变，不用去查询了
+		if 	(ARBSTATUS_MASTER == res->m_nSvrHostStatus)	 //主机断了，重连
+		{
+            //注册交易
+            m_pDrebApi->RegisterDreb(rcvdata.sMsgBuf->sBpcHead.nIndex, &((CTradeResource*)m_pRes)->g_lSvrTxList);
+            //订阅广播
+            m_pDrebApi->Subscribe(rcvdata.sMsgBuf->sBpcHead.nIndex, &((CTradeResource*)m_pRes)->g_lBCFuncList);
+            //m_pDrebApi->Subscribe(rcvdata.sMsgBuf->sBpcHead.nIndex, &((CTradeResource*)m_pRes)->g_lHAFuncList);
+            m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+            return;
+		}
+        else if (ARBSTATUS_BACKUP == res->m_nSvrHostStatus)	 //备机断了，重连
+        {
+            //注册交易
+            m_pDrebApi->RegisterDreb(rcvdata.sMsgBuf->sBpcHead.nIndex, &((CTradeResource*)m_pRes)->g_lArbTxList);
+            //订阅广播
+            m_pDrebApi->Subscribe(rcvdata.sMsgBuf->sBpcHead.nIndex, &((CTradeResource*)m_pRes)->g_lBCFuncList);
+            m_pDrebApi->Subscribe(rcvdata.sMsgBuf->sBpcHead.nIndex, &((CTradeResource*)m_pRes)->g_lHAFuncList);
+            m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
+            rcvdata.sMsgBuf = NULL;
+            return;
+        }
 	}
 	//发起查询，服务在仲裁的状态，根据状态来注册
 	char errmsg[4096];
@@ -486,10 +506,13 @@ void CDrebMsgThread::OnChangeHostStatus(unsigned int status)
 #else
 			m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"本服务为主机  开始启动api");
 #endif
-			//注册交易
 			for (int i=0; i< m_pRes->g_vDrebLinkInfo.size(); i++)
 			{
+				//注册交易
 				m_pDrebApi->RegisterDreb(i,&((CTradeResource *)m_pRes)->g_lSvrTxList);
+				//订阅广播
+				m_pDrebApi->Subscribe(i, &((CTradeResource*)m_pRes)->g_lBCFuncList);
+				//m_pDrebApi->Subscribe(i, &((CTradeResource*)m_pRes)->g_lHAFuncList);
 			}
 			arbconf->m_nSvrHostStatus = ARBSTATUS_MASTER;
 			//进行转为主机的处理，如连接交易所等
@@ -515,6 +538,9 @@ void CDrebMsgThread::OnChangeHostStatus(unsigned int status)
 			{
 				m_pDrebApi->UnRegisterDreb();
 				m_pDrebApi->RegisterDreb(i,&((CTradeResource *)m_pRes)->g_lArbTxList);
+                //订阅广播
+                m_pDrebApi->Subscribe(i, &((CTradeResource*)m_pRes)->g_lBCFuncList);
+                m_pDrebApi->Subscribe(i, &((CTradeResource*)m_pRes)->g_lHAFuncList);
 			}
 			arbconf->m_nSvrHostStatus = ARBSTATUS_BACKUP;
 		}
@@ -528,17 +554,8 @@ void CDrebMsgThread::OnSvrRequest(S_BPC_RSMSG &rcvdata)
 	data.pData = rcvdata.sMsgBuf;
 	data.pData->sBpcHead.nBpuIndex = 0;//表示是总线过来的
 	data.rTime = time(NULL);
-// 	//去掉广播
-// 	if (rcvdata.sMsgBuf->sDBHead.cCmd == CMD_DPABC || rcvdata.sMsgBuf->sDBHead.cCmd == CMD_DPBC)
-// 	{
-// 		m_pDrebApi->PoolFree(rcvdata.sMsgBuf);
-// 		rcvdata.sMsgBuf = NULL;
-// 		return;
-// 	}
-
 	//放入队列
 	m_pRcvQueue->PushData(data);
-
 	return;
 }
 
@@ -670,9 +687,6 @@ void CDrebMsgThread::OnArbControl(S_BPC_RSMSG &rcvdata)
 	rcvdata.sMsgBuf->sDBHead.cRaflag = 1;
 	rcvdata.sMsgBuf->sDBHead.cZip = 0;
 	m_pDrebApi->SendMsg(rcvdata);
-	
-
-
 }
 
 void CDrebMsgThread::OnArbQuery(S_BPC_RSMSG &rcvdata)

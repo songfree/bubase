@@ -33,7 +33,7 @@ char *g_pExitFlag=NULL;
 int   g_pRunFlag= 1;
 
 CTradeMain g_pKernelMain;
-
+char g_VERSION[40];
 
 #ifndef _WINDOWS
 
@@ -148,6 +148,8 @@ void sig_hup(int signo)
 
 int main(int argc, char* argv[])
 {
+    memset(g_VERSION, 0, sizeof(g_VERSION));
+    sprintf(g_VERSION, "2.0.1 %s", __DATE__);
 
 	//打开一块共享内存
 	char shmname[500];
@@ -158,6 +160,7 @@ int main(int argc, char* argv[])
 	if (argc == 1)
 	{
 #ifdef _ENGLISH_
+		printf("risk %s build [%s %s]\n", g_VERSION, __DATE__, __TIME__);
 		printf("command desc:\n");
 		printf("               non parameter parafile is tradekernel.xml \n");
 		printf("               stop/STOP  exit tradekernel \n");
@@ -171,6 +174,7 @@ int main(int argc, char* argv[])
 		printf("               -f   set parafile  -ftmc.xml the parafile is mc.xml , default file is tradekernel.xml \n");
 		printf("               -q   exit \n");
 #else
+		printf("risk %s build [%s %s]\n", g_VERSION, __DATE__, __TIME__);
 		printf("命令行参数说明:\n");
 		printf("               不带参数 后台运行 配置文件为tradekernel.xml \n");
 		printf("               stop/STOP  退出tradekernel \n");

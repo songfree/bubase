@@ -31,7 +31,7 @@ bool CKernelPub::ProcFundFlow(S_MDB_TXACC_LOCK *acclock,std::vector<S_MDB_FUND_F
 	for (i=0; i< flowlist.size(); i++)
 	{
 		amt = flowlist[i]->dAmt;
-		S_MDB_CUST_FUND *fund = m_pMemDb->GetFund(acclock,flowlist[i]->sCurrency);
+		S_MDB_CUST_FUND *fund = m_pMemDb->GetFund(acclock);
 		if (fund == NULL)
 		{
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金表无此资金账号[%s %s]",acclock->sTxAcc,flowlist[i]->sCurrency);
@@ -79,7 +79,7 @@ bool CKernelPub::ProcOrder(S_MDB_TXACC_LOCK *acclock,std::vector<S_MDB_ORDER_INF
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 报单[%s] 的合约编号[%d]在合约表不存在",orderlist[i]->sTxAcc,orderlist[i]->sLocalSerial,orderlist[i]->nContractNo);
 			return false;
 		}
-		fund = m_pMemDb->GetFund(acclock,pc->sCurrency);
+		fund = m_pMemDb->GetFund(acclock);
 		if (fund == NULL)
 		{
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金表无此资金账号[%s %s]",acclock->sTxAcc,pc->sCurrency);
@@ -113,7 +113,7 @@ bool CKernelPub::ProcDone(S_MDB_TXACC_LOCK *acclock,std::vector<S_MDB_DONE_INFO 
 				donelist[i]->sTxAcc,donelist[i]->sLocalNo,donelist[i]->sDoneNo,donelist[i]->nContractNo);
 			return false;
 		}
-		fund = m_pMemDb->GetFund(acclock,pc->sCurrency);
+		fund = m_pMemDb->GetFund(acclock);
 		if (fund == NULL)
 		{
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金表无此资金账号[%s %s]",acclock->sTxAcc,pc->sCurrency);
@@ -142,28 +142,14 @@ bool CKernelPub::ProcPosition(S_MDB_TXACC_LOCK *acclock,std::vector<S_MDB_CUST_P
 	bzero(&sfd,sizeof(S_MDB_CUST_FUND_DETAIL));
 	S_MDB_CUST_FUND_DETAIL *psfd = NULL;
 
-	S_MDB_CUST_FUNDACC_INFO *accinfo = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(acclock->nFundAccRowid);
+	S_MDB_TRADEACC_INFO *accinfo = m_pMemDb->m_pDbCust.m_pTradeAcc.At(acclock->nTradeAccRowid);
 	if (accinfo == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账户锁表的资金账户[%s] rowid[%d]在资金账户表找不到",info.sTxAcc,acclock->nFundAccRowid);
+		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账户锁表的资金账户[%s] rowid[%d]在资金账户表找不到",info.sTxAcc,acclock->nTradeAccRowid);
 		return false;
 	}
 	bool isWriteDetail=true;
-	S_MDB_BROKERAGE_INFO *pbk = m_pMemDb->m_pDbSet.m_pBrokerage.Select(accinfo->nSysId);
-	if (pbk == NULL)
-	{
-		isWriteDetail=false;//找不到对应的配置，先不写
-	}
-	else
-	{
-		if (pbk->nClearFlag != 0)
-		{
-			//说明不是导入的，不用写明细
-			isWriteDetail = false;
-			
-		}
-	}
-	
+
 	int nMarginMode = 0;
 	S_MDB_BIG_MARGIN *pbm=NULL;
 	S_MDB_VARIETY_INFO *pv=NULL;
@@ -603,7 +589,7 @@ bool CKernelPub::ComputeOneDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 				else //平仓  
 				{
 					//取持仓信息
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"无持仓 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 平仓  跳过此成交",\
@@ -914,7 +900,7 @@ bool CKernelPub::ComputeOneDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 				else //平仓
 				{
 					//取持仓信息
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无持仓 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 平仓",\
@@ -964,8 +950,10 @@ bool CKernelPub::ComputeOneDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 			break;
 		case PROD_TYPE_SPOT://现货
 		case PROD_TYPE_SEC://股票
+		case PROD_TYPE_BOND://债券
+		case PROD_TYPE_BOND_BANK://银行间债券
 			//更新持仓
-			pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+			pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 			if (info->sBsFlag[0] == BS_FLAG_BUY)
 			{
 				//更新资金
@@ -1050,7 +1038,8 @@ bool CKernelPub::ComputeOneDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 				}
 			}
 			break;
-		case PROD_TYPE_OPTION:
+		case PROD_TYPE_OPTION:	  //期货期权
+		case PROD_TYPE_OPTION_SEC:////股票期权
 			if (info->sEoFlag[0] == EO_FLAG_OPEN) //开仓
 			{
 				if (info->sBsFlag[0] == BS_FLAG_BUY)
@@ -1086,7 +1075,7 @@ bool CKernelPub::ComputeOneDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 			else //平仓
 			{
 				//取持仓信息
-				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 				if (pPosi == NULL)
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无持仓 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 平仓",\
@@ -1160,7 +1149,8 @@ bool CKernelPub::UpdateFund(S_MDB_TXACC_LOCK *info,S_MDB_CUST_FUND *fund,const c
 	{
 		CBF_PMutex pp(info->mutex);
 	}
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"资金账户[%s] UpdateFund前资金 结存[%lf] 保证金[%lf] 冻结[%lf] 费用[%lf] 浮动盈亏[%lf] 资金类型[%c] 资金代码[%s] 金额[%lf]",info->sTxAcc,fund->dBalance,fund->dMargin,fund->dFrozeFund,fund->dFee,fund->dFloatSurplus,fundflag,fundcode,amt);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"资金账户[%s] UpdateFund前资金 结存[%lf] 可用[%lf] 保证金[%lf] 冻结[%lf] 费用[%lf] 浮动盈亏[%lf] 资金类型[%c] 资金代码[%s] 金额[%lf]",\
+		info->sTxAcc,fund->dBalance,fund->dAvailFund,fund->dMargin,fund->dFrozeFund,fund->dFee,fund->dFloatSurplus,fundflag,fundcode,amt);
 	S_MDB_CUST_FUND_DETAIL sfd;
 	sfd.sFundType[0] = fundflag;
 	sfd.sFundType[1] = 0;
@@ -1358,7 +1348,8 @@ bool CKernelPub::UpdateFund(S_MDB_TXACC_LOCK *info,S_MDB_CUST_FUND *fund,const c
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金类型[%c]不符",fundflag);
 			return false;
 	}
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"资金账户[%s] UpdateFund后资金 结存[%lf] 保证金[%lf] 冻结[%lf] 费用[%lf] 浮动盈亏[%lf] 资金类型[%c] 资金代码[%s]",info->sTxAcc,fund->dBalance,fund->dMargin,fund->dFrozeFund,fund->dFee,fund->dFloatSurplus,fundflag,fundcode);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"资金账户[%s] UpdateFund后资金 结存[%lf] 可用[%lf] 保证金[%lf] 冻结[%lf] 费用[%lf] 浮动盈亏[%lf] 资金类型[%c] 资金代码[%s]",\
+		info->sTxAcc,fund->dBalance, fund->dAvailFund,fund->dMargin,fund->dFrozeFund,fund->dFee,fund->dFloatSurplus,fundflag,fundcode);
 	//增加明细
 	if (psfd == NULL) //新增
 	{
@@ -1727,7 +1718,7 @@ bool CKernelPub::ComputeOneOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fun
 				else //平
 				{
 					//冻持仓
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode);
@@ -1803,7 +1794,7 @@ bool CKernelPub::ComputeOneOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fun
 				else //平
 				{
 					//冻持仓
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode);
@@ -1837,6 +1828,8 @@ bool CKernelPub::ComputeOneOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fun
 			break;
 		case PROD_TYPE_SPOT:
 		case PROD_TYPE_SEC:
+		case PROD_TYPE_BOND:
+		case PROD_TYPE_BOND_BANK:
 			if (info->sBsFlag[0] == BS_FLAG_BUY) //买 
 			{
 				//按剩余数量冻买冻结
@@ -1855,7 +1848,7 @@ bool CKernelPub::ComputeOneOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fun
 			else
 			{
 				//冻持仓
-				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 				if (pPosi == NULL)
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode);
@@ -1873,7 +1866,8 @@ bool CKernelPub::ComputeOneOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fun
 				}
 			}
 			break;
-		case PROD_TYPE_OPTION:
+		case PROD_TYPE_OPTION:	//期货期权
+		case PROD_TYPE_OPTION_SEC:	//股票期权
 			if (info->sEoFlag[0] == EO_FLAG_OPEN) //开仓
 			{
 				//冻资金
@@ -1911,7 +1905,7 @@ bool CKernelPub::ComputeOneOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fun
 			else //平
 			{
 				//冻持仓
-				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 				if (pPosi == NULL)
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode);
@@ -2021,7 +2015,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 								}
 							}
 							
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,bm.dFrozeAmt,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,bm.dFrozeAmt,true,false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2101,7 +2095,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						if (nLastFlag == 1)
 						{
 							//将原来的释放
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,0.00-dLastFroze,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,0.00-dLastFroze, true, false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2112,7 +2106,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						else
 						{
 							//将原来的释放
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,0.00-dLastFroze,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,0.00-dLastFroze, true, false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2124,7 +2118,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						if (pbm->nFrozeFlag == 1)
 						{
 							//进行新的冻结
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,pbm->dFrozeAmt,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,pbm->dFrozeAmt, true, false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2135,7 +2129,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						else
 						{
 							//进行新的冻结
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,pbm->dFrozeAmt,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,pbm->dFrozeAmt, true, false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2145,7 +2139,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						}
 						m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"资金账号[%s]品种[%d] 大边方向[%d] 买占用[%lf] 卖占用[%lf] 冻结方向[%d] 买冻结[%lf] 卖冻结[%lf] 冻结[%lf]",pbm->sTxAcc,pbm->nVarietyId,pbm->nMarginFlag,pbm->dBuyMargin,pbm->dSellMargin,pbm->nFrozeFlag,pbm->dBuyFroze,pbm->dSellFroze,pbm->dFrozeAmt);
 						//冻手续费
-						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 						{
 							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 							info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2188,7 +2182,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 								}
 							}
 							//冻卖保证金
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,pbm->dFrozeAmt,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,pbm->dFrozeAmt, true, false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2262,7 +2256,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						if (nLastFlag == 1)
 						{
 							//将原来的释放
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,0.00-dLastFroze,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,0.00-dLastFroze, true, false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2273,7 +2267,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						else
 						{
 							//将原来的释放
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,0.00-dLastFroze,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,0.00-dLastFroze, true, false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2285,7 +2279,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						if (pbm->nFrozeFlag == 1)
 						{
 							//进行新的冻结
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,pbm->dFrozeAmt,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,pbm->dFrozeAmt, true, false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2296,7 +2290,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						else
 						{
 							//进行新的冻结
-							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,pbm->dFrozeAmt,false))
+							if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,pbm->dFrozeAmt, true, false))
 							{
 								m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 								info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2306,7 +2300,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						}
 						m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"资金账号[%s]品种[%d] 大边方向[%d] 买占用[%lf] 卖占用[%lf] 冻结方向[%d] 买冻结[%lf] 卖冻结[%lf] 冻结[%lf]",pbm->sTxAcc,pbm->nVarietyId,pbm->nMarginFlag,pbm->dBuyMargin,pbm->dSellMargin,pbm->nFrozeFlag,pbm->dBuyFroze,pbm->dSellFroze,pbm->dFrozeAmt);
 						//冻手续费
-						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 						{
 							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 							info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2318,7 +2312,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 				else //平
 				{
 					//冻持仓
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode);
@@ -2356,16 +2350,8 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						pPosi->nDAY_COV_PB_Froze = pPosi->nDAY_COV_PB_Froze - info->nOrderNum;
 					}
 					//平仓不用验手续费是否足够
-					//if (checkfund)
-					//{
-					//	if (fundinfo->dAvailFund <  0.00-info->dExFee+MINDOUBLECOMPARE)
-					//	{
-					//		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"可用资金不足   客户[%s %s]可用[%.4lf]，要冻结[%.4lf]",fundinfo->sTxAcc,fundinfo->sCurrency,fundinfo->dAvailFund,0.00-info->dExFee);
-					//		return RET_ERR_AVAILFUND;
-					//	}
-					//}
 					//冻费用
-					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
 						info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2401,7 +2387,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 					if (info->sBsFlag[0] == BS_FLAG_BUY)
 					{
 						//冻结买保证金
-						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,info->dFrozAmt,false))
+						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZEMARGIN,info->dFrozAmt, true, false))
 						{
 							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 							info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2409,7 +2395,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 							return RET_ERR_SYSTEM;
 						}
 						//冻结手续费
-						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 						{
 							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 							info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2420,7 +2406,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 					else
 					{
 						//冻结卖保证金
-						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,info->dFrozAmt,false))
+						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,info->dFrozAmt, true, false))
 						{
 							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 							info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2428,7 +2414,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 							return RET_ERR_SYSTEM;
 						}
 						//冻结手续费
-						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+						if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 						{
 							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 							info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2440,7 +2426,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 				else //平
 				{
 					//冻持仓
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode);
@@ -2479,7 +2465,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 					}
 					//平仓不用判断手续费是否足够
 					//冻费用
-					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 						info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2492,6 +2478,8 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 			break;
 		case PROD_TYPE_SPOT:
 		case PROD_TYPE_SEC:
+		case PROD_TYPE_BOND:
+		case PROD_TYPE_BOND_BANK:
 			if (info->sBsFlag[0] == BS_FLAG_BUY) //买 
 			{
 				if (checkfund)
@@ -2505,14 +2493,14 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 					}
 				}
 				//买冻结
-				if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZE,info->dAmt,false))
+				if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZE,info->dAmt, true, false))
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 					info->sOrderStatus[0] = ORDER_STATUS_INVALID;
 					strcpy(info->sOrderRsp,"更新资金出错");
 					return RET_ERR_SYSTEM;
 				}
-				if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+				if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 					info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2523,7 +2511,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 			else
 			{
 				//冻持仓库存
-				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 				if (pPosi == NULL)
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode);
@@ -2543,7 +2531,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 				//冻结多仓增加
 				pPosi->nDAY_COV_PB_Froze = pPosi->nDAY_COV_PB_Froze + info->nOrderNum;
 				//冻费用
-				if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+				if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 					info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2553,6 +2541,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 			}
 			break;
 		case PROD_TYPE_OPTION:
+		case PROD_TYPE_OPTION_SEC:
 			if (info->sEoFlag[0] == EO_FLAG_OPEN) //开仓
 			{
 				//冻资金
@@ -2569,7 +2558,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						}
 					}
 					//冻权利金
-					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZE,info->dAmt,false))
+					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZE,info->dAmt, true, false))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 						info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2577,7 +2566,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						return RET_ERR_SYSTEM;
 					}
 					//冻手续费
-					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 						info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2598,7 +2587,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						}
 					}
 					//冻结卖出保证金
-					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,info->dFrozAmt,false))
+					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_SELLFROZEMARGIN,info->dFrozAmt, true, false))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 						info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2606,7 +2595,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						return RET_ERR_SYSTEM;
 					}
 					//冻结手续费
-					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 						info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2618,7 +2607,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 			else //平
 			{
 				//冻持仓
-				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 				if (pPosi == NULL)
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode);
@@ -2647,7 +2636,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						}
 					}
 					//冻权利金
-					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZE,info->dAmt,false))
+					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_BUYFROZE,info->dAmt, true, false))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 						info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2675,7 +2664,7 @@ int CKernelPub::ComputeNewOrder(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 					pPosi->nDAY_COV_PB_Froze = pPosi->nDAY_COV_PB_Froze + info->nOrderNum;
 				}
 				//冻费用
-				if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee,false))
+				if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FROZE,FUND_CODE_FEEFROZE,0.00-info->dExFee, true, false))
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 					info->sOrderStatus[0] = ORDER_STATUS_INVALID;
@@ -2997,7 +2986,7 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 					{
 						return false;
 					}
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无持仓 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 开多",\
@@ -3340,72 +3329,6 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 							return false;
 						}
 					}
-					//更新持仓
-					//pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
-					//if (pPosi == NULL)
-					//{
-					//	S_MDB_CUST_POSITION posi;
-					//	bzero(&posi,sizeof(S_MDB_CUST_POSITION));
-					//	strcpy(posi.sTxAcc,info->sTxAcc);
-					//	strcpy(posi.sSeatNo,info->sSeatNo);
-					//	strcpy(posi.sShFlag,info->sShFlag);
-					//	strcpy(posi.sTradeCode,info->sTxCode);
-					//	posi.nContractNo = info->nContractNo;
-					//	strcpy(posi.sContractCode,info->sContractCode);
-					//	posi.nVarietyId = info->nVarietyId;
-
-					//	if (info->sBsFlag[0] == BS_FLAG_BUY) //买开
-					//	{
-					//		posi.dPB_Avp = info->dDonePrice;
-					//		posi.dPB_Margin = info->dExMargin+info->dMemberMargin;
-					//		posi.nDayPB = info->nDoneNum;
-					//		posi.nCurCanUsePB = info->nDoneNum;
-					//		posi.nCurPB = info->nDoneNum;
-					//		posi.dPB_OAvp = info->dDonePrice;
-					//	}
-					//	else //卖开
-					//	{
-					//		posi.dPS_Avp = info->dDonePrice;
-					//		posi.dPS_Margin = info->dExMargin+info->dMemberMargin;
-					//		posi.nDayPS = info->nDoneNum;
-					//		posi.nCurCanUsePS = info->nDoneNum;
-					//		posi.nCurPS = info->nDoneNum;
-					//		posi.dPS_OAvp = info->dDonePrice;
-					//	}
-					//	posi.nVarietyId = pc->nProdId;
-					//	if (m_pMemDb->m_pDbTrader.m_pPosition.Insert(posi)<0)
-					//	{
-					//		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入持仓表失败 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 开多",\
-					//			info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode,info->nDoneNum);
-					//		return false;
-					//	}
-					//}
-					//else
-					//{
-					//	//计算持仓均价
-					//	if (info->sBsFlag[0] == BS_FLAG_BUY) //买开 多仓
-					//	{
-					//		//均价
-					//		pPosi->dPB_Avp = (pPosi->dPB_Avp*pPosi->nCurPB+info->dDonePrice*info->nDoneNum)/(pPosi->nCurPB+info->nDoneNum);
-					//		pPosi->dPB_Margin = pPosi->dPB_Margin + info->dExMargin+info->dMemberMargin;
-					//		pPosi->nDayPB = pPosi->nDayPB+info->nDoneNum;
-					//		pPosi->nCurCanUsePB = pPosi->nCurCanUsePB+info->nDoneNum;
-					//		pPosi->nCurPB = pPosi->nCurPB+info->nDoneNum;
-					//		//开仓均价
-					//		pPosi->dPB_OAvp = (pPosi->dPB_OAvp*pPosi->nCurPB+info->dDonePrice*info->nDoneNum)/(pPosi->nCurPB+info->nDoneNum);
-					//	}
-					//	else //卖开 空仓
-					//	{
-					//		//均价
-					//		pPosi->dPS_Avp = (pPosi->dPS_Avp*pPosi->nCurPS+info->dDonePrice*info->nDoneNum)/(pPosi->nCurPS+info->nDoneNum);
-					//		pPosi->dPS_Margin = pPosi->dPS_Margin + info->dExMargin+info->dMemberMargin;
-					//		pPosi->nDayPS = pPosi->nDayPS+info->nDoneNum;
-					//		pPosi->nCurCanUsePS = pPosi->nCurCanUsePS+info->nDoneNum;
-					//		pPosi->nCurPS = pPosi->nCurPS+info->nDoneNum;
-					//		//开仓均价
-					//		pPosi->dPS_OAvp = (pPosi->dPS_OAvp*pPosi->nCurPS+info->dDonePrice*info->nDoneNum)/(pPosi->nCurPS+info->nDoneNum);
-					//	}
-					//}
 				}
 				else //平仓 
 				{
@@ -3415,7 +3338,7 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 					{
 						return false;
 					}
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无持仓 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 开多",\
@@ -3438,43 +3361,6 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 							return false;
 						}
-						//取持仓信息
-						//pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
-						//if (pPosi == NULL)
-						//{
-						//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无持仓 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 开多",\
-						//		info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode,info->nDoneNum);
-						//	return false;
-
-						//}
-						//if (pPosi->nCurPS<=0)
-						//{
-						//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"平仓成交但找不到持仓 账户[%s] 品种[%d]",info->sTxAcc,pc->nProdId);
-						//	return false;
-						//}
-						//pPosi->dPS_Margin = pPosi->dPS_Margin*(1.00-1.00*info->nDoneNum/pPosi->nCurPS);
-						//pPosi->nDAY_COV_PS_Froze = pPosi->nDAY_COV_PS_Froze-info->nDoneNum;
-						////冻结减少，可用不变
-						////pPosi->nCurCanUsePS = pPosi->nCurCanUsePS-info->nDoneNum;
-						//pPosi->nCurPS = pPosi->nCurPS-info->nDoneNum;
-						////计算今开持仓
-						//if (info->sEoFlag[0] == EO_FLAG_CLOSETODAY) //平今仓
-						//{
-						//	pPosi->nDayPS = pPosi->nDayPS -  info->nDoneNum;
-						//}
-						//else //平昨
-						//{
-						//	if (pPosi->nCurPS < pPosi->nDayPS)
-						//	{
-						//		pPosi->nDayPS = pPosi->nCurPS;//剩下的全是今持仓了
-						//	}
-						//}
-						////计算平仓盈亏
-						//if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_SURPLUS,FUND_CODE_SURPLUS_CLOSE,(pPosi->dPS_Avp-info->dDonePrice)*info->nDoneNum*pc->dTxUnit,true))
-						//{
-						//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
-						//	return false;
-						//}
 
 					}
 					else //卖平 平多
@@ -3492,47 +3378,10 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 							return false;
 						}
-						//取持仓信息
-						//pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
-						//if (pPosi == NULL)
-						//{
-						//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无持仓 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 开多",\
-						//		info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode,info->nDoneNum);
-						//	return false;
-
-						//}
-						//if (pPosi->nCurPB<=0)
-						//{
-						//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"平仓成交但找不到持仓 账户[%s] 品种[%d]",info->sTxAcc,pc->nProdId);
-						//	return false;
-						//}
-						//pPosi->dPB_Margin = pPosi->dPB_Margin*(1.00-1.00*info->nDoneNum/pPosi->nCurPB);
-						////冻结减少，可用不变
-						//pPosi->nDAY_COV_PB_Froze = pPosi->nDAY_COV_PB_Froze-info->nDoneNum;
-						////pPosi->nCurCanUsePB = pPosi->nCurCanUsePB-info->nDoneNum;
-						//pPosi->nCurPB = pPosi->nCurPB-info->nDoneNum;
-						////计算今开持仓
-						//if (info->sEoFlag[0] == EO_FLAG_CLOSETODAY) //平今仓
-						//{
-						//	pPosi->nDayPB = pPosi->nDayPB -  info->nDoneNum;
-						//}
-						//else //平昨
-						//{
-						//	if (pPosi->nCurPB < pPosi->nDayPB)
-						//	{
-						//		pPosi->nDayPB = pPosi->nCurPB;//剩下的全是今持仓了
-						//	}
-
-						//}
-						////计算平仓盈亏
-						//if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_SURPLUS,FUND_CODE_SURPLUS_CLOSE,(info->dDonePrice-pPosi->dPB_Avp)*info->nDoneNum*pc->dTxUnit,true))
-						//{
-						//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
-						//	return false;
-						//}
 					}
 				}
 			}
+			//更新持仓
 			if (!UpdatePosition(lockinfo,fundinfo,info,pPosi,pc,false))
 			{
 				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdatePosition 出错 ");
@@ -3540,9 +3389,10 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 			break;
 		case PROD_TYPE_SPOT:
 		case PROD_TYPE_SEC:
-
+		case PROD_TYPE_BOND:
+		case PROD_TYPE_BOND_BANK:
 			//更新持仓
-			pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
+			pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sShFlag,info->sContractCode);
 			if (info->sBsFlag[0] == BS_FLAG_BUY)
 			{
 				//解冻委托的保证金及费用
@@ -3654,6 +3504,7 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 			}
 			break;
 		case PROD_TYPE_OPTION:
+		case PROD_TYPE_OPTION_SEC:
 			if (info->sEoFlag[0] == EO_FLAG_OPEN) //开仓
 			{
 				if (info->sBsFlag[0] == BS_FLAG_BUY)
@@ -3713,72 +3564,6 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						return false;
 					}
 				}
-				//更新持仓
-				//pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
-				//if (pPosi == NULL)
-				//{
-				//	S_MDB_CUST_POSITION posi;
-				//	bzero(&posi,sizeof(S_MDB_CUST_POSITION));
-				//	strcpy(posi.sTxAcc,info->sTxAcc);
-				//	strcpy(posi.sSeatNo,info->sSeatNo);
-				//	strcpy(posi.sShFlag,info->sShFlag);
-				//	strcpy(posi.sTradeCode,info->sTxCode);
-				//	posi.nContractNo = info->nContractNo;
-				//	strcpy(posi.sContractCode,info->sContractCode);
-				//	posi.nVarietyId = info->nVarietyId;
-
-				//	if (info->sBsFlag[0] == BS_FLAG_BUY) //买开
-				//	{
-				//		posi.dPB_Avp = info->dDonePrice;
-				//		posi.dPB_Margin = info->dExMargin+info->dMemberMargin;
-				//		posi.nDayPB = info->nDoneNum;
-				//		posi.nCurCanUsePB = info->nDoneNum;
-				//		posi.nCurPB = info->nDoneNum;
-				//		posi.dPB_OAvp = info->dDonePrice;
-				//	}
-				//	else //卖开
-				//	{
-				//		posi.dPS_Avp = info->dDonePrice;
-				//		posi.dPS_Margin = info->dExMargin+info->dMemberMargin;
-				//		posi.nDayPS = info->nDoneNum;
-				//		posi.nCurCanUsePS = info->nDoneNum;
-				//		posi.nCurPS = info->nDoneNum;
-				//		posi.dPS_OAvp = info->dDonePrice;
-				//	}
-				//	posi.nVarietyId = pc->nProdId;
-				//	if (m_pMemDb->m_pDbTrader.m_pPosition.Insert(posi)<0)
-				//	{
-				//		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"写入持仓表失败 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 开多",\
-				//			info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode,info->nDoneNum);
-				//		return false;
-				//	}
-				//}
-				//else
-				//{
-				//	//计算持仓均价
-				//	if (info->sBsFlag[0] == BS_FLAG_BUY) //买开 多仓
-				//	{
-				//		//均价
-				//		pPosi->dPB_Avp = (pPosi->dPB_Avp*pPosi->nCurPB+info->dDonePrice*info->nDoneNum)/(pPosi->nCurPB+info->nDoneNum);
-				//		pPosi->dPB_Margin = pPosi->dPB_Margin + info->dExMargin+info->dMemberMargin;
-				//		pPosi->nDayPB = pPosi->nDayPB+info->nDoneNum;
-				//		pPosi->nCurCanUsePB = pPosi->nCurCanUsePB+info->nDoneNum;
-				//		pPosi->nCurPB = pPosi->nCurPB+info->nDoneNum;
-				//		//开仓均价
-				//		pPosi->dPB_OAvp = (pPosi->dPB_OAvp*pPosi->nCurPB+info->dDonePrice*info->nDoneNum)/(pPosi->nCurPB+info->nDoneNum);
-				//	}
-				//	else //卖开 空仓
-				//	{
-				//		//均价
-				//		pPosi->dPS_Avp = (pPosi->dPS_Avp*pPosi->nCurPS+info->dDonePrice*info->nDoneNum)/(pPosi->nCurPS+info->nDoneNum);
-				//		pPosi->dPS_Margin = pPosi->dPS_Margin + info->dExMargin+info->dMemberMargin;
-				//		pPosi->nDayPS = pPosi->nDayPS+info->nDoneNum;
-				//		pPosi->nCurCanUsePS = pPosi->nCurCanUsePS+info->nDoneNum;
-				//		pPosi->nCurPS = pPosi->nCurPS+info->nDoneNum;
-				//		//开仓均价
-				//		pPosi->dPS_OAvp = (pPosi->dPS_OAvp*pPosi->nCurPS+info->dDonePrice*info->nDoneNum)/(pPosi->nCurPS+info->nDoneNum);
-				//	}
-				//}
 			}
 			else //平仓
 			{
@@ -3789,15 +3574,6 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund 出错");
 					return false;
 				}
-				//取持仓信息
-				//pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo);
-				//if (pPosi == NULL)
-				//{
-				//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无持仓 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 开多",\
-				//		info->sTxAcc,info->sSeatNo,info->sShFlag,info->nContractNo,info->sContractCode,info->nDoneNum);
-				//	return false;
-
-				//}
 				//计算持仓
 				if (info->sBsFlag[0] == BS_FLAG_BUY) //买平  平空
 				{
@@ -3819,40 +3595,11 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"平仓成交但找不到库存 账户[%s]",info->sTxAcc);
 						return false;
 					}
-					//pPosi->dPS_Margin = pPosi->dPS_Margin*(1.00-1.00*info->nDoneNum/pPosi->nCurPS);
-					//pPosi->nDAY_COV_PS_Froze = pPosi->nDAY_COV_PS_Froze-info->nDoneNum;
-					////冻结减少，可用不变
-					////pPosi->nCurCanUsePS = pPosi->nCurCanUsePS-info->nDoneNum;
-					//pPosi->nCurPS = pPosi->nCurPS-info->nDoneNum;
-					////计算今开持仓
-					//if (info->sEoFlag[0] == EO_FLAG_CLOSETODAY) //平今仓
-					//{
-					//	pPosi->nDayPS = pPosi->nDayPS -  info->nDoneNum;
-					//}
-					//else //平昨
-					//{
-					//	if (pPosi->nCurPS < pPosi->nDayPS)
-					//	{
-					//		pPosi->nDayPS = pPosi->nCurPS;//剩下的全是今持仓了
-					//	}
 
-					//}
-					////计算平仓盈亏
-					//if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_SURPLUS,FUND_CODE_SURPLUS_CLOSE,(pPosi->dPS_Avp-info->dDonePrice)*info->nDoneNum*pc->dTxUnit,true))
-					//{
-					//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
-					//	return false;
-					//}
 				}
 				else //卖平 平多
 				{
 					////均价不变 保证金按数量比例减小
-					////更新保证金
-					//if (!UpdateFund(lockinfo, fundinfo, FUND_TYPE_MARGIN, FUND_CODE_MARGIN_POSI_BUY, pPosi->dPB_Margin * (1.00 * info->nDoneNum / pPosi->nCurPB), true))
-					//{
-					//	m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "UpdateFund 出错");
-					//	return false;
-					//}
 					//费用
 					if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_FEE,FUND_CODE_FEE_EXCNANGE,info->dExFee+info->dMemberFee,true))
 					{
@@ -3864,32 +3611,10 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"平仓成交但找不到库存 账户[%s]",info->sTxAcc);
 						return false;
 					}
-					//pPosi->dPB_Margin = pPosi->dPB_Margin*(1.00-1.00*info->nDoneNum/pPosi->nCurPB);
-					////冻结减少，可用不变
-					//pPosi->nDAY_COV_PB_Froze = pPosi->nDAY_COV_PB_Froze-info->nDoneNum;
-					////pPosi->nCurCanUsePB = pPosi->nCurCanUsePB-info->nDoneNum;
-					//pPosi->nCurPB = pPosi->nCurPB-info->nDoneNum;
-					////计算今开持仓
-					//if (info->sEoFlag[0] == EO_FLAG_CLOSETODAY) //平今仓
-					//{
-					//	pPosi->nDayPB = pPosi->nDayPB -  info->nDoneNum;
-					//}
-					//else //平昨
-					//{
-					//	if (pPosi->nCurPB < pPosi->nDayPB)
-					//	{
-					//		pPosi->nDayPB = pPosi->nCurPB;//剩下的全是今持仓了
-					//	}
 
-					//}
-					////计算平仓盈亏
-					//if (!UpdateFund(lockinfo,fundinfo,FUND_TYPE_SURPLUS,FUND_CODE_SURPLUS_CLOSE,(info->dDonePrice-pPosi->dPB_Avp)*info->nDoneNum*pc->dTxUnit,true))
-					//{
-					//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdateFund出错");
-					//	return false;
-					//}
 				}
 			}
+			//更新持仓
 			if (!UpdatePosition(lockinfo,fundinfo,info,pPosi,pc,false))
 			{
 				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"UpdatePosition 出错 ");
@@ -3909,6 +3634,7 @@ bool CKernelPub::ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 	{
 		po->nSyncFlag = 3;//成交同步
 	}
+	m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(*po);
 	return true;
 }
 int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO *po,int nCancelNum )
@@ -3921,8 +3647,6 @@ int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO
 		//报单已撤
 		return 0;
 	}
-
-
 	po->nCancelNum = nCancelNum;
 	po->nRemainNum = 0;
 	po->sCancelFlag[0] = BOOL_TRUE;
@@ -3947,6 +3671,7 @@ int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO
 	{
 		po->nSyncFlag = 2;//撤单
 	}
+	m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(*po);
 
 	//解冻资金或持仓
 	S_MDB_CONTRACT_INFO *pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(po->nContractNo);
@@ -3956,7 +3681,7 @@ int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO
 		return -1;
 	}
 
-	S_MDB_CUST_FUND *pFund = m_pMemDb->GetFund(pAcclock,pc->sCurrency);
+	S_MDB_CUST_FUND *pFund = m_pMemDb->GetFund(pAcclock);
 	if (pFund == NULL)
 	{
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"撤单通知 资金账号[%s] 币种[%s] 在资金表找不到",po->sTxAcc,pc->sCurrency);
@@ -4147,7 +3872,7 @@ int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO
 				else //平仓  
 				{
 					//解冻剩余的手续费和持仓
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sShFlag,po->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo,po->sContractCode);
@@ -4203,7 +3928,7 @@ int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO
 				else
 				{
 					//解冻剩余的手续费和持仓
-					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo);
+					pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sShFlag,po->sContractCode);
 					if (pPosi == NULL)
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo,po->sContractCode);
@@ -4234,7 +3959,8 @@ int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO
 			}
 			
 			break;
-		case PROD_TYPE_OPTION://期权
+		case PROD_TYPE_OPTION://期货期权
+		case PROD_TYPE_OPTION_SEC://股票期权
 			if (po->sEoFlag[0] == EO_FLAG_OPEN) //开仓
 			{
 				//解冻资金
@@ -4273,7 +3999,7 @@ int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO
 			else //平
 			{
 				//解冻持仓
-				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo);
+				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sShFlag,po->sContractCode);
 				if (pPosi == NULL)
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo,po->sContractCode);
@@ -4311,6 +4037,8 @@ int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO
 			break;
 		case PROD_TYPE_SPOT://现货
 		case PROD_TYPE_SEC://证券
+		case PROD_TYPE_BOND://证券
+		case PROD_TYPE_BOND_BANK://证券
 			if (po->sBsFlag[0] == BS_FLAG_BUY) //买 
 			{
 				//解买冻结
@@ -4328,7 +4056,7 @@ int CKernelPub::ProceeOneCancelOrder(S_MDB_TXACC_LOCK *pAcclock,S_MDB_ORDER_INFO
 			else
 			{
 				//解冻持仓库存
-				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo);
+				pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sShFlag,po->sContractCode);
 				if (pPosi == NULL)
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo,po->sContractCode);
@@ -4373,10 +4101,10 @@ bool CKernelPub::CheckOperAccRight(const char *oper, const char *acc)
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]在操作员表无记录",oper);
 		return false;
 	}
-	S_MDB_CUST_FUNDACC_INFO *pacc = m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAcc((char *)acc);
+	S_MDB_TRADEACC_INFO *pacc = m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAcc((char *)acc);
 	if (pacc == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s]在资金账号表无记录",acc);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s]在交易账号表无记录",acc);
 		return false;
 	}
 	S_MDB_ORG_INFO *operorg = m_pMemDb->m_pDbPublic.m_pOrg.Select(poper->sOrgCode);
@@ -4389,7 +4117,7 @@ bool CKernelPub::CheckOperAccRight(const char *oper, const char *acc)
 	S_MDB_ORG_INFO *accorg = m_pMemDb->m_pDbPublic.m_pOrg.Select(pacc->sSignOrg);
 	if (accorg == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s]的机构[%s]在机构表无记录",acc,pacc->sSignOrg);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s]的机构[%s]在机构表无记录",acc,pacc->sSignOrg);
 		return false;
 	}
 	if (strcmp(operorg->sUpOrg,"NULL")==0) //操作员是顶级机构，肯定有权限
@@ -4415,7 +4143,6 @@ bool CKernelPub::CheckOperAccRight(const char *oper, const char *acc)
 }
 bool CKernelPub::CheckOperOrgRight(const char *oper, const char *org)
 {
-	
 	S_MDB_OPER_INFO *poper = m_pMemDb->m_pDbPublic.m_pOper.Select(oper);
 	if (poper == NULL)
 	{
@@ -4510,7 +4237,7 @@ bool CKernelPub::CheckOperProdRight(const char *oper, const char *prod)
 }
 
 
-bool CKernelPub::GetTradeFeeValue(S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_INFO *pcust,int flag ,int num, double amt, double &exfee, double &memberfee)
+bool CKernelPub::GetTradeFeeValue(S_MDB_CONTRACT_INFO *pc, S_MDB_TRADEACC_INFO *pcust,int flag ,int num, double amt, double &exfee, double &memberfee)
 {
 	unsigned int nProdId = pc->nProdId;
 	if (pc->sProd_type[0] == PROD_TYPE_OPTION)
@@ -4550,11 +4277,7 @@ bool CKernelPub::GetTradeFeeValue(S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_IN
 			return false;
 		}
 	}
-	//if (exfeelist.size()>1)
-	//{
-	//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易所手续费 交易所模板[%s]合约[%d %s] 品种[%s %d] 有多个配置",pcust->sExchFareModel,pc->nContractId,pc->sContractCode,pc->sProd_type,nProdId);
-	//	return false;
-	//}
+
 	int i;
 	double dTmp;
 	// #define  FEE_MODEL_DONERATE   '1'		        //成交金额比率(不含交易所)
@@ -4598,32 +4321,18 @@ bool CKernelPub::GetTradeFeeValue(S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_IN
 		{
 			//没有找到，从费率模板表里取
 			iscust = false;
-			if (strlen(pcust->sFsFeeModel)>0) //设了旧的手续费模板
+			
+			if (!m_pMemDb->m_pDbSet.m_pFeeTempletDetail.Select(pcust->sMemberFareModel,pc->sProd_type,pc->nProdId,pc->nContractId,sFeeNo,memberfeelist))
 			{
-				if (!m_pMemDb->m_pDbSet.m_pFeeTempletDetail.Select(pcust->sFsFeeModel,pc->sProd_type,pc->nProdId,pc->nContractId,sFeeNo,memberfeelist))
+				//按合约找不到再按品种找
+				if (!m_pMemDb->m_pDbSet.m_pFeeTempletDetail.Select(pcust->sMemberFareModel,pc->sProd_type,pc->nProdId,0,sFeeNo,memberfeelist))
 				{
-					//按合约找不到再按品种找
-					if (!m_pMemDb->m_pDbSet.m_pFeeTempletDetail.Select(pcust->sFsFeeModel,pc->sProd_type,pc->nProdId,0,sFeeNo,memberfeelist))
-					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"取会员手续费 fs手续模板[%s]合约[%d %s] 品种[%s %d] 找不到配置",pcust->sFsFeeModel,pc->nContractId,pc->sContractCode,pc->sProd_type,nProdId);
-						issetmember = false;
-						//return false;
-					}
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"取会员手续费 会员手续模板[%s]合约[%d %s] 品种[%s %d] 找不到配置",pcust->sMemberFareModel,pc->nContractId,pc->sContractCode,pc->sProd_type,nProdId);
+					issetmember = false;
+					//return false;
 				}
-			}
-			else
-			{
-				if (!m_pMemDb->m_pDbSet.m_pFeeTempletDetail.Select(pcust->sMemberFareModel,pc->sProd_type,pc->nProdId,pc->nContractId,sFeeNo,memberfeelist))
-				{
-					//按合约找不到再按品种找
-					if (!m_pMemDb->m_pDbSet.m_pFeeTempletDetail.Select(pcust->sMemberFareModel,pc->sProd_type,pc->nProdId,0,sFeeNo,memberfeelist))
-					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"取会员手续费 会员手续模板[%s]合约[%d %s] 品种[%s %d] 找不到配置",pcust->sMemberFareModel,pc->nContractId,pc->sContractCode,pc->sProd_type,nProdId);
-						issetmember = false;
-						//return false;
-					}
-				}	
-			}
+			}	
+
 		}
 	}
 	if (!issetmember)
@@ -4796,7 +4505,7 @@ bool CKernelPub::GetTradeFeeValue(S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_IN
 	return true;
 }
 
-bool CKernelPub::GetMarginValue(S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_INFO *pcust, int flag, int num, double amt, double &exmargin, double &membermargin)
+bool CKernelPub::GetMarginValue(S_MDB_CONTRACT_INFO *pc, S_MDB_TRADEACC_INFO *pcust, int flag, int num, double amt, double &exmargin, double &membermargin)
 {
 	// 	    买开：付权利金
 	// 		卖平：得权利金
@@ -4804,88 +4513,96 @@ bool CKernelPub::GetMarginValue(S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_INFO
 	// 		买平：付权利金，释放保证金
 
 	//保证金为会员保证金
-	//期权卖开保证金  = max
-	//(权利金(昨结算)+标的合约保证金(昨结算)-期权虚值额(标的合约昨结算和期权执行价的比较)的一半)
-	//权利金+标的合约保证金(昨结算)的一半
-
-	//期权虚值额的计算   
-	//看涨
-	//MAX((行权价-标的昨结算)*合约乘数,0.0)
-	//看跌
-	//MAX((标的昨结算-行权价)*合约乘数,0.0)
-	if (flag == 1) //期权
+	
+	if (flag == 1) //期货期权 股票期权
 	{
-		if (pc->sProd_type[0] != PROD_TYPE_OPTION)
+		if (pc->sProd_type[0] == PROD_TYPE_OPTION)
 		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"传入为计算期权合约保证金，但合约[%d %s]不是期权合约",pc->nContractId,pc->sContractCode);
-			return false;
+            //期权卖开保证金  = max
+			//(权利金(昨结算)+标的合约保证金(昨结算)-期权虚值额(标的合约昨结算和期权执行价的比较)的一半)
+			//权利金+标的合约保证金(昨结算)的一半
+
+			//期权虚值额的计算   
+			//看涨
+			//MAX((行权价-标的昨结算)*合约乘数,0.0)
+			//看跌
+			//MAX((标的昨结算-行权价)*合约乘数,0.0)
+            S_MDB_CONTRACT_INFO* pdc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(pc->nProdId);
+            if (pdc == NULL)
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约[%d %s]的标的合约[%d]不存在", pc->nContractId, pc->sContractCode, pc->nProdId);
+                return false;
+            }
+            //取得标的合约的昨结算
+            S_MDB_CONTRACT_SETTLE_PRICE* psp = m_pMemDb->m_pDbBaseinfo.m_pSettlePrice.Select(pdc->nContractId);
+            if (psp == NULL)
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约[%d %s]的标的合约[%d %s]的昨结算价不存在", pc->nContractId, pc->sContractCode, pdc->nContractId, pdc->sContractCode);
+                return false;
+            }
+            //取标的合约的保证金
+            double dExMarginTmp;
+            double dMemberMarginTmp;
+            if (!GetMarginValue(pdc, pcust, 0, num, psp->dSettlePrice * num * pdc->dTxUnit, dExMarginTmp, dMemberMarginTmp))
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "取得 合约[%d %s]的标的合约[%d %s]的保证金出错", pc->nContractId, pc->sContractCode, pdc->nContractId, pdc->sContractCode);
+                return false;
+            }
+            //计算 期权虚值额
+            double dOptionVirValue;
+            if (pc->sIsOptionCall[0] == BOOL_TRUE)
+            {
+                dOptionVirValue = (pc->dRefPrice - psp->dSettlePrice) * pc->dTxUnit;
+                if (dOptionVirValue < MAXDOUBLECOMPARE)
+                {
+                    dOptionVirValue = 0.0;
+                }
+            }
+            else
+            {
+                dOptionVirValue = (psp->dSettlePrice - pc->dRefPrice) * pc->dTxUnit;
+                if (dOptionVirValue < MAXDOUBLECOMPARE)
+                {
+                    dOptionVirValue = 0.0;
+                }
+            }
+            //计算保证金
+            //取得合约的昨结算
+            S_MDB_CONTRACT_SETTLE_PRICE* pcsp = m_pMemDb->m_pDbBaseinfo.m_pSettlePrice.Select(pc->nContractId);
+            if (psp == NULL)
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约[%d %s]昨结算价不存在", pc->nContractId, pc->sContractCode);
+                return false;
+            }
+            //取下面2个的最大值为保证金值
+            //(权利金(昨结算)+标的合约保证金(昨结算)-期权虚值额(标的合约昨结算和期权执行价的比较)的一半)
+            //权利金+标的合约保证金(昨结算)的一半
+            double aa = pcsp->dSettlePrice * num * pc->dTxUnit + dExMarginTmp + dMemberMarginTmp - dOptionVirValue / 2.00;
+            double bb = amt + (dExMarginTmp + dMemberMarginTmp) / 2.00;
+            if (aa > bb)
+            {
+                membermargin = aa;
+                exmargin = pcsp->dSettlePrice * num * pc->dTxUnit + dExMarginTmp - dOptionVirValue / 2.00;
+            }
+            else
+            {
+                membermargin = bb;
+                exmargin = amt + (dExMarginTmp) / 2.00;
+            }
+            return true;
 		}
-		S_MDB_CONTRACT_INFO *pdc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(pc->nProdId);
-		if (pdc == NULL)
+		else if (pc->sProd_type[0] == PROD_TYPE_OPTION_SEC)	//股票期权
 		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"合约[%d %s]的标的合约[%d]不存在",pc->nContractId,pc->sContractCode,pc->nProdId);
-			return false;
-		}
-		//取得标的合约的昨结算
-		S_MDB_CONTRACT_SETTLE_PRICE *psp = m_pMemDb->m_pDbBaseinfo.m_pSettlePrice.Select(pdc->nContractId);
-		if (psp == NULL)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"合约[%d %s]的标的合约[%d %s]的昨结算价不存在",pc->nContractId,pc->sContractCode,pdc->nContractId,pdc->sContractCode);
-			return false;
-		}
-		//取标的合约的保证金
-		double dExMarginTmp;
-		double dMemberMarginTmp;
-		if (!GetMarginValue(pdc,pcust,0,num,psp->dSettlePrice*num*pdc->dTxUnit,dExMarginTmp,dMemberMarginTmp))
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"取得 合约[%d %s]的标的合约[%d %s]的保证金出错",pc->nContractId,pc->sContractCode,pdc->nContractId,pdc->sContractCode);
-			return false;
-		}
-		//计算 期权虚值额
-		double dOptionVirValue;
-		if (pc->sIsOptionCall[0] == BOOL_TRUE)
-		{
-			dOptionVirValue = (pc->dRefPrice - psp->dSettlePrice)*pc->dTxUnit;
-			if (dOptionVirValue < MAXDOUBLECOMPARE)
-			{
-				dOptionVirValue = 0.0;
-			}
+			  //这里空的，有空再来计算股票期权的保证金
 		}
 		else
 		{
-			dOptionVirValue = (psp->dSettlePrice-pc->dRefPrice)*pc->dTxUnit;
-			if (dOptionVirValue < MAXDOUBLECOMPARE)
-			{
-				dOptionVirValue = 0.0;
-			}
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "传入为计算期权合约保证金，但合约[%d %s]不是期权合约", pc->nContractId, pc->sContractCode);
+            return false;
 		}
-		//计算保证金
-		//取得合约的昨结算
-		S_MDB_CONTRACT_SETTLE_PRICE *pcsp = m_pMemDb->m_pDbBaseinfo.m_pSettlePrice.Select(pc->nContractId);
-		if (psp == NULL)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"合约[%d %s]昨结算价不存在",pc->nContractId,pc->sContractCode);
-			return false;
-		}
-		//取下面2个的最大值为保证金值
-		//(权利金(昨结算)+标的合约保证金(昨结算)-期权虚值额(标的合约昨结算和期权执行价的比较)的一半)
-		//权利金+标的合约保证金(昨结算)的一半
-		double aa = pcsp->dSettlePrice*num*pc->dTxUnit+dExMarginTmp+dMemberMarginTmp-dOptionVirValue/2.00;
-		double bb = amt + (dExMarginTmp+dMemberMarginTmp)/2.00;
-		if( aa > bb)
-		{
-			membermargin = aa;
-			exmargin = pcsp->dSettlePrice*num*pc->dTxUnit+dExMarginTmp-dOptionVirValue/2.00;
-		}
-		else
-		{
-			membermargin = bb;
-			exmargin = amt + (dExMarginTmp)/2.00;
-		}
-		return true;
+        
 	}
 	//取期货保证金
-
 	char sFeeNo[4];
 	strcpy(sFeeNo,"105");//交易保证金
 
@@ -4937,8 +4654,6 @@ bool CKernelPub::GetMarginValue(S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_INFO
 	//取会员的保证金
 	std::vector<S_MDB_FEE_TEMPLET_DETAIL *> memberfeelist;
 	std::vector<S_MDB_CUST_FEE *> reslist;
-	
-
 
 	//先取客户特殊的
 	bool issetmember=true;//是否设置了会员手续费率，未设默认为0
@@ -5128,9 +4843,6 @@ bool CKernelPub::GetMarginValue(S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_INFO
 			membermargin = membermargin - exmargin;//这个才是会员多收的
 		}
 	}
-
-	
-
 	return true;
 }
 
@@ -5185,6 +4897,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 	}
 	switch (pCon->sProd_type[0] )
 	{
+	case PROD_TYPE_OPTION_SEC:
 	case PROD_TYPE_OPTION:
 		//取标的合约对应的品种
 		pConOpt = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(pCon->nProdId);
@@ -5219,6 +4932,8 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 			}
 		}
 		break;
+	case PROD_TYPE_BOND_BANK:
+	case PROD_TYPE_BOND:
 	case PROD_TYPE_SEC:
 		if (!m_pMemDb->m_pDbSet.m_pPosiTempletDetail.Select(templet->sPosiTempletId,pCon->sProd_type,0,0,pCon->nContractId,positemplet))
 		{
@@ -5244,30 +4959,51 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 	}
 	//从模板里取出预警序号最小的
 
-	S_MDB_CUST_FUND *fund = m_pMemDb->GetFund(acclock,pCon->sCurrency);
+	S_MDB_CUST_FUND *fund = m_pMemDb->GetFund(acclock);
 	if (fund == NULL)
 	{
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 币种[%s]在资金表不存在",acclock->sTxAcc,pCon->sCurrency);
 		return -1;
 	}
-	if (fund->dBalance > MINDOUBLECOMPARE && fund->dBalance<MAXDOUBLECOMPARE)
+	double dMarginRate =0.0; //保证金占比
+	double dPosiValueRate=0.0;	//持仓价值比
+	double dPosiDiffValueRate=0.0;	//持仓轧差价值比
+	double dPosiRate =0.0;		  //持仓集中度
+	double dDv01 = 0.0;			  //净持仓DV01
+	if (pCon->sProd_type[0] == PROD_TYPE_BOND || pCon->sProd_type[0] == PROD_TYPE_BOND)
 	{
-		//结存权益为0
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 结存为0 [%.2lf]",acclock->sTxAcc,fund->dBalance);
-		return -1;
+		//计算债券的dv01和持仓集中度
+		S_MDB_BOND_INFO *pb= m_pMemDb->m_pDbBaseinfo.m_pBond.Select(custposi->sContractCode);
+		if (pb == NULL)
+		{
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "债券[%d]无扩展信息", custposi->sContractCode);
+		}
+		else
+		{
+            dPosiRate = 1.00 * custposi->nCurPB / pb->dMarketScope;
+            dDv01 = 1.00 * pb->dDv01 * custposi->nCurPB; //净持仓的持有量 买-卖 = 当前多头数量
+		}
 	}
-	S_MDB_QUOTATION *quo = m_pMemDb->m_pDbTrader.m_pQuotation.Select(custposi->nContractNo);
-	if (quo == NULL)
+	//计算 保证金占比  持仓价值比	  持仓轧差价值比
+    if (fund->dBalance > MINDOUBLECOMPARE && fund->dBalance < MAXDOUBLECOMPARE)
+    {
+        //结存权益为0
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "交易账号[%s] 结存为0 [%.2lf]", acclock->sTxAcc, fund->dBalance);
+    }
+    S_MDB_QUOTATION* quo = m_pMemDb->m_pDbTrader.m_pQuotation.Select(custposi->nContractNo);
+    if (quo == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约[%d] 在行情表中没有最新价", custposi->nContractNo);
+    }
+	else
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"合约[%d] 在行情表中没有最新价",custposi->nContractNo);
-		return -1;
+        //保证金占比
+        dMarginRate = (custposi->dPB_Margin + custposi->dPS_Margin) / fund->dBalance;
+        //持仓价值比
+        dPosiValueRate = quo->dNewPrice * pCon->dTxUnit * (custposi->nCurPB + custposi->nCurPS) / fund->dBalance;
+        //持仓轧差价值比
+        dPosiDiffValueRate = quo->dNewPrice * pCon->dTxUnit * (custposi->nCurPB - custposi->nCurPS) / fund->dBalance;
 	}
-	//保证金占比
-	double dMarginRate = (custposi->dPB_Margin+custposi->dPS_Margin)/fund->dBalance;
-	//持仓价值比
-	double dPosiValueRate = quo->dNewPrice*pCon->dTxUnit*(custposi->nCurPB+custposi->nCurPS)/fund->dBalance;
-	//持仓轧差价值比
-	double dPosiDiffValueRate = quo->dNewPrice*pCon->dTxUnit*(custposi->nCurPB-custposi->nCurPS)/fund->dBalance;
 	for (j=0; j<positemplet.size(); j++)
 	{
 		switch (positemplet[j]->sPosiModel[0])
@@ -5278,7 +5014,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if (dMarginRate >= positemplet[j]->dValue)
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]保证金占比大于等于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]保证金占[%f]比大于等于[%f]",custposi->nContractNo,custposi->sContractCode,dMarginRate,positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5287,7 +5023,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if (dMarginRate > positemplet[j]->dValue)
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]保证金占比大于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]保证金占比[%f]大于[%f]",custposi->nContractNo,custposi->sContractCode, dMarginRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5296,7 +5032,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if ( (dMarginRate - positemplet[j]->dValue) > MINDOUBLECOMPARE && (dMarginRate - positemplet[j]->dValue) < MAXDOUBLECOMPARE )
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]保证金占比等于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]保证金占比[%f]等于[%f]",custposi->nContractNo,custposi->sContractCode, dMarginRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5305,7 +5041,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if (dMarginRate <= positemplet[j]->dValue)
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]保证金占比小于等于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]保证金占比[%f]小于等于[%f]",custposi->nContractNo,custposi->sContractCode, dMarginRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5317,7 +5053,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if (dPosiValueRate >= positemplet[j]->dValue)
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]持仓价值比大于等于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]持仓价值比[%f]大于等于[%f]",custposi->nContractNo,custposi->sContractCode, dPosiValueRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5326,7 +5062,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if (dPosiValueRate > positemplet[j]->dValue)
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]持仓价值比大于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]持仓价值比[%f]大于[%f]",custposi->nContractNo,custposi->sContractCode, dPosiValueRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5335,7 +5071,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if ( (dPosiValueRate - positemplet[j]->dValue) > MINDOUBLECOMPARE && (dPosiValueRate - positemplet[j]->dValue) < MAXDOUBLECOMPARE )
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]持仓价值比等于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]持仓价值比[%f]等于[%f]",custposi->nContractNo,custposi->sContractCode, dPosiValueRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5344,7 +5080,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if (dPosiValueRate <= positemplet[j]->dValue)
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]持仓价值比小于等于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]持仓价值比[%f]小于等于[%f]",custposi->nContractNo,custposi->sContractCode, dPosiValueRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5355,7 +5091,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if (dPosiDiffValueRate >= positemplet[j]->dValue)
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]持仓轧差价值比大于等于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]持仓轧差价值比[%f]大于等于[%f]",custposi->nContractNo,custposi->sContractCode, dPosiDiffValueRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5364,7 +5100,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if (dPosiDiffValueRate > positemplet[j]->dValue)
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]持仓轧差价值比大于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]持仓轧差价值比[%f]大于[%f]",custposi->nContractNo,custposi->sContractCode, dPosiDiffValueRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5373,7 +5109,7 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if ( (dPosiDiffValueRate - positemplet[j]->dValue) > MINDOUBLECOMPARE && (dPosiDiffValueRate - positemplet[j]->dValue) < MAXDOUBLECOMPARE )
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]持仓轧差价值比等于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]持仓轧差价值比[%f]等于[%f]",custposi->nContractNo,custposi->sContractCode, dPosiDiffValueRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
@@ -5382,11 +5118,88 @@ int CKernelPub::GetPosiRiskLevel(S_MDB_TXACC_LOCK *acclock,S_MDB_CUST_TEMPLET_RE
 				if (dPosiDiffValueRate <= positemplet[j]->dValue)
 				{
 					strcpy(traderight,positemplet[j]->sRight);
-					sprintf(warnmsg,"合约[%d %s]持仓轧差价值比小于等于[%f]",custposi->nContractNo,custposi->sContractCode,positemplet[j]->dValue);
+					sprintf(warnmsg,"合约[%d %s]持仓轧差价值比[%f]小于等于[%f]",custposi->nContractNo,custposi->sContractCode, dPosiDiffValueRate, positemplet[j]->dValue);
 					return positemplet[j]->nWarnNo;
 				}
 			}
 			break;
+		case PM_POSI_CONCENTRATION://持仓集中度
+            if (positemplet[j]->sCondition[0] == EF_LARGEEQUAL)
+            {
+                if (dPosiRate >= positemplet[j]->dValue)
+                {
+                    strcpy(traderight, positemplet[j]->sRight);
+                    sprintf(warnmsg, "合约[%d %s]持仓集中度[%f]大于等于[%f]", custposi->nContractNo, custposi->sContractCode, dPosiRate, positemplet[j]->dValue);
+                    return positemplet[j]->nWarnNo;
+                }
+            }
+            else if (positemplet[j]->sCondition[0] == EF_LARGE)
+            {
+                if (dPosiRate > positemplet[j]->dValue)
+                {
+                    strcpy(traderight, positemplet[j]->sRight);
+                    sprintf(warnmsg, "合约[%d %s]持仓集中度[%f]大于[%f]", custposi->nContractNo, custposi->sContractCode, dPosiRate, positemplet[j]->dValue);
+                    return positemplet[j]->nWarnNo;
+                }
+            }
+            else if (positemplet[j]->sCondition[0] == EF_EQUAL)
+            {
+                if ((dPosiRate - positemplet[j]->dValue) > MINDOUBLECOMPARE && (dPosiRate - positemplet[j]->dValue) < MAXDOUBLECOMPARE)
+                {
+                    strcpy(traderight, positemplet[j]->sRight);
+                    sprintf(warnmsg, "合约[%d %s]持仓集中度[%f]等于[%f]", custposi->nContractNo, custposi->sContractCode, dPosiRate, positemplet[j]->dValue);
+                    return positemplet[j]->nWarnNo;
+                }
+            }
+            else //EF_SMALLEQUAL 小于等
+            {
+                if (dPosiRate <= positemplet[j]->dValue)
+                {
+                    strcpy(traderight, positemplet[j]->sRight);
+                    sprintf(warnmsg, "合约[%d %s]持仓集中度[%f]小于等于[%f]", custposi->nContractNo, custposi->sContractCode, dPosiRate,positemplet[j]->dValue);
+                    return positemplet[j]->nWarnNo;
+                }
+            }
+			break;
+        case PM_POSI_DV01://DV01
+            if (positemplet[j]->sCondition[0] == EF_LARGEEQUAL)
+            {
+                if (dDv01 >= positemplet[j]->dValue)
+                {
+                    strcpy(traderight, positemplet[j]->sRight);
+                    sprintf(warnmsg, "合约[%d %s]净持仓DV01[%f]大于等于[%f]", custposi->nContractNo, custposi->sContractCode, dDv01, positemplet[j]->dValue);
+                    return positemplet[j]->nWarnNo;
+                }
+            }
+            else if (positemplet[j]->sCondition[0] == EF_LARGE)
+            {
+                if (dDv01 > positemplet[j]->dValue)
+                {
+                    strcpy(traderight, positemplet[j]->sRight);
+                    sprintf(warnmsg, "合约[%d %s]净持仓DV01[%f]大于[%f]", custposi->nContractNo, custposi->sContractCode, dDv01, positemplet[j]->dValue);
+                    return positemplet[j]->nWarnNo;
+                }
+            }
+            else if (positemplet[j]->sCondition[0] == EF_EQUAL)
+            {
+                if ((dDv01 - positemplet[j]->dValue) > MINDOUBLECOMPARE && (dDv01 - positemplet[j]->dValue) < MAXDOUBLECOMPARE)
+                {
+                    strcpy(traderight, positemplet[j]->sRight);
+                    sprintf(warnmsg, "合约[%d %s]净持仓DV01[%f]等于[%f]", custposi->nContractNo, custposi->sContractCode, dDv01, positemplet[j]->dValue);
+                    return positemplet[j]->nWarnNo;
+                }
+            }
+            else //EF_SMALLEQUAL 小于等
+            {
+                if (dDv01 <= positemplet[j]->dValue)
+                {
+                    strcpy(traderight, positemplet[j]->sRight);
+                    sprintf(warnmsg, "合约[%d %s]净持仓DV01[%f]小于等于[%f]", custposi->nContractNo, custposi->sContractCode, dDv01, positemplet[j]->dValue);
+                    return positemplet[j]->nWarnNo;
+                }
+            }
+            break;
+            break;
 		default:
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"持仓指标[%s]不符",positemplet[j]->sPosiModel);
 			return -1;
@@ -5452,6 +5265,7 @@ int CKernelPub::GetRiskLevel(S_MDB_CUST_FUND *fund,char *traderight)
 					fund->nRisk_level= warnlist[i]->nWarnNo;
 					traderight[0] = warnlist[i]->sRight[0];
 					sprintf(fund->sRiskDesc,"风险度[%f]大于等于 %f",fund->dRisk,warnlist[i]->dValue);
+					fund->sTradeRight[0]= warnlist[i]->sRight[0];
 					break;
 				}
 			}
@@ -5462,6 +5276,7 @@ int CKernelPub::GetRiskLevel(S_MDB_CUST_FUND *fund,char *traderight)
 					fund->nRisk_level= warnlist[i]->nWarnNo;
 					traderight[0] = warnlist[i]->sRight[0];
 					sprintf(fund->sRiskDesc,"风险度[%f]大于 %f",fund->dRisk,warnlist[i]->dValue);
+					fund->sTradeRight[0] = warnlist[i]->sRight[0];
 					break;
 				}
 			}
@@ -5472,7 +5287,7 @@ int CKernelPub::GetRiskLevel(S_MDB_CUST_FUND *fund,char *traderight)
 			}
 
 		}
-		else //权益
+		else if (warnlist[i]->sFundModel[0] == FMM_RIGHT) //权益
 		{
 			if (warnlist[i]->sCondition[0] == EF_SMALLEQUAL)
 			{
@@ -5485,6 +5300,7 @@ int CKernelPub::GetRiskLevel(S_MDB_CUST_FUND *fund,char *traderight)
 							fund->nRisk_level= warnlist[i]->nWarnNo;
 							traderight[0] = warnlist[i]->sRight[0];
 							sprintf(fund->sRiskDesc,"权益[%f]小于等于 %f",fund->dBalance,warnlist[i]->dValue);
+							fund->sTradeRight[0] = warnlist[i]->sRight[0];
 							break;
 						}
 						else
@@ -5497,6 +5313,7 @@ int CKernelPub::GetRiskLevel(S_MDB_CUST_FUND *fund,char *traderight)
 						fund->nRisk_level= warnlist[i]->nWarnNo;
 						traderight[0] = warnlist[i]->sRight[0];
 						sprintf(fund->sRiskDesc,"权益[%f]小于等于 %f",fund->dBalance,warnlist[i]->dValue);
+						fund->sTradeRight[0] = warnlist[i]->sRight[0];
 						break;
 					}
 				}
@@ -5508,10 +5325,44 @@ int CKernelPub::GetRiskLevel(S_MDB_CUST_FUND *fund,char *traderight)
 				return 10;
 			}
 		}
+        else if (warnlist[i]->sFundModel[0] == FMM_POSI_TOTAL) //持仓总规模
+        {
+            if (warnlist[i]->sCondition[0] == EF_LARGEEQUAL)
+            {
+                if (fund->dPosiTotalValue > warnlist[i]->dValue - MAXDOUBLECOMPARE)//大于等于
+                {
+                    fund->nRisk_level = warnlist[i]->nWarnNo;
+                    traderight[0] = warnlist[i]->sRight[0];
+                    sprintf(fund->sRiskDesc, "持仓总规模[%f]大于等于 %f", fund->dRisk, warnlist[i]->dValue);
+					fund->sTradeRight[0] = warnlist[i]->sRight[0];
+                    break;
+                }
+            }
+            else if (warnlist[i]->sCondition[0] == EF_LARGE)
+            {
+                if (fund->dPosiTotalValue > warnlist[i]->dValue)//大于
+                {
+                    fund->nRisk_level = warnlist[i]->nWarnNo;
+                    traderight[0] = warnlist[i]->sRight[0];
+                    sprintf(fund->sRiskDesc, "持仓总规模[%f]大于 %f", fund->dRisk, warnlist[i]->dValue);
+					fund->sTradeRight[0] = warnlist[i]->sRight[0];
+                    break;
+                }
+            }
+            else
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "templetid %s condition %s error ", templet->sFundTempletId, warnlist[i]->sCondition);
+                return 10;
+            }
+        }
+		else
+		{
+
+		}
 	}
 	return fund->nRisk_level;
 }
-int CKernelPub::GetProdRiskLevel(char *prodid,double unitvalue,double risk,char *traderight,char *warnmsg)
+int CKernelPub::GetProdFundRiskLevel(char *prodid,double unitvalue,double risk,double positotal,char *traderight,char *warnmsg)
 {
 	traderight[0] = TR_NORMAL;//默认为正常
 	int nRiskLevel=10;
@@ -5536,7 +5387,7 @@ int CKernelPub::GetProdRiskLevel(char *prodid,double unitvalue,double risk,char 
 
 	for (int i=0 ; i<reslist.size() ; i++)
 	{
-		if (reslist[i]->sModel[0] == FMM_RISK) //指标为风险度
+		if (reslist[i]->sModel[0] == PFM_RISK) //指标为风险度
 		{
 			if (reslist[i]->sCondition[0] == EF_LARGEEQUAL)
 			{
@@ -5560,12 +5411,12 @@ int CKernelPub::GetProdRiskLevel(char *prodid,double unitvalue,double risk,char 
 			}
 			else
 			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"condition %s error ",reslist[i]->sCondition);
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"templetid [%s] condition %s error ", reslist[i]->sTempletId, reslist[i]->sCondition);
 				return 10;
 			}
 
 		}
-		else //单位净值
+		else if (reslist[i]->sModel[0] == PFM_NETVALUE) //单位净值
 		{
 			if (reslist[i]->sCondition[0] == EF_SMALLEQUAL)
 			{
@@ -5579,14 +5430,46 @@ int CKernelPub::GetProdRiskLevel(char *prodid,double unitvalue,double risk,char 
 			}
 			else
 			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__," condition %s error ",reslist[i]->sCondition);
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"templetid [%s] condition %s error ", reslist[i]->sTempletId, reslist[i]->sCondition);
 				return 10;
 			}
+		}
+		else if (reslist[i]->sModel[0] == PFM_POSI_TOTAL) //持仓总规模
+		{
+            if (reslist[i]->sCondition[0] == EF_LARGEEQUAL)
+            {
+                if (positotal > reslist[i]->dValue - MAXDOUBLECOMPARE)//大于等于
+                {
+					nRiskLevel = reslist[i]->nWarnNo;
+                    traderight[0] = reslist[i]->sRight[0];
+                    sprintf(warnmsg, "持仓总规模[%f]大于等于 %f", positotal, reslist[i]->dValue);
+                    break;
+                }
+            }
+            else if (reslist[i]->sCondition[0] == EF_LARGE)
+            {
+                if (positotal > reslist[i]->dValue)//大于
+                {
+					nRiskLevel = reslist[i]->nWarnNo;
+                    traderight[0] = reslist[i]->sRight[0];
+                    sprintf(warnmsg, "持仓总规模[%f]大于 %f", positotal, reslist[i]->dValue);
+                    break;
+                }
+            }
+            else
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "templetid %s condition %s error ", reslist[i]->sTempletId, reslist[i]->sCondition);
+                return 10;
+            }
+		}
+		else
+		{
+
 		}
 	}
 	return nRiskLevel;
 }
-int CKernelPub::GetProdRiskLevel(char *prodid,double marginrate,double posivalue,double posidiffvalue,char *traderight,char *warnmsg)
+int CKernelPub::GetProdPosiRiskLevel(char *prodid,double marginrate,double posivalue,double posidiffvalue,char *traderight,char *warnmsg)
 {
 	traderight[0] = TR_NORMAL;//默认为正常
 	int nRiskLevel=10;
@@ -5726,7 +5609,7 @@ int CKernelPub::GetProdRiskLevel(char *prodid,double marginrate,double posivalue
 	}
 	return nRiskLevel;
 }
-int CKernelPub::GetOrgRiskLevel(char *orgcode,double unitvalue,double risk,char *traderight,char *warnmsg)
+int CKernelPub::GetOrgFundRiskLevel(char *orgcode,double unitvalue,double risk, double positotal,char *traderight,char *warnmsg)
 {
 	traderight[0] = TR_NORMAL;//默认为正常
 	int nRiskLevel=10;
@@ -5751,7 +5634,7 @@ int CKernelPub::GetOrgRiskLevel(char *orgcode,double unitvalue,double risk,char 
 
 	for (int i=0 ; i<reslist.size() ; i++)
 	{
-		if (reslist[i]->sModel[0] == FMM_RISK) //指标为风险度
+		if (reslist[i]->sModel[0] == PFM_RISK) //指标为风险度
 		{
 			if (reslist[i]->sCondition[0] == EF_LARGEEQUAL)
 			{
@@ -5780,7 +5663,35 @@ int CKernelPub::GetOrgRiskLevel(char *orgcode,double unitvalue,double risk,char 
 			}
 
 		}
-		else //单位净值
+        else if (reslist[i]->sModel[0] == PFM_POSI_TOTAL) //持仓总规模
+        {
+            if (reslist[i]->sCondition[0] == EF_LARGEEQUAL)
+            {
+                if (positotal > reslist[i]->dValue - MAXDOUBLECOMPARE)//大于等于
+                {
+                    nRiskLevel = reslist[i]->nWarnNo;
+                    traderight[0] = reslist[i]->sRight[0];
+                    sprintf(warnmsg, "持仓总规模[%f]大于等于 %f", positotal, reslist[i]->dValue);
+                    break;
+                }
+            }
+            else if (reslist[i]->sCondition[0] == EF_LARGE)
+            {
+                if (positotal > reslist[i]->dValue)//大于
+                {
+                    nRiskLevel = reslist[i]->nWarnNo;
+                    traderight[0] = reslist[i]->sRight[0];
+                    sprintf(warnmsg, "持仓总规模[%f]大于 %f", positotal, reslist[i]->dValue);
+                    break;
+                }
+            }
+            else
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "templetid %s condition %s error ", reslist[i]->sTempletId, reslist[i]->sCondition);
+                return 10;
+            }
+        }
+		else if (reslist[i]->sModel[0] == PFM_NETVALUE) //单位净值
 		{
 			if (reslist[i]->sCondition[0] == EF_SMALLEQUAL)
 			{
@@ -5801,7 +5712,7 @@ int CKernelPub::GetOrgRiskLevel(char *orgcode,double unitvalue,double risk,char 
 	}
 	return nRiskLevel;
 }
-int CKernelPub::GetOrgRiskLevel(char *orgcode,double marginrate,double posivalue,double posidiffvalue,char *traderight,char *warnmsg)
+int CKernelPub::GetOrgPosiRiskLevel(char *orgcode,double marginrate,double posivalue,double posidiffvalue,char *traderight,char *warnmsg)
 {
 	traderight[0] = TR_NORMAL;//默认为正常
 	int nRiskLevel=10;
@@ -6416,7 +6327,7 @@ int CKernelPub::ProcDoneNetMargin(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fu
 	else //平仓 
 	{
 		//取持仓信息
-		pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(pd->sTxAcc,pd->sSeatNo,pd->sShFlag,pd->nContractNo);
+		pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(pd->sTxAcc,pd->sShFlag,pd->sContractCode);
 		if (pPosi == NULL)
 		{
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无持仓 资金账号[%s] 席位[%s] 投保标志[%s] 合约[%d %s] 数量[%d] 平仓",\
@@ -6863,7 +6774,7 @@ bool CKernelPub::UpdatePosition(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 	S_MDB_CUST_POSITION *pPosi=ps;
 	if (pPosi == NULL)
 	{
-		pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(pd->sTxAcc,pd->sSeatNo,pd->sShFlag,pd->nContractNo);
+		pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(pd->sTxAcc,pd->sShFlag,pd->sContractCode);
 		if (pPosi == NULL)
 		{
 			if (pd->sEoFlag[0] != EO_FLAG_OPEN) //不是开仓
@@ -7125,7 +7036,7 @@ bool CKernelPub::UpdatePosition(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fund
 	return true;
 }
 
-int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_FUNDACC_INFO *pcust, double &exfee, double &memberfee,double &exmargin,double &membermargin)
+int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S_MDB_TRADEACC_INFO *pcust, double &exfee, double &memberfee,double &exmargin,double &membermargin)
 {
 	//取要冻结的手续费及保证金等等
 	switch (pc->sProd_type[0])
@@ -7137,12 +7048,12 @@ int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S
 				if (!GetTradeFeeValue(pc,pcust,1,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-					return -1;
+					return RET_ERR_GETFEE;
 				}
 				if (!GetMarginValue(pc,pcust,0,porder->nOrderNum,porder->dAmt,exmargin,membermargin))
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取保证金出错 本地报单号[%s]",porder->sLocalSerial);
-					return -2;
+					return RET_ERR_GETMARGIN;
 				}
 			}
 			else
@@ -7153,7 +7064,7 @@ int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S
 					if (!GetTradeFeeValue(pc,pcust,3,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-						return -1;
+						return RET_ERR_GETFEE;
 					}
 				}
 				else
@@ -7162,26 +7073,27 @@ int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S
 					if (!GetTradeFeeValue(pc,pcust,2,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-						return -1;
+						return RET_ERR_GETFEE;
 					}
 				}
 			}
 			break;
 		case PROD_TYPE_OPTION://期权
+		case PROD_TYPE_OPTION_SEC://股票期权
 			if (porder->sEoFlag[0] == EO_FLAG_OPEN) //开仓
 			{
 				//开仓要算冻结和手续费
 				if (!GetTradeFeeValue(pc,pcust,1,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-					return -1;
+					return RET_ERR_GETFEE;
 				}
 				if (porder->sBsFlag[0] == BS_FLAG_SELL) //卖开要冻结保证金
 				{
 					if (!GetMarginValue(pc,pcust,1,porder->nOrderNum,porder->dAmt,exmargin,membermargin))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取保证金出错 本地报单号[%s]",porder->sLocalSerial);
-						return -2;
+						return RET_ERR_GETMARGIN;
 					}
 				}
 			}
@@ -7194,7 +7106,7 @@ int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S
 					if (!GetTradeFeeValue(pc,pcust,3,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-						return -1;
+						return RET_ERR_GETFEE;
 					}
 				}
 				else
@@ -7203,7 +7115,7 @@ int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S
 					if (!GetTradeFeeValue(pc,pcust,2,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-						return -1;
+						return RET_ERR_GETFEE;
 					}
 				}
 			}
@@ -7226,7 +7138,7 @@ int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S
 					if (!GetTradeFeeValue(pc,pcust,1,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-						return -1;
+						return RET_ERR_GETFEE;
 					}
 				}
 				else
@@ -7235,20 +7147,22 @@ int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S
 					if (!GetTradeFeeValue(pc,pcust,2,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 					{
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-						return -1;
+						return RET_ERR_GETFEE;
 					}
 				}
 			}
 			membermargin = porder->dAmt;
 			break;
 		case PROD_TYPE_SEC://证券
+		case PROD_TYPE_BOND://交易所债券
+		case PROD_TYPE_BOND_BANK://银行间债券
 			if (porder->sBsFlag[0] == BS_FLAG_BUY)
 			{
 				//买要算手续费及金额
 				if (!GetTradeFeeValue(pc,pcust,1,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-					return -1;
+					return RET_ERR_GETFEE;
 				}
 			}
 			else
@@ -7257,14 +7171,14 @@ int CKernelPub::GetFeeMargin(S_MDB_ORDER_INFO *porder,S_MDB_CONTRACT_INFO *pc, S
 				if (!GetTradeFeeValue(pc,pcust,2,porder->nOrderNum,porder->dAmt,exfee,memberfee))
 				{
 					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",porder->sLocalSerial);
-					return -1;
+					return RET_ERR_GETFEE;
 				}
 			}
 			membermargin = porder->dAmt;
 			break;
 		default:
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知合约代码[%s]的品种类别[%s]不符",porder->sContractCode,pc->sProd_type);
-			return -3;
+			return RET_ERR_SYSTEMPARA;
 	}
 	return 0;
 }
@@ -7834,7 +7748,7 @@ int CKernelPub::ProcOrderNetMargin(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *f
 	else //平
 	{
 		//冻持仓
-		pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo);
+		pPosi = m_pMemDb->m_pDbTrader.m_pPosition.Select(po->sTxAcc,po->sShFlag,po->sContractCode);
 		if (pPosi == NULL)
 		{
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 平仓时 席位[%s] 投保标志[%s] 合约[%d %s]无持仓",po->sTxAcc,po->sSeatNo,po->sShFlag,po->nContractNo,po->sContractCode);
@@ -8088,4 +8002,163 @@ int CKernelPub::ProcCancelOrderNetMargin(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_F
 	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"撤单通知 净边处理解冻手续费及撤单完成 资金账号[%s]品种[%d] 净边方向[%d] 买占用[%lf] 卖占用[%lf] 冻结方向[%d] 买冻结[%lf] 卖冻结[%lf] 冻结[%lf]",\
 		pbm->sTxAcc,pbm->nVarietyId,pbm->nMarginFlag,pbm->dBuyMargin,pbm->dSellMargin,pbm->nFrozeFlag,pbm->dBuyFroze,pbm->dSellFroze,pbm->dFrozeAmt);
 	return SUCCESS;
+}
+
+int CKernelPub::GetOrderFeeAmt(S_MDB_ORDER_INFO &order,S_MDB_CONTRACT_INFO *pc,S_MDB_TRADEACC_INFO * pcustacc)
+{
+    double dExchFee = 0.0;//交易所手续费
+    double dMemberFee = 0.0;//会员手续费
+    double dExchMargin = 0.0;//交易所保证金
+    double dMemberMargin = 0.0;//会员保证金
+	int nret = GetFeeMargin(&order, pc, pcustacc, dExchFee, dMemberFee, dExchMargin, dMemberMargin);
+	if (nret != 0)
+	{
+		return nret;
+	}
+    order.dExFee = 0.0 - (dExchFee + dMemberFee);//总手续费 为负数
+    order.dFrozAmt = dExchMargin + dMemberMargin;//总保证金
+    ////取要冻结的手续费及保证金等等
+    //switch (pc->sProd_type[0])
+    //{
+    //case PROD_TYPE_FUTURES://期货
+    //    if (order.sEoFlag[0] == EO_FLAG_OPEN) //开仓
+    //    {
+    //        //开仓要算冻结和手续费
+    //        if (!GetTradeFeeValue(pc, pcustacc, 1, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //        {
+    //            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //            return -1;
+    //        }
+    //        if (!GetMarginValue(pc, pcustacc, 0, order.nOrderNum, order.dAmt, dExchMargin, dMemberMargin))
+    //        {
+    //            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取保证金出错 本地报单号[%s]", order.sLocalSerial);
+    //            return -1;
+    //        }
+    //    }
+    //    else
+    //    {
+    //        if (order.sEoFlag[0] == EO_FLAG_CLOSETODAY) //平今仓
+    //        {
+    //            //平仓要算手续费
+    //            if (!GetTradeFeeValue(pc, pcustacc, 3, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //            {
+    //                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //                return -1;
+    //            }
+    //        }
+    //        else
+    //        {
+    //            //平仓要算手续费
+    //            if (!GetTradeFeeValue(pc, pcustacc, 2, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //            {
+    //                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //                return -1;
+    //            }
+    //        }
+    //    }
+    //    break;
+    //case PROD_TYPE_OPTION_SEC://股票期权
+    //case PROD_TYPE_OPTION://期货期权
+    //    if (order.sEoFlag[0] == EO_FLAG_OPEN) //开仓
+    //    {
+    //        //开仓要算冻结和手续费
+    //        if (!GetTradeFeeValue(pc, pcustacc, 1, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //        {
+    //            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //            return -1;
+    //        }
+    //        if (order.sBsFlag[0] == BS_FLAG_SELL) //卖开要冻结保证金
+    //        {
+    //            if (!GetMarginValue(pc, pcustacc, 1, order.nOrderNum, order.dAmt, dExchMargin, dMemberMargin))
+    //            {
+    //                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取保证金出错 本地报单号[%s]", order.sLocalSerial);
+    //                return -1;
+    //            }
+    //        }
+    //    }
+    //    else
+    //    {
+    //        //平仓要算手续费
+    //        if (order.sEoFlag[0] == EO_FLAG_CLOSETODAY) //平今仓
+    //        {
+    //            //平仓要算手续费
+    //            if (!GetTradeFeeValue(pc, pcustacc, 3, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //            {
+    //                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //                return -1;
+    //            }
+    //        }
+    //        else
+    //        {
+    //            //平仓要算手续费
+    //            if (!GetTradeFeeValue(pc, pcustacc, 2, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //            {
+    //                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //                return -1;
+    //            }
+    //        }
+    //    }
+    //    break;
+    //case PROD_TYPE_SPOT://现货
+    //    //现货有中立仓、交割等
+    //    if (order.sShFlag[0] == SH_FLAG_DERY)
+    //    {
+    //        //递延交割
+    //    }
+    //    else if (order.sShFlag[0] == SH_FLAG_MID)
+    //    {
+    //        //中立仓
+    //    }
+    //    else
+    //    {
+    //        if (order.sBsFlag[0] == BS_FLAG_BUY)
+    //        {
+    //            //买要算手续费及金额
+    //            if (!GetTradeFeeValue(pc, pcustacc, 1, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //            {
+    //                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //                return -1;
+    //            }
+    //        }
+    //        else
+    //        {
+    //            //卖要算手续费	
+    //            if (!GetTradeFeeValue(pc, pcustacc, 2, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //            {
+    //                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //                return -1;
+    //            }
+    //        }
+    //    }
+    //    dMemberMargin = order.dAmt;
+    //    break;
+    //case PROD_TYPE_BOND_BANK://银行间债券
+    //case PROD_TYPE_BOND://债券
+    //case PROD_TYPE_SEC://证券
+    //    if (order.sBsFlag[0] == BS_FLAG_BUY)
+    //    {
+    //        //买要算手续费及金额
+    //        if (!GetTradeFeeValue(pc, pcustacc, 1, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //        {
+    //            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //            return -1;
+    //        }
+    //    }
+    //    else
+    //    {
+    //        //卖要算手续费
+    //        if (!GetTradeFeeValue(pc, pcustacc, 2, order.nOrderNum, order.dAmt, dExchFee, dMemberFee))
+    //        {
+    //            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知取手续费出错 本地报单号[%s]", order.sLocalSerial);
+    //            return -1;
+    //        }
+    //    }
+    //    dMemberMargin = order.dAmt;
+    //    break;
+    //default:
+    //    m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托通知合约代码[%s]的品种类别[%s]不符", order.sContractCode, pc->sProd_type);
+    //    return -1;
+    //}
+    
+	return 0;
 }

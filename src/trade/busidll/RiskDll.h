@@ -11,7 +11,9 @@
 
 #include "IProcBase.h"
 #include "KernelPub.h"
-
+#include "Xdp2Struct.h"
+#include "PubDb.h"
+#include "PubMethod.h"
 
 #ifdef _WINDOWS
 #ifdef _DEBUG
@@ -42,17 +44,33 @@ class KERNELPUB_EXPORT RiskDll : public CIProcBase
 {
 public:
 
-	
-	
+	//处理外部发来的普通报单风控检查
+	int OrderRiskCheck(S_TRADE_DATA& data);
+	//处理外部发来的双边报价风控检查
+	int BilateralOrderRiskCheck(S_TRADE_DATA& data);
+	//处理外部发来的资金同步信息
+	int ProcSyncFund(S_TRADE_DATA& data);
+	//处理外部发来的持仓同步信息
+	int ProcSyncPosi(S_TRADE_DATA& data);
+	//处理外部发来的债券存续规模
+    int ProcBondScope(S_TRADE_DATA& data);
+	//处理外部发来的债券估值
+    int ProcBondValue(S_TRADE_DATA& data);
+	//处理外部发来的DV01数据
+    int ProcBondDv01(S_TRADE_DATA& data);
 
+	
 	// 函数名: OrderMsg
 	// 编程  : 王明松 2018-6-1 16:46:18
 	// 返回  : int 
 	// 参数  : S_TRADE_DATA &data
-	// 描述  : 委托消息处理
+	// 描述  : 处理外部发来的报单通知,不校验资金仓位,默认为已报入且不调用外部接口
 	int OrderMsg(S_TRADE_DATA &data);
 
-	
+	//处理外部发来的成交回报，计算资金持仓
+	int DoneRtn(S_TRADE_DATA& data);
+	//外理外部发来的撤单回报消息，处理撤单后的资金持仓
+	int CancelOrderRtn(S_TRADE_DATA& data);
 
 	// 函数名: QueryCustOrder
 	// 编程  : 王明松 2018-6-1 16:47:10
@@ -61,21 +79,22 @@ public:
 	// 描述  : 查询客户报单
 	int QueryCustOrder(S_TRADE_DATA &data);
 
-	
-
 	// 函数名: RcvQuotation
 	// 编程  : 王明松 2018-3-6 16:16:08
 	// 返回  : int 
 	// 参数  : S_TRADE_DATA &data
 	// 描述  : 接收行情处理
-	int RcvQuotation(S_TRADE_DATA &data);
+	int RcvQuotation(S_TRADE_DATA& data);
+	//导入证券信息
+	int ImportSecu(S_TRADE_DATA& data);
+
 	RiskDll();
 	virtual ~RiskDll();
 
-	virtual bool Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog,CBF_BufferPool *pMemPool,CDbApi *pSqlCmd,CIExchLink *pExchLink,int index);
+	virtual bool Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog,CDbApi *pSqlCmd,CIExchLink *pExchLink,int index);
 
 	CBF_Date_Time m_pDate;
-	char m_sErrMsg[256];
+	
 
 	CKernelPub   m_pKernelPub;//资金持仓等的公共操作库
 
@@ -84,12 +103,42 @@ public:
 	INT64_   m_nBeginTime;//开始时间
 	INT64_   m_nEndTime;  //结束日期
 
-	
+	//定时任务，计算风险
+	int ComputeRisk(S_TRADE_DATA& data);
+	//定时任务，同步至DB
+	int Sync2Db(S_TRADE_DATA& data);
+	//定时任务，处理未找到报单的成交
+	int ProcessDoneNoOrder(S_TRADE_DATA& data);
 protected:
 	int      m_nCallSerial;//异步流水
 
-	bool ReadContract();
-	bool ReadVariety();
+	CPubDb   m_pPubDb;//数据库的公共操作
+	CPubMethod m_pPubMethod;
+
+    // 函数名: OrderCheck
+    // 编程  : 王明松 2022-7-6 16:16:08
+    // 返回  : int 
+    // 参数  : S_MDB_ORDER_INFO &order	   报单信息
+    // 参数  : S_ORDER_PUB &order_pub		 检查返回的账户、合约等信息指针
+    // 描述  : 报单输入检查及风控检查
+	int OrderCheck(S_MDB_ORDER_INFO & order,S_ORDER_PUB &order_pub);
+
+    // 函数名: OrderRsp
+    // 编程  : 王明松 2022-7-6 16:16:08
+    // 返回  : int 
+    // 参数  : S_TRADE_DATA &rpcdata	   原报单信息
+    // 参数  : S_TRADE_DATA &ansdata	   报单响应信息
+    // 描述  : 报单响应
+    int OrderRsp(S_TRADE_DATA& rpcdata, S_TRADE_DATA& ansdata);
+
+    // 函数名: GetPosiTotalValue
+    // 编程  : 王明松 2022-7-7 10:55:08
+    // 返回  : double 持仓总规模 
+    // 参数  : const char* stxacc	交易账号
+    // 描述  : 获取交易账号的持仓总规模  债券按面值，其余按最新价
+	double GetPosiTotalValue(const char* stxacc);
+	double GetProdPosiTotalValue(const char* Org);
+	double GetOrgPosiTotalValue(const char* Org);
 
 	int GetNextSerial();
 	int GetCurSerial();
@@ -105,33 +154,24 @@ protected:
 	// 描述  : 接收行情处理
 	int SendBus(CXdp *xdp,int svrid,int funcno,int serial,short cmd);
 
-
-	void Send2CustPushMsg(S_MDB_TXACC_LOCK *acc, const char *pushdata,int pushdatalen,int funcno);
-	void Send2OperPushMsg(S_MDB_TXACC_LOCK *acc,const char *pushdata,int pushdatalen,int funcno);
-
-
 	void SendMoneyIOPush(S_MDB_TXACC_LOCK *acclock ,S_MDB_FUND_FLOW *info);
-	void SendDonePush(S_MDB_TXACC_LOCK *acclock ,S_MDB_DONE_INFO *info);
-	void SendOrderPush(S_MDB_TXACC_LOCK *acclock ,S_MDB_ORDER_INFO *info);
+	void SendDoneBroadcast(S_MDB_TXACC_LOCK *acclock ,S_MDB_DONE_INFO *info);
+	void SendOrderBroadcast(S_MDB_TXACC_LOCK *acclock ,S_MDB_ORDER_INFO *info);
 
 	void GenAcc(const char *oldacc, int syscode,int destlen, char *txacc);
 
-	void Send2OperProdOrgRiskMsg(char *orgcode, char traderight,const char *riskdata,int riskdatalen,int funcno);
-
-	
-
 	bool ComputeProd(const char *compdate);
 	bool ComputeOrg(const char *compdate);
-	bool ComputeOneOrg(const char* compdate, char* orgcode, const char* orgname, const char* risktype, std::vector<S_MDB_CUST_FUNDACC_INFO*> orgcustlist);
+	bool ComputeOneOrg(const char* compdate, char* orgcode, const char* orgname, const char* risktype, std::vector<S_MDB_TRADEACC_INFO*> orgcustlist);
 	
-
+	//同步成交
 	bool SyncDone(S_MDB_DONE_INFO *done);
+	//同步报单
 	bool SyncOrder(S_MDB_ORDER_INFO *order);
+	//同步债券扩展信息，如存续规模，DV01等
+	bool SyncBond(S_MDB_BOND_INFO* bond);
 
 	bool CalcRiskInfo(char *txacc,S_MDB_CONTRACT_INFO *coninfo,double newprice,S_MDB_CUST_FUND &fund);
-
-	bool UpdateFeeTemplet();
-
 
 	bool ReadOneCustInfo(const char *txacc);
 
@@ -204,38 +244,13 @@ protected:
 	// 描述  : 计算一个新的成交 更新资金及持仓
 	bool ComputeNewDone(S_MDB_TXACC_LOCK *lockinfo,S_MDB_CUST_FUND *fundinfo,S_MDB_DONE_INFO *info,S_MDB_ORDER_INFO *po,S_MDB_CONTRACT_INFO *pc,char *errmsg);
 
-
-	// 函数名: Send2OperRiskMsg
-	// 编程  : 王明松 2018-6-1 16:49:45
-	// 返回  : void 
-	// 参数  : S_MDB_TXACC_LOCK *acc
-	// 参数  : char traderight
-	// 参数  : const char *riskdata
-	// 参数  : int riskdatalen
-	// 参数  : int funcno
-	// 描述  : 发送给操作员风险信息
-	void Send2OperRiskMsg(S_MDB_TXACC_LOCK *acc, char traderight,const char *riskdata,int riskdatalen,int funcno);
-
-	// 函数名: Send2CustRiskMsg
-	// 编程  : 王明松 2018-6-1 16:50:04
-	// 返回  : void 
-	// 参数  : S_MDB_TXACC_LOCK *acc
-	// 参数  : char traderight
-	// 参数  : const char *riskdata
-	// 参数  : int riskdatalen
-	// 参数  : int funcno
-	// 描述  : 发送给客户风险信息
-	void Send2CustRiskMsg(S_MDB_TXACC_LOCK *acc,char traderight,const char *riskdata,int riskdatalen,int funcno);
-
-	void Send2PgSync(S_MDB_TXACC_LOCK *acc,const char *riskdata,int riskdatalen,int funcno);
-
 	// 函数名: SendRiskMsg
 	// 编程  : 王明松 2018-6-1 16:50:19
 	// 返回  : void 
 	// 参数  : S_MDB_TXACC_LOCK *acc
 	// 参数  : S_MDB_CUST_FUND *fund
 	// 参数  : char traderight
-	// 描述  : 发送风险信息
+	// 描述  : 发送交易账户资金风险信息
 	void SendRiskMsg(S_MDB_TXACC_LOCK *acc,S_MDB_CUST_FUND *fund,char traderight);
 
 	void AnsData(S_TRADE_DATA &data);
@@ -274,15 +289,12 @@ protected:
 	// 描述  : 更新数据库结算价
 	void UpdateSetllePrice(S_MDB_QUOTATION qinfo);
 
-
-
 	// 函数名: GetAccList
 	// 编程  : 王明松 2018-3-6 17:12:50
 	// 返回  : bool 
 	// 参数  : std::vector<int> &acclist
 	// 描述  : 取得有浮动盈亏的客户列表
 	bool GetAccList(std::vector<int> &acclist);
-
 
 	// 函数名: ComputeCustRisk
 	// 编程  : 王明松 2018-3-6 17:12:39
@@ -291,15 +303,12 @@ protected:
 	// 描述  : 计算一个客户的风险
 	void ComputeCustRisk(int rowid);
 
-
 	// 函数名: ComputeCustPosiRisk
 	// 编程  : 王明松 2018-3-12 16:16:28
 	// 返回  : void 
 	// 参数  : int rowid
 	// 描述  : 计算一个客户的持仓风险
 	void ComputeCustPosiRisk(int rowid);
-
-	
 
 	// 函数名: ProcessDone
 	// 编程  : 王明松 2018-6-1 16:52:36
@@ -310,12 +319,17 @@ protected:
 	// 参数  : S_MDB_EXCH_INFO *pexch
 	// 参数  : S_MDB_DONE_INFO &info
 	// 描述  : 处理成交
-	int ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc ,S_MDB_ORDER_INFO *po,S_MDB_CONTRACT_INFO *pc,S_MDB_EXCH_INFO *pexch,S_MDB_DONE_INFO &info);
+	int ProcessDone(S_MDB_TRADEACC_INFO *pcustacc ,S_MDB_ORDER_INFO *po,S_MDB_CONTRACT_INFO *pc,S_MDB_EXCH_INFO *pexch,S_MDB_DONE_INFO &info);
 
 
 	//加锁更新资金
 	bool UpdateFundLock(const char *txacc,char *currency,const char fundflag,const  char *fundcode,double amt,bool isadd,int &lockrowid);
-
+	//检查黑白名单
+	int CheckBwgMenu(S_MDB_ORDER_INFO *order,char *msg);
+	//检查价格限定
+	int CheckPriceLimit(S_MDB_ORDER_INFO* order, S_MDB_CONTRACT_INFO* pc, char* msg);
+	//检查风险合约
+	int CheckRiskContract(S_MDB_ORDER_INFO* order, S_MDB_CONTRACT_INFO* pc, char* msg);
 public:
 	void MsgCustRiskCalc(int lockrowid);
 	
@@ -324,8 +338,18 @@ public:
 	// 编程  : 王明松 2018-3-6 16:16:08
 	// 返回  : int 
 	// 参数  : S_TRADE_DATA &data
-	// 描述  : 委托
+	// 描述  : 接收外部的报单，进行资金仓位校验及处理，默认为未报，通过后调用外部的报单接口
 	int Order(S_TRADE_DATA &data);
+	//接收外部的双边报价，调用外部的双边报价接口
+	int BilateralOrder(S_TRADE_DATA& data);
+	//接收外部的撤单请求，调用外部的撤单接口
+	int CancelOrder(S_TRADE_DATA& data);
+	//对应Order的报单，收到外部系统的报单回报，进行回报的处理
+    int OrderRtn(S_TRADE_DATA& data);
+
+	//处理主机同步过来的报单信息
+	int OrderSync(S_TRADE_DATA& data);
+
 
 	int test1021(S_TRADE_DATA& data);
 	int test1023(S_TRADE_DATA& data);

@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\include\dbpub\dreberrcode.h" />
     <ClInclude Include="..\..\..\..\include\dreb\BF_DrebResource.h" />
     <ClInclude Include="..\..\..\..\include\dreb\BF_DrebSendQueue.h" />
     <ClInclude Include="..\..\..\..\include\dreb\BF_DrebServer.h" />

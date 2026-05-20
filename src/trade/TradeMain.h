@@ -247,6 +247,8 @@ public:
     virtual int  GetSerial();
     //取递增的本地号
     virtual UINT64_ GetLocalNo();
+    //取递增的做市本地号
+	virtual UINT64_ GetBilateralSerial();
 
 	void Monitor();
 	void Stop();

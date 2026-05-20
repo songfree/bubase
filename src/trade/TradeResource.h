@@ -102,6 +102,10 @@ public:
 
 	std::vector<int> g_lArbTxList;//服务在总线上注册的仲裁交易
 
+	std::vector<int> g_lBCFuncList;//在总线上要订阅的广播信息
+
+	std::vector<int> g_lHAFuncList;//主备同步的广播
+
 	CBF_Des       m_pDes;
 	CBF_3Des      m_p3Des;
 

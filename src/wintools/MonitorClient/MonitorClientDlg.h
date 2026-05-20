@@ -11,6 +11,8 @@
 #include "BF_SimpleLog.h"
 #include "HwPlayer.h"
 #include "ColorListCtrl.h"
+#include "CDlgCgate.h"
+#include "CDlgDaemon.h"
 
 #define  ONTIMER1 24   //显示时间
 #define  ONTIMER2 25   //定时监控
@@ -117,23 +119,37 @@ protected:
 	int         m_nDbType;
 	void Monitor();
 	bool ConnectDb();
+	//取应用节点信息
 	void GetAppNodeInfo();
+	//取pc节点信秘
 	void GetPcNodeInfo();
+	//取cpu内存磁盘信息
 	void GetPcCpuMemDiskInfo();
+	//取网关连接信息
+	void GetCgateInfo();
+	//取守护进程信息
+	void GetDaemonInfo();
 	char m_sSql[1000];
+
+	bool m_bIsRunning;
 
 	std::vector<S_APP_NODE_INFO> m_vAppNodeInfo;
 	std::vector<S_PC_NODE_INFO> m_vPcNodeInfo;
 	std::vector<S_PC_NODE_DISK_INFO> m_vPcNodeDiskInfo;
 	std::vector<S_PC_NODE_CPU_RAM_INFO> m_vPcNodeCpuRamInfo;
 
+	std::vector<S_CGATE_INFO> m_vCgateInfo;
+	std::vector<S_DAEMON_INFO> m_vDaemonInfo;
 	void UpdateAppNode();
 	void UpdatePcNode();
 	void UpdatePCpuMemDisk();
 	void autoDisplay();
 
+	void UpdateCGateInfo();
+
     CHwPlayer m_playmusic;
     bool m_picstatus_app;
+	bool m_picdaemon_status;
 	bool m_picstatus_pc;
 
 	MCI_OPEN_PARMS  m_music_open;
@@ -165,4 +181,6 @@ public:
 	// 启动监控
 	CButton m_btnOk;
 	afx_msg void OnBnClickedButtonSet();
+	afx_msg void OnClickedButtonCgate();
+	afx_msg void OnBnClickedButton3();
 };

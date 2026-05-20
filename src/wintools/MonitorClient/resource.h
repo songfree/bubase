@@ -13,6 +13,8 @@
 #define IDI_ICON_ERR1                   133
 #define IDI_ICON_ERR2                   134
 #define IDD_DIALOG_SET                  135
+#define IDD_CGATE_INFO                  137
+#define IDD_DIALOG_DAEMON               139
 #define IDC_LIST_APP_NODE               1000
 #define IDC_LIST_PC_NODE                1002
 #define IDC_LIST_DISK                   1003
@@ -33,14 +35,19 @@
 #define IDC_EDIT_PWD                    1012
 #define IDC_COMBO_PWDFLAG               1013
 #define IDC_COMBO_DBTYPE                1014
+#define IDC_LIST_GATE                   1015
+#define IDC__CGATE                      1016
+#define IDC__BUTTON_CGATE               1016
+#define IDC_LIST_DAEMON                 1017
+#define IDC_BUTTON3                     1018
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        137
+#define _APS_NEXT_RESOURCE_VALUE        141
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1015
+#define _APS_NEXT_CONTROL_VALUE         1019
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

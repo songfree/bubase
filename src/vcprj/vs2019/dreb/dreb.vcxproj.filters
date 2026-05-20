@@ -99,6 +99,9 @@
     <ClInclude Include="..\..\..\base\dreb\SvrTbl.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\dbpub\dreberrcode.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\base\dreb\BFDreb.cpp">

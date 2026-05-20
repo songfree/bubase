@@ -18,7 +18,22 @@
 #include "CodeTable.h"
 #include "BF_Queue.h"
 
-
+typedef struct _ORDER_PUB
+{
+    S_MDB_CONTRACT_INFO* pc = NULL;	 //合约信息
+    S_MDB_QUOTATION* pq = NULL;	 //合约行情信息
+    S_MDB_EXCH_INFO* pe = NULL;	 //合约对应交易所信息
+    S_MDB_CONTRACT_SETTLE_PRICE* psp = NULL; //合约对应结算价信息
+    S_MDB_VARIETY_INFO* pv = NULL;			 //合约对应品种信息
+    S_MDB_TRADEACC_INFO* pCustFuncAcc = NULL; //交易账户信息
+    S_MDB_CUSTINFO* pCust = NULL;	       //交易账户对应客户信息
+    S_MDB_CUST_FUND* pCustFund = NULL;	   //交易账户资金信息
+    S_MDB_ORG_INFO* pOrg = NULL;		   //交易账户所属机构信息
+    S_MDB_TXACC_LOCK* pAcclock = NULL;	   //交易账户锁表
+    S_MDB_ORDER_INFO* pOrder = NULL;	   //报单表
+	S_MDB_EXCH_TRADER_INFO *pExTrader=NULL;	   //交易所、席位对应的通讯参数信息
+	S_MDB_CUST_TRADECODE *pCustTrader=NULL;	   //交易账户对应的交易所、交易所席位信息
+}S_ORDER_PUB;
 
 
 class CMemDb  
@@ -79,34 +94,23 @@ public:
 		if (info != NULL)
 		{
 			int rid;
-			if (info->nFundAccRowid<0)
+			if (info->nTradeAccRowid<0)
 			{
-				rid= m_pDbCust.m_pCustFundAcc.GetRowId(txacc);
+				rid= m_pDbCust.m_pTradeAcc.GetRowId(txacc);
 				if (rid<0)
 				{
 					return NULL;
 				}
-				info->nFundAccRowid = rid;
-				rid = m_pDbCust.m_pCustom.GetRowId(m_pDbCust.m_pCustFundAcc.At(rid)->sCustNo);
+				info->nTradeAccRowid = rid;
+				rid = m_pDbCust.m_pCustom.GetRowId(m_pDbCust.m_pTradeAcc.At(rid)->sCustNo);
 				if (rid<0)
 				{
 					return NULL;
 				}
 				info->nCustRowid = rid;
 				//取资金表的rowid
-				std::vector<int>iset;
-				if (m_pDbTrader.m_pFund.Select(txacc,iset))
-				{
-					S_MDB_CUST_FUND *pfund=NULL;
-					for (int i=0;i<iset.size(); i++)
-					{
-						pfund = m_pDbTrader.m_pFund.At(iset[i]);
-						if (pfund != NULL)
-						{
-							info->nFundRowid[atoi(pfund->sCurrency)] = iset[i];
-						}
-					}
-				}
+				info->nFundRowid = m_pDbTrader.m_pFund.GetRowId(txacc);
+				//将持仓信息更新至info里面
 			}
 			return info;
 		}
@@ -116,48 +120,38 @@ public:
 	{
 		S_MDB_TXACC_LOCK *info =m_pTxAccLock.At(rowid);
 		int rid;
-		if (info->nFundAccRowid<0)
+		if (info->nTradeAccRowid <0)
 		{
-			rid= m_pDbCust.m_pCustFundAcc.GetRowId(info->sTxAcc);
+			rid= m_pDbCust.m_pTradeAcc.GetRowId(info->sTxAcc);
 			if (rid<0)
 			{
 				return NULL;
 			}
-			info->nFundAccRowid = rid;
-			rid = m_pDbCust.m_pCustom.GetRowId(m_pDbCust.m_pCustFundAcc.At(rid)->sCustNo);
+			info->nTradeAccRowid = rid;
+			rid = m_pDbCust.m_pCustom.GetRowId(m_pDbCust.m_pTradeAcc.At(rid)->sCustNo);
 			if (rid<0)
 			{
 				return NULL;
 			}
 			info->nCustRowid = rid;
-			//取资金表的rowid
-			std::vector<int>iset;
-			if (m_pDbTrader.m_pFund.Select(info->sTxAcc,iset))
-			{
-				S_MDB_CUST_FUND *pfund=NULL;
-				for (int i=0;i<iset.size(); i++)
-				{
-					pfund = m_pDbTrader.m_pFund.At(iset[i]);
-					if (pfund != NULL)
-					{
-						info->nFundRowid[atoi(pfund->sCurrency)] = iset[i];
-					}
-				}
-			}
+			info->nFundRowid = m_pDbTrader.m_pFund.GetRowId(info->sTxAcc);
+			
 		}
 		return info;
 	}
-	S_MDB_CUST_FUND *GetFund(S_MDB_TXACC_LOCK *acclock,char *currency)
+	S_MDB_CUST_FUND *GetFund(S_MDB_TXACC_LOCK *acclock)
 	{
-		int ncur = atoi(currency);
-		if (ncur<0 || ncur>19)
+		if (acclock->nFundRowid < 0)
 		{
 			return NULL;
 		}
-		int rowid = acclock->nFundRowid[ncur];
-		return m_pDbTrader.m_pFund.At(rowid);
+		return m_pDbTrader.m_pFund.At(acclock->nFundRowid);
 	}
-
+	//从持仓表更新交易账户的持仓至锁表 加快查找持仓  
+	bool UpdatePosition()
+	{
+		return  true;
+	}
 };
 
 #endif // !defined(AFX_MEMDB_H__2EBC663A_63AF_4C36_92E0_2671FE9B4780__INCLUDED_)

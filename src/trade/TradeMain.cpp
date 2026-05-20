@@ -1043,3 +1043,8 @@ UINT64_ CTradeMain::GetLocalNo()
 {
 	return g_pPubData.GetLocalSerial();
 }
+//取递增的做市本地号
+UINT64_ CTradeMain::GetBilateralSerial()
+{
+    return g_pPubData.GetBilateralSerial();
+}

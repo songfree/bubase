@@ -37,17 +37,42 @@ void RiskDll::GenAcc(const char *oldacc, int syscode,int destlen, char *txacc)
 RiskDll::RiskDll()
 {
 	m_nRpcSerial=0;
-	InitFuncInfo(9999999,(FuncPointer )&RiskDll::RcvQuotation,"行情处理",1.0,"作者",1);
+	InitFuncInfo(9800, (FuncPointer)&RiskDll::ProcSyncFund, "处理外部发来的资金同步信息", 1.0, "wms", 1);
+	InitFuncInfo(9801, (FuncPointer)&RiskDll::ProcSyncPosi, "处理外部发来的持仓同步信息", 1.0, "wms", 1);
+	InitFuncInfo(9802, (FuncPointer)&RiskDll::ProcBondScope, "处理外部发来的债券存续规模", 1.0, "wms", 1);
+	InitFuncInfo(9803, (FuncPointer)&RiskDll::ProcBondValue, "处理外部发来的中证估值信息", 1.0, "wms", 1);
+	InitFuncInfo(9804, (FuncPointer)&RiskDll::ProcBondDv01, "处理外部发来的债券DV01信息", 1.0, "wms", 1);
 
-	InitFuncInfo(9805,(FuncPointer )&RiskDll::QueryCustOrder,"查询客户报单",1.0,"作者",1);
+	InitFuncInfo(9808, (FuncPointer)&RiskDll::RcvQuotation, "处理外部发来的行情", 1.0, "wms", 1);
 
-	InitFuncInfo(9202,(FuncPointer )&RiskDll::OrderMsg,"资金更新",1.0,"作者",1);
+	InitFuncInfo(9901, (FuncPointer)&RiskDll::OrderRiskCheck, "处理外部发来的普通报单风控检查", 1.0, "wms", 1);
+	InitFuncInfo(9902, (FuncPointer)&RiskDll::BilateralOrderRiskCheck, "处理外部发来的双边报价风控检查", 1.0, "wms", 1);
+
+	InitFuncInfo(9903, (FuncPointer)&RiskDll::OrderMsg, "处理外部发来的报单通知,不校验资金仓位,默认为已报入且不调用外部接口", 1.0, "wms", 1);
+	InitFuncInfo(9904, (FuncPointer)&RiskDll::DoneRtn, "处理外部发来的成交回报，计算资金持仓", 1.0, "wms", 1);
+	InitFuncInfo(9905, (FuncPointer)&RiskDll::CancelOrderRtn, "外理外部发来的撤单回报消息，处理撤单后的资金持仓", 1.0, "wms", 1);
+																			 
+	//InitFuncInfo(9906, (FuncPointer)&RiskDll::BilateralOrderMsg, "外理外部发来的做市双边报价", 1.0, "wms", 1);
+	//InitFuncInfo(9907, (FuncPointer)&RiskDll::BilateralDoneMsg, "外理外部发来的做市双边报价的成交", 1.0, "wms", 1);
 
 
-	InitFuncInfo(9830,(FuncPointer )&RiskDll::Order,"持仓更新",1.0,"作者",1);
+	InitFuncInfo(9920, (FuncPointer)&RiskDll::Order, "接收外部的报单，进行资金仓位校验及处理，默认为未报，通过后调用外部的报单接口", 1.0, "wms", 1);
+	InitFuncInfo(9921, (FuncPointer)&RiskDll::BilateralOrder, "接收外部的双边报价，调用外部的双边报价接口", 1.0, "wms", 1);
+	InitFuncInfo(9922, (FuncPointer)&RiskDll::CancelOrder, "接收外部的撤单请求，调用外部的撤单接口", 1.0, "wms", 1);
+	InitFuncInfo(9923, (FuncPointer)&RiskDll::OrderRtn, "对应Order的报单，收到外部系统的报单回报，进行回报的处理", 1.0, "wms", 1);
 
-	InitFuncInfo(1021, (FuncPointer)&RiskDll::test1021, "计算账户盈亏", 1.0, "作者", 1);
-	InitFuncInfo(1023, (FuncPointer)&RiskDll::test1023, "委托报单", 1.0, "作者", 1);
+
+
+	InitFuncInfo(9926, (FuncPointer)&RiskDll::OrderSync, "接收主机发布的报单广播，同步至本备机，本身就含交易核心", 1.0, "wms", 1);
+
+	InitFuncInfo(9999, (FuncPointer)&RiskDll::ComputeRisk, "定时任务，计算风险", 1.0, "wms", 1);
+	InitFuncInfo(9998, (FuncPointer)&RiskDll::ProcessDoneNoOrder, "处理未找到报单的成交", 1.0, "wms", 1);
+	InitFuncInfo(9997, (FuncPointer)&RiskDll::Sync2Db, "同步报单及成交至数据库", 1.0, "wms", 1);
+
+	InitFuncInfo(9701, (FuncPointer)&RiskDll::ImportSecu, "导入合约信息", 1.0, "wms", 1);
+
+	InitFuncInfo(1021, (FuncPointer)&RiskDll::test1021, "测试rpc", 1.0, "wms", 1);
+	InitFuncInfo(1023, (FuncPointer)&RiskDll::test1023, "测试rpc", 1.0, "wms", 1);
 }
 
 int RiskDll::test1021(S_TRADE_DATA& data)
@@ -69,7 +94,15 @@ int RiskDll::test1021(S_TRADE_DATA& data)
 			{
 				m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "rpc总线应答返回出错[%d] requestid[%d]", ansdata.pData->sDBHead.a_Ainfo.a_nRetCode, ansdata.pData->sDBHead.s_Sinfo.s_nSerial);
 			}
+			if (!m_pXdp->FromBuffer(ansdata.pData->sBuffer,ansdata.pData->sDBHead.nLen,m_sErrMsg))
+			{
+				m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "FromBuffer出错");
+				m_pClientLink->PoolFree(ansdata);
+				return -1;
+			}
 			m_pClientLink->PoolFree(ansdata);
+			//处理
+			
 			return 0;
 		}
 		
@@ -81,8 +114,18 @@ int RiskDll::test1021(S_TRADE_DATA& data)
 }
 int RiskDll::test1023(S_TRADE_DATA& data)
 {
-    sprintf(data.pData->sBuffer,"test1023应答 %d",data.pData->sDBHead.s_Sinfo.s_nSerial);
-	data.pData->sDBHead.nLen = strlen(data.pData->sBuffer);
+	m_pXdp->ResetData();
+	char tmpchar[500];
+	sprintf(tmpchar, "test1023应答 %d", data.pData->sDBHead.s_Sinfo.s_nSerial);
+	m_pXdp->SetFieldValue((unsigned short)80, tmpchar,strlen(tmpchar),m_sErrMsg);
+	unsigned int len = sizeof(data.pData->sBuffer);
+	if (!m_pXdp->ToBuffer(data.pData->sBuffer, len,m_sErrMsg))
+	{
+		sprintf(tmpchar, "xdp ToBuffer出错 ");
+		strcpy(data.pData->sBuffer,tmpchar);
+		len = strlen(data.pData->sBuffer);
+	}
+	data.pData->sDBHead.nLen = len;
 	m_pClientLink->AnsData(data,0);
 	return 0;
 }
@@ -91,7 +134,7 @@ RiskDll::~RiskDll()
 {
 
 }
-bool RiskDll::Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog,CBF_BufferPool *pMemPool,CDbApi *pSqlCmd,CIExchLink *pExchLink,int index)
+bool RiskDll::Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXdp,	CIErrlog *pLog,CDbApi *pSqlCmd,CIExchLink *pExchLink,int index)
 {
 	m_pClientLink = pBusLink;
 	m_pXdp = pXdp;
@@ -107,186 +150,110 @@ bool RiskDll::Init(CBF_Xml *xml,CIClientLink *pBusLink,CMemDb *pMemDb,	CXdp *pXd
 	m_pLog = pLog;
 	m_pSqlCmd = pSqlCmd;
 	m_pExchLink = pExchLink;
-	m_pMemPool = pMemPool;
 	m_nIndex = index;
 	m_pKernelPub.m_pMemDb = pMemDb;
 	m_pKernelPub.m_pLog = pLog;
 	m_nCallSerial = m_nIndex*1000000+1;
+	m_pPubDb.m_pLog = pLog;
+	m_pPubDb.m_pSqlCmd = m_pSqlCmd;
+    m_pPubMethod.m_pLog = pLog;
+	m_pPubMethod.m_pSqlCmd = m_pSqlCmd;
 	return true;
 }
 
 
-int RiskDll::RcvQuotation(S_TRADE_DATA &data)
+int RiskDll::RcvQuotation(S_TRADE_DATA& data)
 {
-	if (!m_pXdp->FromBuffer(data.pData->sBuffer,data.pData->sDBHead.nLen,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"RcvQuotation Xdp FromBuffer error <%s>",m_sErrMsg);
-		m_pClientLink->PoolFree(data);
-		return -1;
-	}
-	//收到行情后不需要应答，直接释放空间
-	m_pClientLink->PoolFree(data);
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "RcvQuotation Xdp FromBuffer error <%s>", m_sErrMsg);
+        m_pClientLink->PoolFree(data);
+        return -1;
+    }
+    //收到行情后不需要应答，直接释放空间
+    m_pClientLink->PoolFree(data);
+    //接收行情
+    //更新行情表
+    //若发生变化，去更新持仓表的浮动盈亏
+    //更新完后，置风险计算标志，另外定时去统计各个风险度等
 
-	
+    S_MDB_QUOTATION qinfo;
+    bzero(&qinfo, sizeof(S_MDB_QUOTATION));
+	Xdp2Struct::ConvertQuotation(m_pXdp,qinfo);
+    
 
-	//接收行情
-	//更新行情表
-	//若发生变化，去更新持仓表的浮动盈亏
-	//更新完后，置风险计算标志，另外定时去统计各个风险度等
+    S_MDB_CONTRACT_INFO* pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(qinfo.sContractCode);
+    if (pc == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约[%d %s]在合约表中不存在", qinfo.nContractNo, qinfo.sContractCode);
+        return -1;
+    }
+	//行情序号是不是有值
+	if (strlen(qinfo.sQuoSerial)<1)
+	{
+		//使用行情时间作为行情序号
+		char tmpchar[50];
+		bzero(tmpchar,sizeof(tmpchar));
+		strncpy(tmpchar,qinfo.sTime,8);
+		strcpy(tmpchar+8, qinfo.sTime+9);
+		CBF_Tools::StringCopy(qinfo.sQuoSerial,sizeof(qinfo.sQuoSerial)-1,tmpchar);
+	}
+    qinfo.nContractNo = pc->nContractId;
+    bool bret = m_pMemDb->m_pDbTrader.m_pQuotation.Update(qinfo);
+    if (bret)
+    {
+        m_pMemDb->m_bIsNewQuotation = true;
+        if (qinfo.dSettlePrice > MAXDOUBLECOMPARE)
+        {
+            //结算价有值，更新到数据库表里面
+            UpdateSetllePrice(qinfo);
+        }
+        if (qinfo.dNewPrice > 99999999 || qinfo.dNewPrice < -99999999) //错误行情
+        {
+            return 0;
+        }
+        //查看是否是风险合约
+        //处理是否风险合约
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "开始计算风险合约[%d %s] 行情[%s %s]", qinfo.nContractNo, qinfo.sContractCode, qinfo.sDate, qinfo.sQuoSerial);
+        ProcRiskContract(qinfo, pc);
+        //盈亏计算 风险度计算
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "开始计算盈亏 合约[%d %s] 行情[%s %s]", qinfo.nContractNo, qinfo.sContractCode, qinfo.sDate, qinfo.sQuoSerial);
+        ProcRisk(qinfo, pc);
 
-	S_MDB_QUOTATION qinfo;
-	bzero(&qinfo,sizeof(S_MDB_QUOTATION));
-	int fieldtype;
-	unsigned int len;
-	len = sizeof(qinfo.sContractCode);
-	if (!m_pXdp->GetFieldValue((unsigned short)100,qinfo.sContractCode,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"GetFieldValue error [%s]!",m_sErrMsg);
-		return -1;
-	}
-	if (!m_pXdp->GetFieldValue((unsigned short)26,qinfo.nContractNo,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"GetFieldValue error [%s]!",m_sErrMsg);
-		return -1;
-	}
+        //针对LME 3M合约，有到期日的合约按3M合约最新价计算盈亏
+        if (strcmp(pc->sContractCode, "LME+CA+R+3M") == 0)
+        {
+            m_pDate.Update();
+            char scurdate[9];
+            m_pDate.ToCharDate(scurdate);
+            std::vector<S_MDB_CONTRACT_INFO*> contlist;
+            if (m_pMemDb->m_pDbBaseinfo.m_pContract.SelectByExch((char*)"B", contlist))
+            {
+                for (int k = 0; k < contlist.size(); k++)
+                {
+                    pc = contlist[k];
+                    if (strncmp(pc->sContractCode, "LME+CA+S+", 9) == 0 && strncmp(pc->sContractCode + 9, scurdate, 8) >= 0) //3m对应的合约
+                    {
+                        //进行风险计算
+                        qinfo.nContractNo = pc->nContractId;
+                        strcpy(qinfo.sContractCode, pc->sContractCode);
+                        strcpy(qinfo.sContractName, pc->sContractName);
+                        //处理是否风险合约
+                        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "开始计算风险合约[%d %s] 行情[%s %s]", qinfo.nContractNo, qinfo.sContractCode, qinfo.sDate, qinfo.sQuoSerial);
+                        ProcRiskContract(qinfo, pc);
+                        //盈亏计算 风险度计算
+                        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "开始计算盈亏 合约[%d %s] 行情[%s %s]", qinfo.nContractNo, qinfo.sContractCode, qinfo.sDate, qinfo.sQuoSerial);
+                        ProcRisk(qinfo, pc);
+                    }
+                }
+            }
+        }
 
-	//取出行情日期、行情序号
-	if (!m_pXdp->GetFieldValue((unsigned short)23,qinfo.nDate,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"GetFieldValue error [%s]!",m_sErrMsg);
-		return -1;
-	}
-	if (!m_pXdp->GetFieldValue((unsigned short)25,qinfo.nQuoSerial,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"GetFieldValue error [%s]!",m_sErrMsg);
-		return -1;
-	}
-		
-	len = sizeof(qinfo.sContractName);
-	m_pXdp->GetFieldValue((unsigned short)101,qinfo.sContractName,len,fieldtype,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)60,qinfo.dLastSetllePrice,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)61,qinfo.dLastClosePrice,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)62,qinfo.dOpenPrice,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)63,qinfo.dHighPrice,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)64,qinfo.dLowPrice,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)65,qinfo.dNewPrice,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)66,qinfo.dClosePrice,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)67,qinfo.dSettlePrice,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)70,qinfo.dBuyPrice1,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)71,qinfo.dBuyPrice2,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)72,qinfo.dBuyPrice3,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)73,qinfo.dBuyPrice4,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)74,qinfo.dBuyPrice5,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)75,qinfo.dBuyPrice6,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)76,qinfo.dBuyPrice7,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)77,qinfo.dBuyPrice8,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)78,qinfo.dBuyPrice9,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)79,qinfo.dBuyPrice10,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)40,qinfo.nBuy1,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)41,qinfo.nBuy2,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)42,qinfo.nBuy3,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)43,qinfo.nBuy4,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)44,qinfo.nBuy5,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)45,qinfo.nBuy6,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)46,qinfo.nBuy7,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)47,qinfo.nBuy8,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)48,qinfo.nBuy9,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)49,qinfo.nBuy10,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)80,qinfo.dSellPrice1,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)81,qinfo.dSellPrice2,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)82,qinfo.dSellPrice3,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)83,qinfo.dSellPrice4,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)84,qinfo.dSellPrice5,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)85,qinfo.dSellPrice6,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)86,qinfo.dSellPrice7,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)87,qinfo.dSellPrice8,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)88,qinfo.dSellPrice9,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)89,qinfo.dSellPrice10,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)50,qinfo.nSell1,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)51,qinfo.nSell2,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)52,qinfo.nSell3,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)53,qinfo.nSell4,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)54,qinfo.nSell5,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)55,qinfo.nSell6,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)56,qinfo.nSell7,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)57,qinfo.nSell8,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)58,qinfo.nSell9,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)59,qinfo.nSell10,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)20,qinfo.nDoneQty,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)121,qinfo.dDoneWeight,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)21,qinfo.nPosition,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)122,qinfo.dUpLimit,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)123,qinfo.dDownLimit,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)127,qinfo.dUpDown,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)124,qinfo.dUpDownRate,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)125,qinfo.dDownAmt,m_sErrMsg);
-	m_pXdp->GetFieldValue((unsigned short)126,qinfo.dAvp,m_sErrMsg);
-
-	S_MDB_CONTRACT_INFO *pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(qinfo.nContractNo);
-	if (pc == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"合约[%d %s]在合约表中不存在",qinfo.nContractNo,qinfo.sContractCode);
-		return -1;
-	}
-	strcpy(qinfo.sContractCode,pc->sContractCode);
-	bool bret = m_pMemDb->m_pDbTrader.m_pQuotation.Update(qinfo);
-	if (bret)
-	{
-		m_pMemDb->m_bIsNewQuotation = true;
-		
-		if (qinfo.dSettlePrice > MAXDOUBLECOMPARE)
-		{
-			//结算价有值，更新到数据库表里面
-			UpdateSetllePrice(qinfo);
-		}
-
-		if (qinfo.dNewPrice > 99999999 || qinfo.dNewPrice <-99999999) //错误行情
-		{
-			return 0;
-		}
-		//查看是否是风险合约
-		//处理是否风险合约
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始计算风险合约[%d %s] 行情[%d %d]",qinfo.nContractNo,qinfo.sContractCode,qinfo.nDate,qinfo.nQuoSerial);
-		ProcRiskContract(qinfo,pc);
-		//盈亏计算 风险度计算
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始计算盈亏 合约[%d %s] 行情[%d %d]",qinfo.nContractNo,qinfo.sContractCode,qinfo.nDate,qinfo.nQuoSerial);
-		ProcRisk(qinfo,pc);
-
-		//针对LME 3M合约，有到期日的合约按3M合约最新价计算盈亏
-		if (strcmp(pc->sContractCode,"LME+CA+R+3M") == 0)
-		{
-			m_pDate.Update();
-			char scurdate[9];
-			m_pDate.ToCharDate(scurdate);
-			std::vector<S_MDB_CONTRACT_INFO *> contlist;
-			if (m_pMemDb->m_pDbBaseinfo.m_pContract.SelectByExch((char *)"B",contlist))
-			{
-				for (int k=0; k<contlist.size(); k++)
-				{
-					pc = contlist[k];
-					if (  strncmp(pc->sContractCode,"LME+CA+S+",9)==0 && strncmp(pc->sContractCode+9,scurdate,8)>= 0 ) //3m对应的合约
-					{
-						//进行风险计算
-						qinfo.nContractNo = pc->nContractId;
-						strcpy(qinfo.sContractCode,pc->sContractCode);
-						strcpy(qinfo.sContractName,pc->sContractName);
-						//处理是否风险合约
-						m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始计算风险合约[%d %s] 行情[%d %d]",qinfo.nContractNo,qinfo.sContractCode,qinfo.nDate,qinfo.nQuoSerial);
-						ProcRiskContract(qinfo,pc);
-						//盈亏计算 风险度计算
-						m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始计算盈亏 合约[%d %s] 行情[%d %d]",qinfo.nContractNo,qinfo.sContractCode,qinfo.nDate,qinfo.nQuoSerial);
-						ProcRisk(qinfo,pc);
-					}
-				}
-			}
-		}
-		
-		return 0;
-	}
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"合约[%d %s] 行情[%d %d]不是最新",qinfo.nContractNo,qinfo.sContractCode,qinfo.nDate,qinfo.nQuoSerial);
-	return 0;
+        return 0;
+    }
+    m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "合约[%d %s] 行情[%s %s]不是最新", qinfo.nContractNo, qinfo.sContractCode, qinfo.sDate, qinfo.sQuoSerial);
+    return 0;
 }
-
 
 void RiskDll::UpdateSetllePrice(S_MDB_QUOTATION qinfo)
 {
@@ -299,11 +266,10 @@ void RiskDll::UpdateSetllePrice(S_MDB_QUOTATION qinfo)
 	{
 		return ;
 	}
-	char tmpchar[10];
-	sprintf(tmpchar,"%d",qinfo.nDate);
+
 	sprintf(m_sSql,"select SETTLE_PRICE from CONTRACT_SETTLE_PRICE where EXCH_DATE=:1 and CONTRACT_NO=:2");
 	m_pSqlCmd->setCommandText(m_sSql);
-	m_pSqlCmd->Param(1).setAsString() = tmpchar;
+	m_pSqlCmd->Param(1).setAsString() = qinfo.sDate;
 	m_pSqlCmd->Param(2).setAsLong() = qinfo.nContractNo;
 	if (!m_pSqlCmd->Execute())
 	{
@@ -330,7 +296,7 @@ void RiskDll::UpdateSetllePrice(S_MDB_QUOTATION qinfo)
 	{
 		sprintf(m_sSql,"insert into CONTRACT_SETTLE_PRICE(EXCH_DATE,CONTRACT_NO,CONTRACT_CODE,SETTLE_PRICE,HOLD_POSI,CLOSE_PRICE,PRICE_CHANGE,SIMPLE_RETURN,LOG_RETURN,HIGH,LOW,OPEN) values(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12)");
 		m_pSqlCmd->setCommandText(m_sSql);
-		m_pSqlCmd->Param(1).setAsString() = tmpchar;
+		m_pSqlCmd->Param(1).setAsString() = qinfo.sDate;
 		m_pSqlCmd->Param(2).setAsLong() = qinfo.nContractNo;
 		m_pSqlCmd->Param(3).setAsString() = qinfo.sContractCode;
 		m_pSqlCmd->Param(4).setAsDouble() = qinfo.dSettlePrice;
@@ -360,7 +326,7 @@ void RiskDll::UpdateSetllePrice(S_MDB_QUOTATION qinfo)
 		m_pSqlCmd->Param(4).setAsDouble() = qinfo.dHighPrice;
 		m_pSqlCmd->Param(5).setAsDouble() = qinfo.dLowPrice;
 		m_pSqlCmd->Param(6).setAsDouble() = qinfo.dOpenPrice;
-		m_pSqlCmd->Param(7).setAsString() = tmpchar;
+		m_pSqlCmd->Param(7).setAsString() = qinfo.sDate;
 		m_pSqlCmd->Param(8).setAsLong() = qinfo.nContractNo;
 		
 		if (!m_pSqlCmd->Execute())
@@ -378,7 +344,7 @@ void RiskDll::UpdateSetllePrice(S_MDB_QUOTATION qinfo)
 void RiskDll::ProcRiskContract(S_MDB_QUOTATION qinfo,S_MDB_CONTRACT_INFO *pc)
 {
 	m_nBeginTime = CBF_Date_Time::GetTickUS();
-	unsigned int nVarietyNo;
+	unsigned int nVarietyNo=0;
 	switch (pc->sProd_type[0])
 	{
 		case PROD_TYPE_FUTURES:
@@ -387,10 +353,13 @@ void RiskDll::ProcRiskContract(S_MDB_QUOTATION qinfo,S_MDB_CONTRACT_INFO *pc)
 		case PROD_TYPE_SPOT:
 			nVarietyNo = pc->nProdId;
 			break;
+		case PROD_TYPE_BOND_BANK:
+		case PROD_TYPE_BOND:
 		case PROD_TYPE_SEC:
 			nVarietyNo = 0;
 			break;
 		case PROD_TYPE_OPTION:
+		case PROD_TYPE_OPTION_SEC:
 			S_MDB_CONTRACT_INFO *pc2 = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(pc->nProdId);
 			if (pc2 == NULL)
 			{
@@ -421,7 +390,6 @@ void RiskDll::ProcRiskContract(S_MDB_QUOTATION qinfo,S_MDB_CONTRACT_INFO *pc)
 	rinfo.dNewPrice = qinfo.dNewPrice;
 	rinfo.dSellPrice = qinfo.dSellPrice1;
 	rinfo.dUpDown = qinfo.dUpDown;
-	rinfo.dUpDownRate = qinfo.dUpDownRate;
 	rinfo.nDoneQty = qinfo.nDoneQty;
 	CBF_Date_Time pEnddate;
 	CBF_Date_Time pbegindate;
@@ -515,40 +483,30 @@ void RiskDll::ProcRiskContract(S_MDB_QUOTATION qinfo,S_MDB_CONTRACT_INFO *pc)
 	if (issend)
 	{
 		//发送风险合约通知
-		S_TRADE_DATA sdata;
-//		sdata.pData = (PBPCCOMMSTRU)m_pMemPool->PoolMalloc();
-		if (m_pClientLink->PoolMalloc(sdata)<0)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"PoolMalloc error");
-			return ;
-		}
 		m_pXdp->ResetData();
-		m_pXdp->SetFieldValue((unsigned short)20,(unsigned int)rinfo.nContractNo,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)100,rinfo.sContractCode,strlen(rinfo.sContractCode),m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)60,rinfo.dNewPrice,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)61,rinfo.dUpDown,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)62,rinfo.dUpDownRate,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)63,rinfo.dBuyPrice,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)64,rinfo.dSellPrice,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)65,rinfo.dHighPrice,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)66,rinfo.dLowPrice,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)21,(unsigned int)rinfo.nDoneQty,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)101,rinfo.sRiskDesc,strlen(rinfo.sRiskDesc),m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)102,rinfo.sRiskFlag,strlen(rinfo.sRiskFlag),m_sErrMsg);
-		unsigned int len = BPUDATASIZE;
-		if (!m_pXdp->ToBuffer(sdata.pData->sBuffer,len,m_sErrMsg))
+		m_pXdp->SetFieldValue((unsigned short)10,(unsigned int)rinfo.nContractNo,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)80,rinfo.sContractCode,strlen(rinfo.sContractCode),m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)50,rinfo.dNewPrice,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)51,rinfo.dUpDown,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)52,rinfo.dUpDownRate,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)53,rinfo.dBuyPrice,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)54,rinfo.dSellPrice,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)55,rinfo.dHighPrice,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)56,rinfo.dLowPrice,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)40,(UINT64_)rinfo.nDoneQty,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)81,rinfo.sRiskDesc,strlen(rinfo.sRiskDesc),m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)82,rinfo.sRiskFlag,strlen(rinfo.sRiskFlag),m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)83, m_pDate.ToStringD8().c_str(), m_pDate.ToStringD8().length(), m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)84, m_pDate.ToStringT6().c_str(), m_pDate.ToStringT6().length(), m_sErrMsg);
+		
+		char sBuffer[4096];
+		unsigned int len = sizeof(sBuffer);
+		if (!m_pXdp->ToBuffer(sBuffer,len,m_sErrMsg))
 		{
 			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Xdp ToBuffer error");
-			m_pClientLink->PoolFree(sdata);
 			return ;
 		}
-		bzero(&(sdata.pData->sDBHead),DREBHEADLEN);
-		sdata.pData->sDBHead.cRaflag = 0;
-		sdata.pData->sDBHead.cCmd = CMD_DPABC;
-		sdata.pData->sDBHead.d_Dinfo.d_nServiceNo = 9817;
-		sdata.src = 0;
-		sdata.pData->sDBHead.nLen = len;
-		m_pClientLink->Send2Client(sdata);
+		ReleaseBroadcast(sBuffer,len,0,0,9939);
 	}
 	m_nEndTime = CBF_Date_Time::GetTickUS();
 	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"计算风险合约完成 耗时[%ld]",m_nEndTime-m_nBeginTime);
@@ -570,8 +528,8 @@ void RiskDll::ProcRisk(S_MDB_QUOTATION info,S_MDB_CONTRACT_INFO *pc)
 		ComputeSurplus(info,pc,pPosiList[i]);
 	}
 	m_nEndTime = CBF_Date_Time::GetTickUS();
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"合约[%d %s]行情[%d %d]变化 计算盈亏耗时[%ld]微秒",pc->nContractId,pc->sContractCode,info.nDate,info.nQuoSerial,m_nEndTime-m_nBeginTime);
-	//计算完盈亏就行了，在另外的定时任务，根据m_pSurplusLockRowId去计算资金账号的风险度风险等级
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"合约[%d %s]行情[%s %s]变化 计算盈亏耗时[%ld]微秒",pc->nContractId,pc->sContractCode,info.sDate,info.sQuoSerial,m_nEndTime-m_nBeginTime);
+	//计算完盈亏就行了，在另外的定时任务，根据m_pSurplusLockRowId去计算交易账号的风险度风险等级
 }
 
 void RiskDll::ComputeSurplus(S_MDB_QUOTATION info, S_MDB_CONTRACT_INFO *pc, S_MDB_CUST_POSITION *posi)
@@ -585,7 +543,7 @@ void RiskDll::ComputeSurplus(S_MDB_QUOTATION info, S_MDB_CONTRACT_INFO *pc, S_MD
 	//更新客户的浮动盈亏到资金表
 	char fundflag = FUND_TYPE_FLOATSURPLUS;
 	char fundcode[7];
-	if (pc->sProd_type[0] == PROD_TYPE_FUTURES || pc->sProd_type[0] == PROD_TYPE_OPTION) 
+	if (pc->sProd_type[0] == PROD_TYPE_FUTURES || pc->sProd_type[0] == PROD_TYPE_OPTION || pc->sProd_type[0] == PROD_TYPE_OPTION_SEC)
 	{
 		//持仓
 		strcpy(fundcode,FUND_CODE_FLOATSURPLUS_POSI);
@@ -600,25 +558,6 @@ void RiskDll::ComputeSurplus(S_MDB_QUOTATION info, S_MDB_CONTRACT_INFO *pc, S_MD
 		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"UpdateFund 出错");
 		return;
 	}
-	//合计所有浮动盈亏
-	//double surplus =0.0;
-	//std::vector<S_MDB_CUST_POSITION *> posilist;
-	//if (!m_pMemDb->m_pDbTrader.m_pPosition.SelectByAcc(posi->sTxAcc,posilist))
-	//{
-	//	m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"取账户[%s]所有的持仓出错",posi->sTxAcc);
-	//	return;
-	//}
-	//for (int i=0; i<posilist.size(); i++)
-	//{
-	//	surplus +=posilist[i]->dDAY_PB_SURPLUS;
-	//	surplus +=posilist[i]->dDAY_PS_SURPLUS;
-	//}
-	//int rowid;
-	//if (!UpdateFundLock(posi->sTxAcc,fundflag,fundcode,surplus,false,rowid))
-	//{
-	//	m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"UpdateFund 出错");
-	//	return;
-	//}
 	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"已计算盈亏的客户锁表rowid %d",rowid);
 	MsgCustRiskCalc(rowid);
 	return ;
@@ -643,18 +582,20 @@ void RiskDll::ComputeCustRisk(int rowid)
 	S_MDB_TXACC_LOCK *info = m_pMemDb->SelectLock(rowid);
 	if (info == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号锁表rowid[%d]不存在",rowid);
+		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易账号锁表rowid[%d]不存在",rowid);
 		return ;
 	}
+	S_MDB_CUST_FUND* fund = m_pMemDb->GetFund(info);
 	std::vector<S_MDB_CUST_FUND *>fundlist;
-	if (!m_pMemDb->m_pDbTrader.m_pFund.Select(info->sTxAcc,fundlist))
+	if (fund == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号[%s] 在资金表里不存在",info->sTxAcc);
+		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易账号[%s] 在资金表里不存在",info->sTxAcc);
 		return ;
 	}
-	S_MDB_CUST_FUND *fund=NULL;
-	S_MDB_CUST_FUNDACC_INFO *fundacc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(info->nFundAccRowid);
-	if (fundacc == NULL)
+	fundlist.push_back(fund);
+	
+	S_MDB_TRADEACC_INFO *tradeacc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(info->nTradeAccRowid);
+	if (tradeacc == NULL)
 	{
 		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"fundacc 没找到");
 	}
@@ -697,7 +638,9 @@ void RiskDll::ComputeCustRisk(int rowid)
 		{
 			fund->dRisk = 1.00*(fund->dMargin+fund->dFrozeFund)/fund->dBalance;
 		}
-		
+		//计算持仓总规模
+		fund->dPosiTotalValue =  GetPosiTotalValue(tradeacc->sTxAcc);
+
 		strcpy(fund->sRiskDesc,"");
 		//取得风险级别
 		if (m_pKernelPub.GetRiskLevel(fund,sTradeRight)<0)
@@ -721,10 +664,10 @@ void RiskDll::ComputeCustRisk(int rowid)
 			m_pMemDb->m_pDbTrader.m_pRiskTick.Insert(risktick);
 		}
 		fund->sTradeRight[0] = sTradeRight[0];
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"计算资金账号[%s %s]风险度完成  风险度[%lf] 风险级别[%d] 交易权限[%s]",fund->sTxAcc,fund->sCurrency,fund->dRisk,fund->nRisk_level,fund->sTradeRight);
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"计算交易账号[%s %s]风险度完成  风险度[%lf] 风险级别[%d] 交易权限[%s]",fund->sTxAcc,fund->sCurrency,fund->dRisk,fund->nRisk_level,fund->sTradeRight);
 		if (oldrisklevel != fund->nRisk_level)
 		{
-			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送风险通知 资金账号[%s]  风险度[%lf] 风险级别[%d] 交易权限[%s]",fund->sTxAcc,fund->dRisk,fund->nRisk_level,fund->sTradeRight);
+			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送风险通知 交易账号[%s]  风险度[%lf] 风险级别[%d] 交易权限[%s]",fund->sTxAcc,fund->dRisk,fund->nRisk_level,fund->sTradeRight);
 			//风险级别不一样了，发送通知
 			SendRiskMsg(info,fund,sTradeRight[0]);
 		}
@@ -737,13 +680,13 @@ void RiskDll::ComputeCustPosiRisk(int rowid)
 	S_MDB_TXACC_LOCK *info = m_pMemDb->SelectLock(rowid);
 	if (info == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号锁表rowid[%d]不存在",rowid);
+		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易账号锁表rowid[%d]不存在",rowid);
 		return ;
 	}
-	S_MDB_CUST_FUNDACC_INFO *pFundAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(info->nFundAccRowid);
-	if (pFundAcc == NULL)
+	S_MDB_TRADEACC_INFO *pTradeAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(info->nTradeAccRowid);
+	if (pTradeAcc == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号rowid[%d]不存在",info->nFundAccRowid);
+		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易账号rowid[%d]不存在",info->nTradeAccRowid);
 		return ;
 	}
 	S_MDB_CUSTINFO *pCust= m_pMemDb->m_pDbCust.m_pCustom.At(info->nCustRowid);
@@ -756,18 +699,18 @@ void RiskDll::ComputeCustPosiRisk(int rowid)
 	std::vector<S_MDB_CUST_POSITION *> posilist;
 	if (!m_pMemDb->m_pDbTrader.m_pPosition.SelectByAcc(info->sTxAcc,posilist))
 	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号[%s]无持仓",info->sTxAcc);
+		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易账号[%s]无持仓",info->sTxAcc);
 		return;
 	}
-	//取资金账号对应的模板
+	//取交易账号对应的模板
 	S_MDB_CUST_TEMPLET_RELA *templet = m_pMemDb->m_pDbSet.m_pCustTemplet.Select(info->sTxAcc);
 	if (templet == NULL)
 	{
-		//没有找到资金账号对应的模板,取$对应的模板
+		//没有找到交易账号对应的模板,取$对应的模板
 		templet = m_pMemDb->m_pDbSet.m_pCustTemplet.Select("$");
 		if (templet == NULL)
 		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 没有对应的持仓模板 ",info->sTxAcc);
+			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s] 没有对应的持仓模板 ",info->sTxAcc);
 			return ;
 		}
 	}
@@ -919,92 +862,85 @@ void RiskDll::ComputeCustPosiRisk(int rowid)
 		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"账户[%s] 持仓[%d %s] 持仓风险计算完成 风险标志[%s %s] 是否发送[%d]",info->sTxAcc,posilist[i]->nContractNo,posilist[i]->sContractCode,risk->sRiskFlag,risk->sRiskDesc,issend);
 		if (issend)
 		{
-			// 		102	varrchar3	交易账号	20	Y	
-			// 			40	int1	风险等级	2	y	
-			// 			20	uint1	合约编号	9	y	
-			// 			104	varchar5	合约代码	20	Y	
-			// 			103	short1	投机保值	1	y	
-			// 			21	uint2	买持仓	10	y	
-			// 			22	uint3	卖持仓	10	y	
-			// 			101	varchar2	风险说明	80	y	
-			// 			102	varchar3	风险标志	1	y	'1'产生风险'0'取消风险
-			//106	varchar7	账户名称	40	y	
-			//	107	varchar8	风险模板代码	12	n	产生风险则有
-			//	108	varchar9	风险模板名称	40	n	产生风险则有
-			//	109	varchar10	客户号	10	y	
-			//	110	varchar11	所属机构	12	y	
-			//	111	varchar12	所属机构名称	40	y	
-			//	112	varchar12	代理机构	12	n	可为空
-			//	113	varchar13	代理机构名称	40	n	可为空
+            //80		交易账户	20	y
+            //    10		证券编号	10	y
+            //    81		证券代码	20	y
+            //    82		投保标志	1
+            //    30		多头持仓量	18
+            //    31		空头持仓量	18
+            //    83		风险标志	1	y	‘0’取消风险’1’产生风险
+            //    11		风险级别	2	y	数字越小，风险越高
+            //    84		风险说明	80	y	说明哪个指标产生风险
+            //    85		交易权限	1	y
+            //    86		账户名称	40	y
+            //    87		风险模板代码	12	y
+            //    88		风险模板名称	40	y
+            //    89		客户号	10	y
+            //    90		所属机构	12	y
+            //    91		所属机构名称	40	y
+            //    92		代理机构	12	n
+            //    93		代理机构名称	40	n
+            //	  94		日期	8	y
+            //    95		时间	8	y
 
 
 			char riskdata[1000];
 			unsigned int riskdatalen=sizeof(riskdata) ;
 			m_pXdp->ResetData();
-			m_pXdp->SetFieldValue((unsigned short)103,risk->sTxAcc,strlen(risk->sTxAcc),m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)40,(int)risk->nWarnLevel,m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)20,(unsigned int)risk->nContractNo,m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)104,risk->sContractCode,strlen(risk->sContractCode),m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)105,risk->sShFlag,strlen(risk->sShFlag),m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)21,(unsigned int)risk->nBuyQty,m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)22,(unsigned int)risk->nSellQty,m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)101,risk->sRiskDesc,strlen(risk->sRiskDesc),m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)102,risk->sRiskFlag,strlen(risk->sRiskFlag),m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)106,pFundAcc->sCustName,strlen(pFundAcc->sCustName),m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)107,templet->sPosiTempletId,strlen(templet->sPosiTempletId),m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)108,pPosiTemplet->sTempletName,strlen(pPosiTemplet->sTempletName),m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)109,pFundAcc->sCustNo,strlen(pFundAcc->sCustNo),m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)110,pFundAcc->sSignOrg,strlen(pFundAcc->sSignOrg),m_sErrMsg);
-			nRet = slist.FillSepString(pFundAcc->sCustSimpleName);
-			if (nRet !=2 )
-			{
-				m_pXdp->SetFieldValue((unsigned short)96,pFundAcc->sCustSimpleName,strlen(pFundAcc->sCustSimpleName),m_sErrMsg);
-			}
-			else
-			{
-				m_pXdp->SetFieldValue((unsigned short)96,(char *)slist.GetAt(0).c_str(),slist.GetAt(0).length(),m_sErrMsg);
-				m_pXdp->SetFieldValue((unsigned short)97,(char *)slist.GetAt(1).c_str(),slist.GetAt(1).length(),m_sErrMsg);
-			}
-
-			pOrg = m_pMemDb->m_pDbPublic.m_pOrg.Select(pFundAcc->sSignOrg);
+			m_pXdp->SetFieldValue((unsigned short)80,risk->sTxAcc,strlen(risk->sTxAcc),m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)10,(unsigned int)risk->nContractNo,m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)81,risk->sContractCode,strlen(risk->sContractCode),m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)82,risk->sShFlag,strlen(risk->sShFlag),m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)30,risk->nBuyQty,m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)31,risk->nSellQty,m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)83, risk->sRiskFlag, strlen(risk->sRiskFlag), m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)11, (int)risk->nWarnLevel, m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)84,risk->sRiskDesc,strlen(risk->sRiskDesc),m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)85, traderight, strlen(traderight), m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)86,pTradeAcc->sAccName,strlen(pTradeAcc->sAccName),m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)87,templet->sPosiTempletId,strlen(templet->sPosiTempletId),m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)88,pPosiTemplet->sTempletName,strlen(pPosiTemplet->sTempletName),m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)89,pTradeAcc->sCustNo,strlen(pTradeAcc->sCustNo),m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)90, pTradeAcc->sSignOrg,strlen(pTradeAcc->sSignOrg),m_sErrMsg);
+			
+			pOrg = m_pMemDb->m_pDbPublic.m_pOrg.Select(pTradeAcc->sSignOrg);
 			if (pOrg != NULL)
 			{
-				m_pXdp->SetFieldValue((unsigned short)111,pOrg->sOrgName,strlen(pOrg->sOrgName),m_sErrMsg);
+				m_pXdp->SetFieldValue((unsigned short)91,pOrg->sOrgName,strlen(pOrg->sOrgName),m_sErrMsg);
 			}
 			else
 			{
-				m_pXdp->SetFieldValue((unsigned short)111," ",1,m_sErrMsg);
+				m_pXdp->SetFieldValue((unsigned short)91," ",1,m_sErrMsg);
 			}
-			if (strlen(pFundAcc->sMgrOrg)<1)
+			if (strlen(pTradeAcc->sMgrOrg)<1)
 			{
-				m_pXdp->SetFieldValue((unsigned short)112," ",1,m_sErrMsg);
-				m_pXdp->SetFieldValue((unsigned short)113," ",1,m_sErrMsg);
+				m_pXdp->SetFieldValue((unsigned short)92," ",1,m_sErrMsg);
+				m_pXdp->SetFieldValue((unsigned short)93," ",1,m_sErrMsg);
 			}
 			else
 			{
-				m_pXdp->SetFieldValue((unsigned short)112,pFundAcc->sMgrOrg,strlen(pFundAcc->sMgrOrg),m_sErrMsg);
-				pOrg = m_pMemDb->m_pDbPublic.m_pOrg.Select(pFundAcc->sMgrOrg);
+				m_pXdp->SetFieldValue((unsigned short)92, pTradeAcc->sMgrOrg,strlen(pTradeAcc->sMgrOrg),m_sErrMsg);
+				pOrg = m_pMemDb->m_pDbPublic.m_pOrg.Select(pTradeAcc->sMgrOrg);
 				if (pOrg != NULL)
 				{
-					m_pXdp->SetFieldValue((unsigned short)113,pOrg->sOrgName,strlen(pOrg->sOrgName),m_sErrMsg);
+					m_pXdp->SetFieldValue((unsigned short)93,pOrg->sOrgName,strlen(pOrg->sOrgName),m_sErrMsg);
 				}
 				else
 				{
-					m_pXdp->SetFieldValue((unsigned short)113," ",1,m_sErrMsg);
+					m_pXdp->SetFieldValue((unsigned short)93," ",1,m_sErrMsg);
 				}
 			}
-			m_pXdp->SetFieldValue((unsigned short)38,risk->nRiskdate,m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)39,risk->nRisktime,m_sErrMsg);
-			m_pXdp->SetFieldValue((unsigned short)115,pFundAcc->sCustName,strlen(pFundAcc->sCustName),m_sErrMsg);
-
+            char tmpchar[30];
+            sprintf(tmpchar, "%ld", risk->nRiskdate);
+            m_pXdp->SetFieldValue((unsigned short)94, tmpchar, strlen(tmpchar), m_sErrMsg);
+            sprintf(tmpchar, "%ld", risk->nRisktime);
+            m_pXdp->SetFieldValue((unsigned short)95, tmpchar, strlen(tmpchar), m_sErrMsg);
 			if (!m_pXdp->ToBuffer(riskdata,riskdatalen,m_sErrMsg))
 			{
 				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Xdp ToBuffer error %s",m_sErrMsg);
 				return;
 			}
-			Send2CustRiskMsg(info,traderight[0],riskdata,riskdatalen,9844);
-			Send2OperRiskMsg(info,traderight[0],riskdata,riskdatalen,9844);
-			Send2PgSync(info,riskdata,riskdatalen,9844);
+			ReleaseBroadcast(riskdata,riskdatalen,atoi(risk->sTxAcc),0,9931);
 			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"发送账户[%s]持仓风险通知完成",info->sTxAcc);
 		}
 	}
@@ -1016,15 +952,15 @@ void RiskDll::SendRiskMsg(S_MDB_TXACC_LOCK *acc,S_MDB_CUST_FUND *fund, char trad
 {
 	if (*g_nSvrHostStatus != 	ARBSTATUS_MASTER && *g_nSvrHostStatus != ARBSTATUS_MASTER_AYN && *g_nSvrHostStatus!=MASTERHOST)
 	{
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"Send2CustRiskMsg 不是主机，略过");
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"SendRiskMsg 不是主机，略过");
 		return;
 	}
 	m_pXdp->ResetData();
 
-	S_MDB_CUST_FUNDACC_INFO *pFundAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(acc->nFundAccRowid);
+	S_MDB_TRADEACC_INFO *pFundAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(acc->nTradeAccRowid);
 	if (pFundAcc == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号rowid[%d]不存在",acc->nFundAccRowid);
+		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易账号rowid[%d]不存在",acc->nTradeAccRowid);
 		return ;
 	}
 	S_MDB_CUSTINFO *pCust= m_pMemDb->m_pDbCust.m_pCustom.At(acc->nCustRowid);
@@ -1037,19 +973,22 @@ void RiskDll::SendRiskMsg(S_MDB_TXACC_LOCK *acc,S_MDB_CUST_FUND *fund, char trad
 	char sRiskTempletName[41];
 	bzero(sRiskTempletId,sizeof(sRiskTempletId));
 	bzero(sRiskTempletName,sizeof(sRiskTempletName));
-	//取资金账号对应的模板
+	//取交易账号对应的模板
 	S_MDB_CUST_TEMPLET_RELA *templet = m_pMemDb->m_pDbSet.m_pCustTemplet.Select(acc->sTxAcc);
 	if (templet == NULL)
 	{
-		//没有找到资金账号对应的模板,取$对应的模板
+		//没有找到交易账号对应的模板,取$对应的模板
 		templet = m_pMemDb->m_pDbSet.m_pCustTemplet.Select("$");
 		if (templet == NULL)
 		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 没有对应的持仓模板 ",acc->sTxAcc);
+			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s] 没有对应的持仓模板 ",acc->sTxAcc);
 		}
-		strcpy(sRiskTempletId,templet->sFundTempletId);
+		else
+		{
+			strcpy(sRiskTempletId, templet->sFundTempletId);
+		}
 	}
-	else
+	if (templet != NULL)
 	{
 		S_MDB_TEMPLET_INFO *pFundTemplet = m_pMemDb->m_pDbSet.m_pFundTemplet.Select(templet->sFundTempletId);
 		if (pFundTemplet == NULL)
@@ -1061,86 +1000,79 @@ void RiskDll::SendRiskMsg(S_MDB_TXACC_LOCK *acc,S_MDB_CUST_FUND *fund, char trad
 			strcpy(sRiskTempletName,pFundTemplet->sTempletName);
 		}
 	}
-	
 	//根据模板ID，从持仓模板设置表查找
 	S_MDB_ORG_INFO *pOrg = NULL;
-	// 	102	varrchar3	交易账号	20	Y	
-	// 	103	varrchar4	币种	1	Y	
-	// 		60	double1	风险度	18.4	y	
-	// 		40	int1	风险等级	2	y	
-	// 		61	double2	可用资金	18.4	y	
-	// 		62	double3	可提资金	18.4	y	
-	// 		63	double4	保证金	18.4	y	
-	// 		64	double5	客户权益	18.4	y	
-	//	101	varchar2	风险说明	80	y
+        //80		交易账户	20	y
+        //81		币种	20	y
+        //50		风险度	18.4	y
+        //10		风险级别	2	y	数字越小，风险越高
+        //82		交易权限	1	y
+        //83		风险标志	1	y	‘0’取消风险’1’产生风险
+        //84		风险说明	80	y	说明哪个指标产生风险
+        //51		可用资金	18.4	y
+        //52		可提资金	18.4	y
+        //53		保证金	18.4	y
+		//53		权益	18.4	y
+        //85		账户名称	40	y
+        //86		风险模板代码	12	y
+        //87		风险模板名称	40	y
+        //88		所属机构	12	y
+        //89		所属机构名称	40	y
+        //90		代理机构	12	n
+        //91		代理机构名称	40	n
+        //92		客户号	10	y
+        // 93		日期	8	y	
+		//94		时间	8	y
 
-	//106	varchar7	账户名称	40	y	
-	//	107	varchar8	风险模板代码	12	n	产生风险则有
-	//	108	varchar9	风险模板名称	40	n	产生风险则有
-	//109	varchar10	客户号	10	y	
-	//	110	varchar11	所属机构	12	y	
-	//	111	varchar12	所属机构名称	40	y	
-	//	112	varchar12	代理机构	12	n	可为空
-	//	113	varchar13	代理机构名称	40	n	可为空
-	CBF_Slist slist;
-	slist.SetSeparateString("-");
 	//设置值
-	m_pXdp->SetFieldValue((unsigned short)102,fund->sTxAcc,strlen(fund->sTxAcc),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)103,fund->sCurrency,strlen(fund->sCurrency),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)60,fund->dRisk,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)40,(int)fund->nRisk_level,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)61,fund->dAvailFund,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)62,fund->dGetFund,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)63,fund->dMargin,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)64,fund->dBalance,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)101,fund->sRiskDesc,strlen(fund->sRiskDesc),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)106,pFundAcc->sCustName,strlen(pFundAcc->sCustName),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)107,sRiskTempletId,strlen(sRiskTempletId),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)108,sRiskTempletName,strlen(sRiskTempletName),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)109,pFundAcc->sCustNo,strlen(pFundAcc->sCustNo),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)110,pFundAcc->sSignOrg,strlen(pFundAcc->sSignOrg),m_sErrMsg);
-	//brokerid-客户号
-	int nRet = slist.FillSepString(pFundAcc->sCustSimpleName);
-	if (nRet !=2 )
-	{
-		m_pXdp->SetFieldValue((unsigned short)96,pFundAcc->sCustSimpleName,strlen(pFundAcc->sCustSimpleName),m_sErrMsg);
-	}
-	else
-	{
-		m_pXdp->SetFieldValue((unsigned short)96,(char *)slist.GetAt(0).c_str(),slist.GetAt(0).length(),m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)97,(char *)slist.GetAt(1).c_str(),slist.GetAt(1).length(),m_sErrMsg);
-	}
-	
+	m_pXdp->SetFieldValue((unsigned short)80,fund->sTxAcc,strlen(fund->sTxAcc),m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)81,fund->sCurrency,strlen(fund->sCurrency),m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)82,fund->sTradeRight, strlen(fund->sTradeRight), m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)50,fund->dRisk,m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)10,(int)fund->nRisk_level,m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)51,fund->dAvailFund,m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)52,fund->dGetFund,m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)53,fund->dMargin,m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)54,fund->dBalance,m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)84,fund->sRiskDesc,strlen(fund->sRiskDesc),m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)85,pFundAcc->sAccName,strlen(pFundAcc->sAccName),m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)86,sRiskTempletId,strlen(sRiskTempletId),m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)87,sRiskTempletName,strlen(sRiskTempletName),m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)92,pFundAcc->sCustNo,strlen(pFundAcc->sCustNo),m_sErrMsg);
+	m_pXdp->SetFieldValue((unsigned short)88,pFundAcc->sSignOrg,strlen(pFundAcc->sSignOrg),m_sErrMsg);
 	pOrg = m_pMemDb->m_pDbPublic.m_pOrg.Select(pFundAcc->sSignOrg);
 	if (pOrg != NULL)
 	{
-		m_pXdp->SetFieldValue((unsigned short)111,pOrg->sOrgName,strlen(pOrg->sOrgName),m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)89,pOrg->sOrgName,strlen(pOrg->sOrgName),m_sErrMsg);
 	}
 	else
 	{
-		m_pXdp->SetFieldValue((unsigned short)111," ",1,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)89," ",1,m_sErrMsg);
 	}
 	if (strlen(pFundAcc->sMgrOrg)<1)
 	{
-		m_pXdp->SetFieldValue((unsigned short)112," ",1,m_sErrMsg);
-		m_pXdp->SetFieldValue((unsigned short)113," ",1,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)90," ",1,m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)91," ",1,m_sErrMsg);
 	}
 	else
 	{
-		m_pXdp->SetFieldValue((unsigned short)112,pFundAcc->sMgrOrg,strlen(pFundAcc->sMgrOrg),m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)90,pFundAcc->sMgrOrg,strlen(pFundAcc->sMgrOrg),m_sErrMsg);
 		pOrg = m_pMemDb->m_pDbPublic.m_pOrg.Select(pFundAcc->sMgrOrg);
 		if (pOrg != NULL)
 		{
-			m_pXdp->SetFieldValue((unsigned short)113,pOrg->sOrgName,strlen(pOrg->sOrgName),m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)91,pOrg->sOrgName,strlen(pOrg->sOrgName),m_sErrMsg);
 		}
 		else
 		{
-			m_pXdp->SetFieldValue((unsigned short)113," ",1,m_sErrMsg);
+			m_pXdp->SetFieldValue((unsigned short)91," ",1,m_sErrMsg);
 		}
 	}
-	m_pXdp->SetFieldValue((unsigned short)38,fund->nRiskdate,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)39,fund->nRisktime,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)115,pFundAcc->sCustName,strlen(pFundAcc->sCustName),m_sErrMsg);
+	char tmpchar[30];
+	sprintf(tmpchar,"%ld", fund->nRiskdate);
+	m_pXdp->SetFieldValue((unsigned short)93, tmpchar,strlen(tmpchar),m_sErrMsg);
+    sprintf(tmpchar, "%ld", fund->nRisktime);
+    m_pXdp->SetFieldValue((unsigned short)94, tmpchar, strlen(tmpchar), m_sErrMsg);
+	
 	char sRiskdata[1000];
 	unsigned int len = sizeof(sRiskdata);
 	if (!m_pXdp->ToBuffer(sRiskdata,len,m_sErrMsg))
@@ -1148,248 +1080,9 @@ void RiskDll::SendRiskMsg(S_MDB_TXACC_LOCK *acc,S_MDB_CUST_FUND *fund, char trad
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Xdp ToBuffer error");
 		return ;
 	}
-	//发送给此客户，若客户已登录
-	Send2CustRiskMsg(acc,traderight,sRiskdata,len,9802);
-	//发送给操作员，代理该客户的操作员或该客户的上级机构操作员，操作员已登录且订阅了消息
-	Send2OperRiskMsg(acc,traderight,sRiskdata,len,9802);
-	Send2PgSync(acc,sRiskdata,len,9802);
+	ReleaseBroadcast(sRiskdata,len,atoi(fund->sTxAcc),0,9930);
 	
 }
-void RiskDll::Send2PgSync(S_MDB_TXACC_LOCK *acc,const char *riskdata,int riskdatalen,int funcno)
-{
-	S_TRADE_DATA sdata;
-	
-	S_MDB_CUST_FUNDACC_INFO *pCustFuncAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(acc->nFundAccRowid);
-	if (pCustFuncAcc == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号rowid[%d]不存在",acc->nFundAccRowid);
-		return ;
-	}
-	S_MDB_BROKERAGE_INFO *pbrok = m_pMemDb->m_pDbSet.m_pBrokerage.Select(pCustFuncAcc->nSysId);
-	if (pbrok == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号无所属经纪公司[%d]",pCustFuncAcc->nSysId);
-		return ;
-	}
-	
-	int drebsvrid;
-	if (pbrok->nClearFlag == 0) //对接的是柜台
-	{
-		drebsvrid = pbrok->nSvrId;
-	}
-	else if (pbrok->nClearFlag == 2) //对接的是柜台
-	{
-		CBF_Slist slist;
-		slist.SetSeparateString("-");
-		S_MDB_BROKERAGE_PG *pginfo =NULL;
-		//brokerid-客户号
-		int nRet = slist.FillSepString(pCustFuncAcc->sCustSimpleName);
-		if (nRet !=2 )
-		{
-			pginfo = m_pMemDb->m_pDbSet.m_pBrokeragePg.Select(pCustFuncAcc->nSysId,pCustFuncAcc->sCustSimpleName);
-		}
-		else
-		{
-			pginfo = m_pMemDb->m_pDbSet.m_pBrokeragePg.Select(pCustFuncAcc->nSysId,(char *)slist.GetAt(0).c_str());
-		}
-		if (pginfo == NULL)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置为连接多个PG，但BROKERAGE_PG表里无pg配置[%d %s]",pCustFuncAcc->nSysId,pCustFuncAcc->sCustSimpleName);
-			return ;
-		}
-		drebsvrid = pginfo->nSvrId;
-	}
-	else
-	{
-		return ;
-	}
-	if (m_pClientLink->PoolMalloc(sdata)<0)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"PoolMalloc error");
-		return ;
-	}
-	bzero(&(sdata.pData->sDBHead),DREBHEADLEN);
-
-	memcpy(sdata.pData->sBuffer,riskdata,riskdatalen);
-	sdata.pData->sDBHead.nLen = riskdatalen;
-
-
-	sdata.pData->sDBHead.cRaflag = 0;
-	//sdata.pData->sDBHead.cCmd = CMD_DPPUSH;
-	sdata.pData->sDBHead.cCmd = CMD_DPABC;
-	sdata.pData->sDBHead.d_Dinfo.d_nServiceNo = funcno;
-	
-	sdata.src = 0;
-	sdata.pData->sDBHead.d_Dinfo.d_nNodeId = 0;
-	sdata.pData->sDBHead.d_Dinfo.d_cNodePrivateId = 0;
-	sdata.pData->sDBHead.d_Dinfo.d_nSvrMainId = drebsvrid;
-	sdata.pData->sDBHead.d_Dinfo.d_cSvrPrivateId = 0;
-	sdata.pData->sDBHead.s_Sinfo.s_nGateIndex = 0;
-	sdata.pData->sDBHead.s_Sinfo.s_nHook = 0;
-	m_pClientLink->Send2Client(sdata);
-	return;
-}
-void RiskDll::Send2CustRiskMsg(S_MDB_TXACC_LOCK *acc, char traderight,const char *riskdata,int riskdatalen,int funcno)
-{
-// 	if (*g_nSvrHostStatus != 	ARBSTATUS_MASTER && *g_nSvrHostStatus != ARBSTATUS_MASTER_AYN && *g_nSvrHostStatus!=MASTERHOST)
-// 	{
-// 		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"Send2CustRiskMsg 不是主机，略过");
-// 		return;
-// 	}
-	S_TRADE_DATA sdata;
-	//查找登录表，推送风险消息
-	S_MDB_CUSTINFO *cust=	m_pMemDb->m_pDbCust.m_pCustom.At(acc->nCustRowid);
-	if (cust == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"SendRiskMsg cust is NULL");
-		return;
-	}
-	std::vector<S_MDB_CUST_ONLINE *> onlist;
-	bool bret = m_pMemDb->m_pDbTrader.m_pCustOnline.Select(cust->sCustNo,onlist);
-	if (!bret)
-	{
-		return;
-	}
-
-	for (int i=0; i<onlist.size();i++)
-	{
-		if (onlist[i]->sOnlineStatus[0] != LOGIN_STATUS_OK)
-		{
-			continue;
-		}
-//		sdata.pData = (PBPCCOMMSTRU)m_pMemPool->PoolMalloc();
-		if (m_pClientLink->PoolMalloc(sdata)<0)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"PoolMalloc error");
-			return ;
-		}
-		bzero(&(sdata.pData->sDBHead),DREBHEADLEN);
-
-		memcpy(sdata.pData->sBuffer,riskdata,riskdatalen);
-		sdata.pData->sDBHead.nLen = riskdatalen;
-
-		
-		sdata.pData->sDBHead.cRaflag = 0;
-		sdata.pData->sDBHead.cCmd = CMD_DPPUSH;
-		sdata.pData->sDBHead.d_Dinfo.d_nServiceNo = funcno;
-		if (strcmp(onlist[i]->sTermType,TERM_TYPE_RPCAPI) ==0)
-		{
-			//socket
-			sdata.src = 1;
-			sdata.pData->sBpcHead.nIndex = onlist[i]->nGateIndex;
-			sdata.pData->sBpcHead.nConnectTime = onlist[i]->nTimeStamp;
-		}
-		else //总线
-		{
-			sdata.src = 0;
-			sdata.pData->sDBHead.d_Dinfo.d_nNodeId = onlist[i]->nDrebId;
-			sdata.pData->sDBHead.d_Dinfo.d_cNodePrivateId = onlist[i]->nDrebPid;
-			sdata.pData->sDBHead.d_Dinfo.d_nSvrMainId = onlist[i]->nSvrId;
-			sdata.pData->sDBHead.d_Dinfo.d_cSvrPrivateId = onlist[i]->nSvrPid;
-			sdata.pData->sDBHead.s_Sinfo.s_nGateIndex = onlist[i]->nGateIndex;
-			sdata.pData->sDBHead.s_Sinfo.s_nHook = onlist[i]->nTimeStamp;
-			
-		}
-		m_pClientLink->Send2Client(sdata);
-	}
-}
-
-void RiskDll::Send2OperRiskMsg(S_MDB_TXACC_LOCK *acc, char traderight,const char *riskdata,int riskdatalen,int funcno)
-{
-// 	if (*g_nSvrHostStatus != 	ARBSTATUS_MASTER && *g_nSvrHostStatus != ARBSTATUS_MASTER_AYN && *g_nSvrHostStatus!=MASTERHOST)
-// 	{
-// 		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"Send2CustRiskMsg 不是主机，略过");
-// 		return;
-// 	}
-	//发送给操作员，代理该客户的操作员或该客户的上级机构操作员，操作员已登录且订阅了消息
-	
-	S_MDB_CUST_FUNDACC_INFO *pcust = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(acc->nFundAccRowid);
-	if (pcust == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号为空 [%d]",acc->nFundAccRowid);
-		return;
-	}
-	//资金账号所属机构
-	int len = strlen(pcust->sSignOrg);
-	//查找在线并且订阅了风险的操作员
-	std::vector<S_MDB_SUBSCRIBE *> sublist;
-	if (!m_pMemDb->m_pDbTrader.m_pSubcribe.Select((char *)"0",sublist))
-	{
-		return;
-	}
-	S_MDB_SUBSCRIBE  *psub=NULL;
-	int i,j;
-	std::vector<S_MDB_OPER_ONLINE *> onlist;
-	for (i=0;i<sublist.size(); i++)
-	{
-		//查看操作员是否在线，是否有权限
-		onlist.clear();
-		psub = sublist[i];
-		if (!m_pMemDb->m_pDbPublic.m_pOperOnline.Select(sublist[i]->sOper,onlist))
-		{
-			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"订阅风险的操作员[%s] 没有登录",sublist[i]->sOper);
-			continue;
-		}
-		for (j=0 ; j<onlist.size(); j++)
-		{
-			//是否登录
-			if (onlist[j]->sOnlineStatus[0] != LOGIN_STATUS_OK )
-			{
-				continue;
-			}
-			//查找操作员机构
-			S_MDB_OPER_INFO *poper = m_pMemDb->m_pDbPublic.m_pOper.Select(onlist[j]->sOperCode);
-			if (poper== NULL)
-			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]在操作员表中不存在",onlist[j]->sOperCode);
-				continue;
-			}
-			//查看机构是否有权限
-			if (m_pKernelPub.CheckRight(pcust->sSignOrg,poper->sOrgCode))
-			{
-				S_TRADE_DATA sdata;
-				//有权限，发送报文
-//				sdata.pData = (PBPCCOMMSTRU)m_pMemPool->PoolMalloc();
-				if (m_pClientLink->PoolMalloc(sdata)<0)
-				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"PoolMalloc error");
-					return ;
-				}
-				bzero(&(sdata.pData->sDBHead),DREBHEADLEN);
-				
-				memcpy(sdata.pData->sBuffer,riskdata,riskdatalen);
-				sdata.pData->sDBHead.nLen = riskdatalen;
-				
-				
-				sdata.pData->sDBHead.cRaflag = 0;
-				sdata.pData->sDBHead.cCmd = CMD_DPPUSH;
-				sdata.pData->sDBHead.d_Dinfo.d_nServiceNo = funcno;
-				if (strcmp(onlist[j]->sTermType,TERM_TYPE_RPCAPI) ==0)
-				{
-					//socket
-					sdata.src = 1;
-					sdata.pData->sBpcHead.nIndex = onlist[j]->nGateIndex;
-					sdata.pData->sBpcHead.nConnectTime = onlist[j]->nTimeStamp;
-				}
-				else //总线
-				{
-					sdata.src = 0;
-					sdata.pData->sDBHead.d_Dinfo.d_nNodeId = onlist[j]->nDrebId;
-					sdata.pData->sDBHead.d_Dinfo.d_cNodePrivateId = onlist[j]->nDrebPid;
-					sdata.pData->sDBHead.d_Dinfo.d_nSvrMainId = onlist[j]->nSvrId;
-					sdata.pData->sDBHead.d_Dinfo.d_cSvrPrivateId = onlist[j]->nSvrPid;
-					sdata.pData->sDBHead.s_Sinfo.s_nGateIndex = onlist[j]->nGateIndex;
-					sdata.pData->sDBHead.s_Sinfo.s_nHook = onlist[j]->nTimeStamp;
-					
-				}
-				m_pClientLink->Send2Client(sdata);
-			}
-		}
-	}
-	
-}
-
-
 
 int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 {
@@ -1412,9 +1105,7 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 	//116	varchar17	机构	12	n	按操作员查询时可选
 	//	58	int19	是否包含下属机构	1	n	0不包括 1包括下属机构
 
-	
-	
-	char sTxAcc[21];//资金账号
+	char sTxAcc[21];//交易账号
 	int  nFlag; //0客户 1操作员
 	char sOper[21];//操作员/客户号
 	char sLocalSerial[38];//本地报单号
@@ -1438,11 +1129,11 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 	int fieldtype;
 	
 	std::vector<S_MDB_ORDER_INFO *> reslist;
-	std::vector<S_MDB_CUST_FUNDACC_INFO *> fundacclist;
+	std::vector<S_MDB_TRADEACC_INFO *> fundacclist;
 	std::vector<S_MDB_ORG_INFO *> orglist;
 	CInt acclist;
 	S_MDB_ORG_INFO *pOrgTmp=NULL;
-	S_MDB_CUST_FUNDACC_INFO *pCustAccTmp=NULL;
+	S_MDB_TRADEACC_INFO *pCustAccTmp=NULL;
 	
 
 	if (!m_pXdp->GetFieldValue((unsigned short)59,nFlag,m_sErrMsg))
@@ -1487,19 +1178,19 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 			return -1;
 		}
 	}
-	S_MDB_CUST_FUNDACC_INFO *pacc=NULL;
+	S_MDB_TRADEACC_INFO *pacc=NULL;
 	S_MDB_ORDER_INFO *pordertmp=NULL;
 	if (nFlag == 0)//客户
 	{
 		if (strlen(sTxAcc)>0)
 		{
 
-			pacc = m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAcc(sTxAcc);
+			pacc = m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAcc(sTxAcc);
 			if (pacc == NULL)
 			{
 				data.pData->sDBHead.nLen = 0;
 				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NOTFOUND;
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号 [%s]没有找到",sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号 [%s]没有找到",sTxAcc);
 				AnsData(data);
 				return -1;
 			}
@@ -1507,13 +1198,13 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 			{
 				data.pData->sDBHead.nLen = 0;
 				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NO_RIGHT;
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s]不属于客户[%s]",sTxAcc,sOper);
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s]不属于客户[%s]",sTxAcc,sOper);
 				AnsData(data);
 				return -1;
 			}
 			m_pMemDb->m_pDbTrader.m_pOrder.SelectByAcc(sTxAcc,reslist);
 		}
-		else //没有输入资金账号 按报单号
+		else //没有输入交易账号 按报单号
 		{
 			if (strlen(sLocalSerial)>0)
 			{
@@ -1522,12 +1213,12 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 				if (pordertmp != NULL)
 				{
 					//是否有权限
-					pacc = m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAcc(pordertmp->sTxAcc);
+					pacc = m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAcc(pordertmp->sTxAcc);
 					if (pacc == NULL)
 					{
 						data.pData->sDBHead.nLen = 0;
 						data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NOTFOUND;
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号 [%s]没有找到",pordertmp->sTxAcc);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号 [%s]没有找到",pordertmp->sTxAcc);
 						AnsData(data);
 						return -1;
 					}
@@ -1535,7 +1226,7 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 					{
 						data.pData->sDBHead.nLen = 0;
 						data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NO_RIGHT;
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s]不属于客户[%s]",pordertmp->sTxAcc,sOper);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s]不属于客户[%s]",pordertmp->sTxAcc,sOper);
 						AnsData(data);
 						return -1;
 					}
@@ -1548,12 +1239,12 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 				if (m_pMemDb->m_pDbTrader.m_pOrder.SelectByClient(sClientSerial,reslist))
 				{
 					//是否有权限
-					pacc = m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAcc(reslist[0]->sTxAcc);
+					pacc = m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAcc(reslist[0]->sTxAcc);
 					if (pacc == NULL)
 					{
 						data.pData->sDBHead.nLen = 0;
 						data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NOTFOUND;
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号 [%s]没有找到",reslist[0]->sTxAcc);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号 [%s]没有找到",reslist[0]->sTxAcc);
 						AnsData(data);
 						return -1;
 					}
@@ -1561,7 +1252,7 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 					{
 						data.pData->sDBHead.nLen = 0;
 						data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NO_RIGHT;
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s]不属于客户[%s]",reslist[0]->sTxAcc,sOper);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s]不属于客户[%s]",reslist[0]->sTxAcc,sOper);
 						AnsData(data);
 						return -1;
 					}
@@ -1570,11 +1261,11 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 			else
 			{
 				//按客户号
-				if (!m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByCust(sOper,fundacclist))
+				if (!m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByCust(sOper,fundacclist))
 				{
 					data.pData->sDBHead.nLen = 0;
 					data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NOTFOUND;
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"客户号[%s]无所属资金账号",sOper);
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"客户号[%s]无所属交易账号",sOper);
 					AnsData(data);
 					return -1;
 				}
@@ -1594,13 +1285,13 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 			{
 				data.pData->sDBHead.nLen = 0;
 				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NO_RIGHT;
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]无资金账号[%s]权限",sOper,sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]无交易账号[%s]权限",sOper,sTxAcc);
 				AnsData(data);
 				return -1;
 			}
 			m_pMemDb->m_pDbTrader.m_pOrder.SelectByAcc(sTxAcc,reslist);
 		}
-		else //没有输入资金账号 
+		else //没有输入交易账号 
 		{
 			if (strlen(sLocalSerial)>0)
 			{
@@ -1613,7 +1304,7 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 					{
 						data.pData->sDBHead.nLen = 0;
 						data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NO_RIGHT;
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]无资金账号[%s]权限",sOper,pordertmp->sTxAcc);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]无交易账号[%s]权限",sOper,pordertmp->sTxAcc);
 						AnsData(data);
 						return -1;
 					}
@@ -1630,7 +1321,7 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 					{
 						data.pData->sDBHead.nLen = 0;
 						data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NO_RIGHT;
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]无资金账号[%s]权限",sOper,reslist[0]->sTxAcc);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]无交易账号[%s]权限",sOper,reslist[0]->sTxAcc);
 						AnsData(data);
 						return -1;
 					}
@@ -1668,7 +1359,7 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 						if (nRet == 1) //顶级机构
 						{
 							//取所有的资金账户
-							m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectAll(acclist);
+							m_pMemDb->m_pDbCust.m_pTradeAcc.SelectAll(acclist);
 						}
 						else
 						{
@@ -1676,23 +1367,23 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 							for (i=0; i<orglist.size();i++)
 							{
 								//查询此机构下面的客户 所属机构
-								m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAccOrg(orglist[i]->sOrgCode,acclist);
+								m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAccOrg(orglist[i]->sOrgCode,acclist);
 								//代理机构
-								m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByMgrOrg(orglist[i]->sOrgCode,acclist);
+								m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByMgrOrg(orglist[i]->sOrgCode,acclist);
 							}
 						}
 					}
 					else
 					{
 						//查询此机构下面的客户 所属机构
-						if (!m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAccOrg(sOrgCode,acclist))
+						if (!m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAccOrg(sOrgCode,acclist))
 						{
-							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"机构[%s]下无资金账号",sOrgCode);
+							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"机构[%s]下无交易账号",sOrgCode);
 							}
 						//代理机构
-						if (!m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByMgrOrg(sOrgCode,acclist))
+						if (!m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByMgrOrg(sOrgCode,acclist))
 						{
-							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"机构[%s]下无资金账号",sOrgCode);
+							m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"机构[%s]下无交易账号",sOrgCode);
 						}
 					}
 					bRet = acclist.First(rid);
@@ -1700,7 +1391,7 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 					{
 						data.pData->sDBHead.nLen = 0;
 						data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NOTFOUND;
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"机构[%s]没有资金账号",sOrgCode);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"机构[%s]没有交易账号",sOrgCode);
 						AnsData(data);
 						return -1;
 					}
@@ -1721,21 +1412,21 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]的机构[%s]在机构表无记录",sOper,poper->sOrgCode);
 						return false;
 					}
-					if (!m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAccOrg(operorg->sOrgCode,acclist))
+					if (!m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAccOrg(operorg->sOrgCode,acclist))
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]所属机构[%s]下无资金账号",sOper,operorg->sOrgCode);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]所属机构[%s]下无交易账号",sOper,operorg->sOrgCode);
 					}
 					//代理机构
-					if (!m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByMgrOrg(operorg->sOrgCode,acclist))
+					if (!m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByMgrOrg(operorg->sOrgCode,acclist))
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]所属机构[%s]下无资金账号",sOper,sOrgCode);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]所属机构[%s]下无交易账号",sOper,sOrgCode);
 					}
 					bRet = acclist.First(rid);
 					if (!bRet)
 					{
 						data.pData->sDBHead.nLen = 0;
 						data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NOTFOUND;
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"机构[%s]没有资金账号",sOrgCode);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"机构[%s]没有交易账号",sOrgCode);
 						AnsData(data);
 						return -1;
 					}
@@ -1743,7 +1434,7 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 				while (bRet)
 				{
 					//查询报单
-					m_pMemDb->m_pDbTrader.m_pOrder.SelectByAcc(m_pMemDb->m_pDbCust.m_pCustFundAcc.At(rid)->sTxAcc,reslist);
+					m_pMemDb->m_pDbTrader.m_pOrder.SelectByAcc(m_pMemDb->m_pDbCust.m_pTradeAcc.At(rid)->sTxAcc,reslist);
 					bRet = acclist.Next(rid);
 				}
 
@@ -1752,7 +1443,7 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 	}
 	
 	int curNum=0;
-	S_MDB_CUST_FUNDACC_INFO *pFundAcc=NULL;
+	S_MDB_TRADEACC_INFO *pFundAcc=NULL;
 	//找出来结果了，是否分页查询
 	if (bIsPage)
 	{
@@ -1805,10 +1496,10 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 				m_pXdp->SetFieldValue((unsigned short)curNum+1,(unsigned short)65,reslist[i]->dFrozOutamt,m_sErrMsg);
 				m_pXdp->SetFieldValue((unsigned short)curNum+1,(unsigned short)23,(unsigned int)reslist[i]->nCancelNum,m_sErrMsg);
 				m_pXdp->SetFieldValue((unsigned short)curNum+1,(unsigned short)66,reslist[i]->dDoneAvp,m_sErrMsg);
-				pFundAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAcc(reslist[i]->sTxAcc);
+				pFundAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAcc(reslist[i]->sTxAcc);
 				if (pFundAcc != NULL)
 				{
-					m_pXdp->SetFieldValue((unsigned short)curNum+1,(unsigned short)119,pFundAcc->sCustName,strlen(pFundAcc->sCustName),m_sErrMsg);
+					m_pXdp->SetFieldValue((unsigned short)curNum+1,(unsigned short)119,pFundAcc->sAccName,strlen(pFundAcc->sAccName),m_sErrMsg);
 				}
 				curNum++;
 			}
@@ -1857,10 +1548,10 @@ int RiskDll::QueryCustOrder(S_TRADE_DATA &data)
 			m_pXdp->SetFieldValue((unsigned short)i+1,(unsigned short)65,reslist[i]->dFrozOutamt,m_sErrMsg);
 			m_pXdp->SetFieldValue((unsigned short)i+1,(unsigned short)23,(unsigned int)reslist[i]->nCancelNum,m_sErrMsg);
 			m_pXdp->SetFieldValue((unsigned short)i+1,(unsigned short)66,reslist[i]->dDoneAvp,m_sErrMsg);
-			pFundAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAcc(reslist[i]->sTxAcc);
+			pFundAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAcc(reslist[i]->sTxAcc);
 			if (pFundAcc != NULL)
 			{
-				m_pXdp->SetFieldValue((unsigned short)i+1,(unsigned short)119,pFundAcc->sCustName,strlen(pFundAcc->sCustName),m_sErrMsg);
+				m_pXdp->SetFieldValue((unsigned short)i+1,(unsigned short)119,pFundAcc->sAccName,strlen(pFundAcc->sAccName),m_sErrMsg);
 			}
 			
 		}
@@ -1894,76 +1585,36 @@ int RiskDll::OrderMsg(S_TRADE_DATA &data)
 		return -1;
 	}
 	m_pClientLink->PoolFree(data);
-
-// 	40	int1	交易日期	8	n	yyyymmdd
-// 		102	varrchar3	交易账号	20	Y	
-// 		100	varchar1	合约代码	20	Y	
-// 		5	short1	投保标志	1	Y	
-// 		6	short2	开平标志	1	Y	
-// 		7	short3	买卖标志	1	Y	
-// 		8	short4	交易类型	1	Y	
-// 		9	short5	指令类型	1	Y	报单类型
-// 		13	short9	报单属性	1	Y	成交属性
-// 		10	short6	强平标志	1	Y	
-// 		11	short7	撤单标志	1	Y	
-// 		41	int2	委托数量	8	Y	
-// 		60	double1	委托价格	18.4	Y	
-// 		103	varchar4	本地报单号	37	Y	
-// 		104	varchar5	系统报单号	20	Y	
-// 		14	short10	报单状态	2	Y	ascii
-// 		105	varchar6	操作员	20	Y	此笔报单发起方，交易员号或资金账号
-// 		3	ushort4	系统代码	3	y	风控数据导入设置里面配置的系统代码
-// 		106	varchar7	交易所代码	1	y
-	INT64_  nBeginTime=CBF_Date_Time::GetTickUS();
+ 	INT64_  nBeginTime=CBF_Date_Time::GetTickUS();
 	INT64_  nEndTime;
 	S_MDB_ORDER_INFO order;
 	S_MDB_ORDER_INFO *po=NULL;
 	S_MDB_TXACC_LOCK *acclock=NULL;
 	bzero(&order,sizeof(S_MDB_ORDER_INFO));
-	char sTxAcc[21];
-	bzero(sTxAcc,sizeof(sTxAcc));
-	char sLocalSerial[38];//本地报单号
-	bzero(sLocalSerial,sizeof(sLocalSerial));
+	Xdp2Struct::ConvertOrder(m_pXdp,order);
 
-	unsigned int len;
+    char errmsg[256];
 	int fieldtype;
-	short nShortValue;
+    unsigned int len = sizeof(order.sLocalSerial);
+	if (!m_pXdp->GetFieldValue((unsigned short)95, order.sLocalSerial, len, fieldtype, errmsg))
+	{
+		m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "报单消息 本地报单号为空");
+		return -1;
+	}
+    len = sizeof(order.sSystemNo);
+    if (!m_pXdp->GetFieldValue((unsigned short)96, order.sSystemNo, len, fieldtype, errmsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "报单消息 系统报单号为空");
+        return -1;
+    }
+    len = sizeof(order.sOrderStatus);
+    if (!m_pXdp->GetFieldValue((unsigned short)97, order.sOrderStatus, len, fieldtype, errmsg))
+    {
+		order.sOrderStatus[0]=ORDER_STATUS_OK;//默认为已报入
+    }
 
-
-	len = sizeof(order.sExchCode);
-	if (!m_pXdp->GetFieldValue((unsigned short)106,order.sExchCode,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托回报 无交易所代码 %s",m_sErrMsg);
-		return -1;
-	}
-	len = sizeof(order.sSystemNo);
-	if (!m_pXdp->GetFieldValue((unsigned short)104,order.sSystemNo,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托回报 无系统报单号 %s",m_sErrMsg);
-		return -1;
-	}
-	if (m_pXdp->GetFieldValue((unsigned short)14,nShortValue,m_sErrMsg))
-	{
-		if (nShortValue < ORDER_STATUS_SENDOK || nShortValue > MAXASCIINUM)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托回报 报单状态不符 %d",nShortValue);
-			return -1;
-		}
-		order.sOrderStatus[0] = nShortValue;
-	}
-	else
-	{
-		//没有报单状态默认为已报入
-		order.sOrderStatus[0] = ORDER_STATUS_OK;
-	}
-	len = sizeof(sLocalSerial);
-	if (!m_pXdp->GetFieldValue((unsigned short)103,sLocalSerial,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托回报  无本地报单号 %s",m_sErrMsg);
-		return -1;
-	}
 	//根据本地报单号去查询，若找到说明是风控发起的报单，否则为外报单
-	po = m_pMemDb->m_pDbTrader.m_pOrder.Select(sLocalSerial);
+	po = m_pMemDb->m_pDbTrader.m_pOrder.Select(order.sLocalSerial);
 	if (po != NULL)
 	{
 		//只需更改状态并置同步标志
@@ -1977,173 +1628,28 @@ int RiskDll::OrderMsg(S_TRADE_DATA &data)
 		{
 			strcpy(po->sOrderRsp,"回报完成");
 		}
-		
+		m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(*po); //设置需要更新
 		nEndTime =CBF_Date_Time::GetTickUS();
 		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"委托回报 处理完成 本地报单号[%s]  处理时间[%d]微秒",po->sLocalSerial,nEndTime-nBeginTime);
 		acclock = m_pMemDb->SelectLock(po->sTxAcc);
 		if (acclock == NULL)
 		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托回报  资金账号[%s]不存在",po->sTxAcc);
+			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托回报  交易账号[%s]不存在",po->sTxAcc);
 			return -1;
 		}
 		//通知要对此客户进行风险计算
 		MsgCustRiskCalc(acclock->nLockRowid);
-		//发送委托回报推送
-		SendOrderPush(acclock,po);
+        if (*g_nSvrHostStatus == ARBSTATUS_MASTER || *g_nSvrHostStatus == ARBSTATUS_MASTER_AYN || *g_nSvrHostStatus == MASTERHOST)
+        {
+            //是主机发送回报推送
+            SendOrderBroadcast(acclock, po);
+        }
+		
 		return 0;
 	}
-
-
-	len = sizeof(order.sTxAcc);
-	if (!m_pXdp->GetFieldValue((unsigned short)102,sTxAcc,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无交易账号 %s",m_sErrMsg);
-		return -1;
-	}
-	len = sizeof(order.sSeatNo);
-	if (!m_pXdp->GetFieldValue((unsigned short)101,order.sSeatNo,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"委托通知无席位代码，默认为$");
-		strcpy(order.sSeatNo,"$");
-	}
-
-	len = sizeof(order.sContractCode);
-	if (!m_pXdp->GetFieldValue((unsigned short)100,order.sContractCode,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无合约代码 %s",m_sErrMsg);
-		return -1;
-	}
-	
-	
-	len = sizeof(order.sOrderOper);
-	m_pXdp->GetFieldValue((unsigned short)105,order.sOrderOper,len,fieldtype,m_sErrMsg);
-	
-	
-	if (!m_pXdp->GetFieldValue((unsigned short)5,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无投保标志 %s",m_sErrMsg);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知投保标志不符 %d",nShortValue);
-		return -1;
-	}
-	order.sShFlag[0] = nShortValue;
-	if (!m_pXdp->GetFieldValue((unsigned short)6,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无开平标志 %s",m_sErrMsg);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知开平标志不符 %d",nShortValue);
-		return -1;
-	}
-	order.sEoFlag[0] = nShortValue;
-	
-	if (!m_pXdp->GetFieldValue((unsigned short)7,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无买卖标志 %s",m_sErrMsg);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知买卖标志不符 %d",nShortValue);
-		return -1;
-	}
-	order.sBsFlag[0] = nShortValue;
-	
-	if (!m_pXdp->GetFieldValue((unsigned short)8,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无交易类型 %s",m_sErrMsg);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知交易类型不符 %d",nShortValue);
-		return -1;
-	}
-	order.sTxType[0] = nShortValue;
-
-	if (!m_pXdp->GetFieldValue((unsigned short)9,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无报单类型 %s",m_sErrMsg);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知报单类型不符 %d",nShortValue);
-		return -1;
-	}
-	order.sCmdType[0] = nShortValue;
-
-	if (!m_pXdp->GetFieldValue((unsigned short)13,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无报单属性 %s",m_sErrMsg);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知报单属性不符 %d",nShortValue);
-		return -1;
-	}
-	order.sCmdAttr[0] = nShortValue;
 	order.nRemainNum = order.nOrderNum;//剩余数量默认为委托数量
 	order.sCancelFlag[0] = BOOL_FALSE;
 	order.sCancelFlag[1] =0;
-
-	//强平标志
-	if (m_pXdp->GetFieldValue((unsigned short)10,nShortValue,m_sErrMsg))
-	{
-		if (nShortValue != BOOL_ASC_FALSE && nShortValue != BOOL_ASC_TRUE)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知强平标志不符 %d",nShortValue);
-			return -1;
-		}
-		order.sForceFlag[0] = nShortValue;
-	}
-	else
-	{
-		order.sForceFlag[0] = '0';
-	}
-
-	//委托数量
-	if (!m_pXdp->GetFieldValue((unsigned short)41,order.nOrderNum,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无委托数量 %s",m_sErrMsg);
-		return -1;
-	}
-	if (order.nOrderNum<1)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知委托数量不符 %d",order.nOrderNum);
-		return -1;
-	}
-	//委托价格
-	if (!m_pXdp->GetFieldValue((unsigned short)60,order.dOrderPrice,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无委托价格 %s",m_sErrMsg);
-		return -1;
-	}
-	//这里的价格是交易所返回的价格，所以可以直接按这个价格计算
-	
-	
-	unsigned short nCcId;//系统代码
-	if (!m_pXdp->GetFieldValue((unsigned short)3,nCcId,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无系统代码 %s",m_sErrMsg);
-		return -1;
-	}
-	strcpy(order.sOrderChannel,TERM_TYPE_SYSTEM);//从柜台过来的报单渠道默认为系统
-	//拼资金账号
-	GenAcc(sTxAcc,nCcId,12,order.sTxAcc);//旧系统资金账号为3-12长
-
-//	sprintf(order.sTxAcc,"%d%012s",nCcId,sTxAcc);//旧系统资金账号为3-12长
-	//拼本地报单号
-	sprintf(order.sLocalSerial,"%d%s",nCcId,sLocalSerial);
-	
-	
-
 	//查找交易日期
 	S_MDB_CONTRACT_INFO *pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(order.sContractCode);
 	if (pc == NULL)
@@ -2151,6 +1657,7 @@ int RiskDll::OrderMsg(S_TRADE_DATA &data)
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知合约代码[%s]在合约表中不存在",order.sContractCode);
 		return -1;
 	}
+	strcpy(order.sContractName,pc->sContractName);
 	order.nContractNo = pc->nContractId;
 	order.nVarietyId = pc->nProdId;
 	strcpy(order.sExchCode,pc->sExcode);
@@ -2165,46 +1672,29 @@ int RiskDll::OrderMsg(S_TRADE_DATA &data)
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知合约代码[%s]所属交易所[%s]的交易日期[%s]不符",order.sContractCode,pc->sExcode,pe->sTradeDate);
 		return -1;
 	}
-	int ntxdate=0;
-	if (!m_pXdp->GetFieldValue((unsigned short)40,ntxdate,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知无交易日期 %s",m_sErrMsg);
-		strcpy(order.sTxDate,pe->sTradeDate);
-	}
-	else
-	{
-		if (ntxdate != atoi(pe->sTradeDate))
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知 交易日期[%d]和交易所日期[%s]不符",ntxdate,pe->sTradeDate);
-			return -1;
-		}
-		sprintf(order.sTxDate,"%d",ntxdate);
-	}
-
+	strcpy(order.sTxDate,pe->sTradeDate);
 	acclock = m_pMemDb->SelectLock(order.sTxAcc);
 	if (acclock == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知资金账号[%s]不存在",order.sTxAcc);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知交易账号[%s]不存在",order.sTxAcc);
 		return -1;
 	}
-	S_MDB_CUST_FUNDACC_INFO *pcustacc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(acclock->nFundAccRowid);
-	//S_MDB_CUST_FUNDACC_INFO *pcustacc = m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAcc(order.sTxAcc);
+	S_MDB_TRADEACC_INFO *pcustacc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(acclock->nTradeAccRowid);
 	if (pcustacc == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知资金账号[%s]不存在",order.sTxAcc);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知交易账号[%s]不存在",order.sTxAcc);
 		return -1;
 	}
 	order.dAmt = order.dOrderPrice*pc->dTxUnit*order.nOrderNum;//金额
-	
-	//取交易编码
-	S_MDB_CUST_TRADECODE *ptx = m_pMemDb->m_pDbTrader.m_pTradecode.Select(order.sTxAcc,order.sExchCode,order.sSeatNo);
+	//取交易编码及席位号
+	S_MDB_CUST_TRADECODE *ptx = m_pMemDb->m_pDbTrader.m_pTradecode.Select(order.sTxAcc,order.sExchCode);
 	if (ptx != NULL)
 	{
 		strcpy(order.sTxCode,ptx->sTradeCode);
+		strcpy(order.sSeatNo, ptx->sSeatNo);
 	}
 	order.nCancelNum = 0;
 	order.nRemainNum = order.nOrderNum;
-
 	//查询本地报单号是否存在
 	po = m_pMemDb->m_pDbTrader.m_pOrder.Select(order.sLocalSerial);
 	if (po != NULL)
@@ -2213,160 +1703,23 @@ int RiskDll::OrderMsg(S_TRADE_DATA &data)
 		return -1;
 	}
 	//这里的通知没有机构，统一默认为签约机构
-	strcpy(order.sAccOrg,pcustacc->sSignOrg);
-	strcpy(order.sTxOrg,pcustacc->sSignOrg);
-
-	double dExchFee=0.0;//交易所手续费
-	double dMemberFee=0.0;//会员手续费
-	double dExchMargin=0.0;//交易所保证金
-	double dMemberMargin=0.0;//会员保证金
-	
-	//取要冻结的手续费及保证金等等
-	switch (pc->sProd_type[0])
+	if (strlen(order.sAccOrg) < 1)
 	{
-		case PROD_TYPE_FUTURES://期货
-			if (order.sEoFlag[0] == EO_FLAG_OPEN) //开仓
-			{
-				//开仓要算冻结和手续费
-				if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,1,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-					return -1;
-				}
-				if (!m_pKernelPub.GetMarginValue(pc,pcustacc,0,order.nOrderNum,order.dAmt,dExchMargin,dMemberMargin))
-				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取保证金出错 本地报单号[%s]",order.sLocalSerial);
-					return -1;
-				}
-			}
-			else
-			{
-				if (order.sEoFlag[0] == EO_FLAG_CLOSETODAY) //平今仓
-				{
-					//平仓要算手续费
-					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,3,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-						return -1;
-					}
-				}
-				else
-				{
-					//平仓要算手续费
-					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,2,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-						return -1;
-					}
-				}
-			}
-			break;
-		case PROD_TYPE_OPTION://期权
-			if (order.sEoFlag[0] == EO_FLAG_OPEN) //开仓
-			{
-				//开仓要算冻结和手续费
-				if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,1,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-					return -1;
-				}
-				if (order.sBsFlag[0] == BS_FLAG_SELL) //卖开要冻结保证金
-				{
-					if (!m_pKernelPub.GetMarginValue(pc,pcustacc,1,order.nOrderNum,order.dAmt,dExchMargin,dMemberMargin))
-					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取保证金出错 本地报单号[%s]",order.sLocalSerial);
-						return -1;
-					}
-				}
-			}
-			else
-			{
-				//平仓要算手续费
-				if (order.sEoFlag[0] == EO_FLAG_CLOSETODAY) //平今仓
-				{
-					//平仓要算手续费
-					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,3,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-						return -1;
-					}
-				}
-				else
-				{
-					//平仓要算手续费
-					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,2,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-						return -1;
-					}
-				}
-			}
-			break;
-		case PROD_TYPE_SPOT://现货
-			//现货有中立仓、交割等
-			if (order.sShFlag[0] == SH_FLAG_DERY)
-			{
-				//递延交割
-			}
-			else if (order.sShFlag[0] == SH_FLAG_MID)
-			{
-				//中立仓
-			}
-			else
-			{
-				if (order.sBsFlag[0] == BS_FLAG_BUY)
-				{
-					//买要算手续费及金额
-					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,1,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-						return -1;
-					}
-				}
-				else
-				{
-					//卖要算手续费	
-					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,2,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-						return -1;
-					}
-				}
-			}
-			dMemberMargin = order.dAmt;
-			break;
-		case PROD_TYPE_SEC://证券
-			if (order.sBsFlag[0] == BS_FLAG_BUY)
-			{
-				//买要算手续费及金额
-				if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,1,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-					return -1;
-				}
-			}
-			else
-			{
-				//卖要算手续费
-				if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,2,order.nOrderNum,order.dAmt,dExchFee,dMemberFee))
-				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知取手续费出错 本地报单号[%s]",order.sLocalSerial);
-					return -1;
-				}
-			}
-			dMemberMargin = order.dAmt;
-			break;
-		default:
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知合约代码[%s]的品种类别[%s]不符",order.sContractCode,pc->sProd_type);
-			return -1;
+		strcpy(order.sAccOrg, pcustacc->sSignOrg);
 	}
-	order.dExFee = 0.0 - (dExchFee+dMemberFee);//总手续费 为负数
-	order.dFrozAmt = dExchMargin+dMemberMargin;//总保证金
+	if (strlen(order.sTxOrg) < 1)
+	{
+		strcpy(order.sTxOrg, pcustacc->sSignOrg);
+	}
+	//获取报单的手续费及冻结金额
+	if (m_pKernelPub.GetOrderFeeAmt(order,pc,pcustacc) !=0)
+	{
+		return -1;
+	}
 	//报单时间
 	m_pDate.Update();
 	strcpy(order.sAnsTime,m_pDate.ToStringDT17().c_str());
 	//取得费用和资金后，写入报单表
-
 	int orderrid = m_pMemDb->m_pDbTrader.m_pOrder.Insert(order);
 	if (orderrid <0)
 	{
@@ -2379,16 +1732,14 @@ int RiskDll::OrderMsg(S_TRADE_DATA &data)
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知  委托表出错 rowid[%d]找不到委托",orderrid);
 		return -1;
 	}
+	m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(orderrid);	//设置更新标志
 	po->nSyncFlag = 1; //报入同步
-
-
-	S_MDB_CUST_FUND *pfund = m_pMemDb->GetFund(acclock,pc->sCurrency);
+	S_MDB_CUST_FUND *pfund = m_pMemDb->GetFund(acclock);
 	if (pfund == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知 找不到资金账号资金信息 [%s %s]",order.sTxAcc,pc->sCurrency);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托通知 找不到交易账号资金信息 [%s %s]",order.sTxAcc,pc->sCurrency);
 		return -1;
 	}
-	
 	//更新资金、冻结等
 	if (m_pKernelPub.ComputeNewOrder(acclock,pfund,po,pc,false) != SUCCESS)
 	{
@@ -2400,11 +1751,213 @@ int RiskDll::OrderMsg(S_TRADE_DATA &data)
 
 	//通知要对此客户进行风险计算
 	MsgCustRiskCalc(acclock->nLockRowid);
-	//发送委托回报推送
-	SendOrderPush(acclock,po);
+    if (*g_nSvrHostStatus == ARBSTATUS_MASTER || *g_nSvrHostStatus == ARBSTATUS_MASTER_AYN || *g_nSvrHostStatus == MASTERHOST)
+    {
+        //是主机发送回报推送
+        SendOrderBroadcast(acclock, po);
+    }
+	
 	return 0;
 }
+int RiskDll::DoneRtn(S_TRADE_DATA& data)
+{
+    m_nBeginTime = CBF_Date_Time::GetTickUS();
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+        m_pClientLink->PoolFree(data);
+        return -1;
+    }
+    m_pClientLink->PoolFree(data);
+    S_MDB_ORDER_INFO* po = NULL;
+    S_MDB_DONE_INFO info;
+    bzero(&info, sizeof(S_MDB_DONE_INFO));
+	Xdp2Struct::ConvertDone(m_pXdp,info);
 
+    char sTxAcc[21];
+    bzero(sTxAcc, sizeof(sTxAcc));
+    char sLocalNo[38];
+    bzero(sLocalNo, sizeof(sLocalNo));
+    
+
+    //根据交易所代码+系统报单号 去取报单信息
+    std::vector<S_MDB_ORDER_INFO*> orderlist;
+    if (!m_pMemDb->m_pDbTrader.m_pOrder.SelectBySystemno(info.sExchCode, info.sSystemNo, orderlist))
+    {
+        m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "成交回报 交易所[%s] 系统报单号[%s] 在委托表中不存在  放入待处理队列", info.sExchCode, info.sSystemNo);
+        //放入未处理成功队列，定时来处理
+        m_pMemDb->m_pUnProcessDoneMatch.push_back(info);
+        return -1;
+    }
+    if (orderlist.size() != 1)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 交易所[%s] 系统报单号[%s]不是唯一", info.sExchCode, info.sSystemNo);
+        return -1;
+    }
+	m_pDate.Update();
+    po = orderlist[0];
+	//从报单信息中补齐
+    strcpy(info.sDoneDate, po->sTxDate);
+    strcpy(info.sTxAcc, po->sTxAcc);
+    strcpy(info.sContractCode, po->sContractCode);
+    info.nContractNo = po->nContractNo;
+    strcpy(info.sLocalNo, po->sLocalSerial);
+    strcpy(info.sShFlag, po->sShFlag);
+    strcpy(info.sEoFlag, po->sEoFlag);
+    strcpy(info.sBsFlag, po->sBsFlag);
+    strcpy(info.sTxOrg, po->sTxOrg);
+    strcpy(info.sAccOrg, po->sAccOrg);
+    strcpy(info.sTxType, po->sTxType);
+    strcpy(info.sCmdType, po->sCmdType);
+    strcpy(info.sCmdAttr, po->sCmdAttr);
+    strcpy(info.sOrderOper, po->sOrderOper);
+    strcpy(info.sTxCode, po->sTxCode);
+    strcpy(info.sSeatNo, po->sSeatNo);
+	strcpy(info.sOrderChannel, po->sOrderChannel);
+	strcpy(info.sForceFlag, po->sForceFlag);
+	strcpy(info.sRuleAlgoCode, po->sRuleAlgoCode);
+	info.nVarietyId = po->nVarietyId;
+	strcpy(info.sDoneTime,m_pDate.ToStringDT17().c_str());
+	strcpy(info.sContractName, po->sContractName);
+	strcpy(info.sSystemDate,m_pDate.ToStringD8().c_str());
+
+    S_MDB_CONTRACT_INFO* pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(info.sContractCode);
+    if (pc == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 的合约[%d %s]不存在", info.nContractNo, info.sContractCode);
+        return -1;
+    }
+    S_MDB_EXCH_INFO* pexch = m_pMemDb->m_pDbBaseinfo.m_pExchange.Select(pc->sExcode);
+    if (pexch == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 的合约代码[%s]所属交易所[%s]不存在", info.sContractCode, pc->sExcode);
+        return -1;
+    }
+	//info.nVarietyId = pc->nProdId;
+	//strcpy(info.sContractName,pc->sContractName);
+
+    S_MDB_TRADEACC_INFO* pcustacc = m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAcc(info.sTxAcc);
+    if (pcustacc == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 交易账号[%s]不存在", info.sTxAcc);
+        return -1;
+    }
+    info.dAmt = info.dDonePrice * pc->dTxUnit * info.nDoneNum;//金额
+    //查询此成交是否存在
+    S_MDB_DONE_INFO* pdinfo = m_pMemDb->m_pDbTrader.m_pDone.Select(info.sExchCode, info.sBsFlag, info.sDoneNo);
+    if (pdinfo != NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 交易账号[%s] 的成交[%s %s %s]已存在", info.sTxAcc, info.sExchCode, info.sBsFlag, info.sDoneNo);
+        return -1;
+    }
+
+    ProcessDone(pcustacc, po, pc, pexch, info);
+    return 0;
+}
+int RiskDll::CancelOrderRtn(S_TRADE_DATA& data)
+{
+    m_nBeginTime = CBF_Date_Time::GetTickUS();
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+        m_pClientLink->PoolFree(data);
+        return -1;
+    }
+    m_pClientLink->PoolFree(data);
+    //80		系统号	20	y	交易所的报单号
+    //    81		交易所代码	1	y
+    //    82		撤单成功标志	1	y	撤单成功标志’1’ 成功
+    //    10		撤单数量	8	y
+
+
+    char sExcode[2];//交易所代码
+    char sSystemNo[38];//系统报单号
+    char sStatus[10];
+	char sOper[21];	        //操作员
+	char sChannel[3];		  //渠道
+    bzero(sExcode, sizeof(sExcode));
+    bzero(sSystemNo, sizeof(sSystemNo));
+    bzero(sStatus, sizeof(sStatus));
+	bzero(sOper, sizeof(sOper));
+	bzero(sChannel, sizeof(sChannel));
+
+    unsigned int len;
+    int fieldtype;
+    unsigned int   nCancelNum;//撤单数量
+
+    len = sizeof(sExcode);
+    if (!m_pXdp->GetFieldValue((unsigned short)81, sExcode, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "撤单通知 无交易所代码 %s", m_sErrMsg);
+        return -1;
+    }
+    len = sizeof(sSystemNo);
+    if (!m_pXdp->GetFieldValue((unsigned short)80, sSystemNo, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "撤单通知 无系统报单号 %s", m_sErrMsg);
+        return -1;
+    }
+    if (!m_pXdp->GetFieldValue((unsigned short)10, nCancelNum, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "撤单通知 无撤单数量 %s", m_sErrMsg);
+        return -1;
+    }
+    len = sizeof(sStatus);
+    if (!m_pXdp->GetFieldValue((unsigned short)82, sStatus, len, fieldtype, m_sErrMsg))
+    {
+        strcpy(sStatus, "1");
+    }
+    if (strcmp(sStatus, "1") != 0)
+    {
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "撤单通知 交易所[%s] 系统号[%s] 撤单不成功", sExcode, sSystemNo);
+        return -1;
+    }
+    len = sizeof(sOper);
+    m_pXdp->GetFieldValue((unsigned short)83, sOper, len, fieldtype, m_sErrMsg);
+    len = sizeof(sChannel);
+    m_pXdp->GetFieldValue((unsigned short)84, sChannel, len, fieldtype, m_sErrMsg);
+    std::vector<S_MDB_ORDER_INFO*> orderlist;
+    if (!m_pMemDb->m_pDbTrader.m_pOrder.SelectBySystemno(sExcode, sSystemNo, orderlist))
+    {
+        SLEEP(1000);
+        if (!m_pMemDb->m_pDbTrader.m_pOrder.SelectBySystemno(sExcode, sSystemNo, orderlist))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "撤单通知 交易所[%s] 系统号[%s] 找不到报单", sExcode, sSystemNo);
+        }
+        return -1;
+    }
+    if (orderlist.size() != 1)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "撤单通知 交易所[%s] 系统号[%s] 不唯一", sExcode, sSystemNo);
+        return -1;
+    }
+
+    S_MDB_ORDER_INFO* po = orderlist[0];
+
+    S_MDB_TXACC_LOCK* pAcclock = m_pMemDb->SelectLock(po->sTxAcc);
+    if (pAcclock == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "撤单通知 交易账号[%s]找不到", po->sTxAcc);
+        return -1;
+    }
+	strcpy(po->sCancelChannel,sChannel);
+	strcpy(po->sCancelOper,sOper);
+	m_pDate.Update();
+	strcpy(po->sCancelTime,m_pDate.ToStringDT17().c_str());
+    MsgCustRiskCalc(pAcclock->nLockRowid);
+    if (m_pKernelPub.ProceeOneCancelOrder(pAcclock, po, nCancelNum) == 0)
+    {
+        m_nEndTime = CBF_Date_Time::GetTickUS();
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "撤单通知 处理完成 本地报单号[%s] 耗时[%ld]微秒", po->sLocalSerial, m_nEndTime - m_nBeginTime);
+        //发送撤单推送
+        if (*g_nSvrHostStatus == ARBSTATUS_MASTER || *g_nSvrHostStatus == ARBSTATUS_MASTER_AYN || *g_nSvrHostStatus == MASTERHOST)
+        {
+            //是主机发送撤单推送
+			SendOrderBroadcast(pAcclock, po);
+        }
+    }
+    return 0;
+}
 void RiskDll::AnsData(S_TRADE_DATA &data)
 {
 	data.pData->sDBHead.cRaflag = 1;
@@ -2418,22 +1971,7 @@ bool RiskDll::UpdateOrder2Db(S_MDB_ORDER_INFO *porder)
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Not connect risk database");
 		return false;
 	}
-	sprintf(m_sSql,"select TX_ACC from ORDER_INFO where LOCAL_NO=:1");
-	m_pSqlCmd->setCommandText(m_sSql);
-	m_pSqlCmd->Param(1).setAsString() = porder->sLocalSerial;
-	if (!m_pSqlCmd->Execute())
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Execute %s error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
-		return false;
-	}
-	if (m_pSqlCmd->FetchNext())
-	{
-		//已有此报单，直接返回
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"数据库已有此报单 本地报单号[%s]",porder->sLocalSerial);
-		return true;
-	}
-
-	sprintf(m_sSql,"insert into ORDER_INFO(TX_ACC,EX_CODE,SEAT_NO,TX_CODE,CONTRACT_NO,CONTRACT_CODE,CLIENT_SERIAL,LOCAL_NO,SYSTEM_NO,ORDER_NUM,ORDER_PRICE,REMAIN_NUM,EO_FLAG,BS_FLAG,SH_FLAG,TXDATE,AMT,FROZ_AMT,EX_FARE,TX_TYPE,CMD_TYPE,CMD_ATTR,FORCE_FLAG,ORDER_STATUS,CANCEL_FLAG,ANS_TIME,ORDER_CHANNEL,ACC_ORG,TX_ORG,ORDER_OPER,CANCEL_CHANNEL,CANCEL_OPER,CANCEL_TIME,ORDER_RSP,FROZ_USEAMT,FROZ_OUTAMT,CANCEL_NUM,DONE_AVP,VARIETY) values(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39) ");
+	sprintf(m_sSql,"insert into t_order_info(TX_ACC,EX_CODE,SEAT_NO,TX_CODE,SECU_NO,SECU_CODE,SECU_NAME,CLIENT_SERIAL,LOCAL_NO,SYSTEM_NO,ORDER_VOL,ORDER_PRICE,REMAIN_VOL,EO_FLAG,BS_FLAG,SH_FLAG,TXDATE,AMT,FROZ_AMT,EX_FEE,TX_TYPE,CMD_TYPE,CMD_ATTR,FORCE_FLAG,ORDER_STATUS,CANCEL_FLAG,ANS_TIME,ORDER_CHANNEL,ACC_ORG,TX_ORG,ORDER_OPER,CANCEL_CHANNEL,CANCEL_OPER,CANCEL_TIME,ORDER_RSP,FROZ_USEAMT,FROZ_OUTAMT,CANCEL_VOL,DONE_AVP,VARIETY,RULE_ALGO_CODE,CLEAR_SPEED,DELIVERY_TYPE,CLEAR_METHOD,MATCH_ACC) values(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43,:44,:45) ");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = porder->sTxAcc;
 	m_pSqlCmd->Param(2).setAsString() = porder->sExchCode;
@@ -2441,39 +1979,45 @@ bool RiskDll::UpdateOrder2Db(S_MDB_ORDER_INFO *porder)
 	m_pSqlCmd->Param(4).setAsString() = porder->sTxCode;
 	m_pSqlCmd->Param(5).setAsLong() = porder->nContractNo;
 	m_pSqlCmd->Param(6).setAsString() = porder->sContractCode;
-	m_pSqlCmd->Param(7).setAsString() = porder->sClientSerial;
-	m_pSqlCmd->Param(8).setAsString() = porder->sLocalSerial;
-	m_pSqlCmd->Param(9).setAsString() = porder->sSystemNo;
-	m_pSqlCmd->Param(10).setAsLong() = porder->nOrderNum;
-	m_pSqlCmd->Param(11).setAsDouble() = porder->dOrderPrice;
-	m_pSqlCmd->Param(12).setAsLong() = porder->nRemainNum;
-	m_pSqlCmd->Param(13).setAsString() = porder->sEoFlag;
-	m_pSqlCmd->Param(14).setAsString() = porder->sBsFlag;
-	m_pSqlCmd->Param(15).setAsString() = porder->sShFlag;
-	m_pSqlCmd->Param(16).setAsString() = porder->sTxDate;
-	m_pSqlCmd->Param(17).setAsDouble() = porder->dAmt;
-	m_pSqlCmd->Param(18).setAsDouble() = porder->dFrozAmt;
-	m_pSqlCmd->Param(19).setAsDouble() = porder->dExFee;
-	m_pSqlCmd->Param(20).setAsString() = porder->sTxType;
-	m_pSqlCmd->Param(21).setAsString() = porder->sCmdType;
-	m_pSqlCmd->Param(22).setAsString() = porder->sCmdAttr;
-	m_pSqlCmd->Param(23).setAsString() = porder->sForceFlag;
-	m_pSqlCmd->Param(24).setAsString() = porder->sOrderStatus;
-	m_pSqlCmd->Param(25).setAsString() = porder->sCancelFlag;
-	m_pSqlCmd->Param(26).setAsString() = porder->sAnsTime;
-	m_pSqlCmd->Param(27).setAsString() = porder->sOrderChannel;
-	m_pSqlCmd->Param(28).setAsString() = porder->sAccOrg;
-	m_pSqlCmd->Param(29).setAsString() = porder->sTxOrg;
-	m_pSqlCmd->Param(30).setAsString() = porder->sOrderOper;
-	m_pSqlCmd->Param(31).setAsString() = porder->sCancelChannel;
-	m_pSqlCmd->Param(32).setAsString() = porder->sCancelOper;
-	m_pSqlCmd->Param(33).setAsString() = porder->sCancelTime;
-	m_pSqlCmd->Param(34).setAsString() = porder->sOrderRsp;
-	m_pSqlCmd->Param(35).setAsDouble() = porder->dFrozUseamt;
-	m_pSqlCmd->Param(36).setAsDouble() = porder->dFrozOutamt;
-	m_pSqlCmd->Param(37).setAsLong() = porder->nCancelNum;
-	m_pSqlCmd->Param(38).setAsDouble() = porder->dDoneAvp;
-	m_pSqlCmd->Param(39).setAsLong() = porder->nVarietyId;
+	m_pSqlCmd->Param(7).setAsString() = porder->sContractName;
+	m_pSqlCmd->Param(8).setAsString() = porder->sClientSerial;
+	m_pSqlCmd->Param(9).setAsString() = porder->sLocalSerial;
+	m_pSqlCmd->Param(10).setAsString() = porder->sSystemNo;
+	m_pSqlCmd->Param(11).setAsLong() = porder->nOrderNum;
+	m_pSqlCmd->Param(12).setAsDouble() = porder->dOrderPrice;
+	m_pSqlCmd->Param(13).setAsLong() = porder->nRemainNum;
+	m_pSqlCmd->Param(14).setAsString() = porder->sEoFlag;
+	m_pSqlCmd->Param(15).setAsString() = porder->sBsFlag;
+	m_pSqlCmd->Param(16).setAsString() = porder->sShFlag;
+	m_pSqlCmd->Param(17).setAsString() = porder->sTxDate;
+	m_pSqlCmd->Param(18).setAsDouble() = porder->dAmt;
+	m_pSqlCmd->Param(19).setAsDouble() = porder->dFrozAmt;
+	m_pSqlCmd->Param(20).setAsDouble() = porder->dExFee;
+	m_pSqlCmd->Param(21).setAsString() = porder->sTxType;
+	m_pSqlCmd->Param(22).setAsString() = porder->sCmdType;
+	m_pSqlCmd->Param(23).setAsString() = porder->sCmdAttr;
+	m_pSqlCmd->Param(24).setAsString() = porder->sForceFlag;
+	m_pSqlCmd->Param(25).setAsString() = porder->sOrderStatus;
+	m_pSqlCmd->Param(26).setAsString() = porder->sCancelFlag;
+	m_pSqlCmd->Param(27).setAsString() = porder->sAnsTime;
+	m_pSqlCmd->Param(28).setAsString() = porder->sOrderChannel;
+	m_pSqlCmd->Param(29).setAsString() = porder->sAccOrg;
+	m_pSqlCmd->Param(30).setAsString() = porder->sTxOrg;
+	m_pSqlCmd->Param(31).setAsString() = porder->sOrderOper;
+	m_pSqlCmd->Param(32).setAsString() = porder->sCancelChannel;
+	m_pSqlCmd->Param(33).setAsString() = porder->sCancelOper;
+	m_pSqlCmd->Param(34).setAsString() = porder->sCancelTime;
+	m_pSqlCmd->Param(35).setAsString() = porder->sOrderRsp;
+	m_pSqlCmd->Param(36).setAsDouble() = porder->dFrozUseamt;
+	m_pSqlCmd->Param(37).setAsDouble() = porder->dFrozOutamt;
+	m_pSqlCmd->Param(38).setAsLong() = porder->nCancelNum;
+	m_pSqlCmd->Param(39).setAsDouble() = porder->dDoneAvp;
+	m_pSqlCmd->Param(40).setAsLong() = porder->nVarietyId;
+	m_pSqlCmd->Param(41).setAsString() = porder->sRuleAlgoCode;
+	m_pSqlCmd->Param(42).setAsLong() = porder->nClearSpeed;
+	m_pSqlCmd->Param(43).setAsLong() = porder->nDeliveryType;
+	m_pSqlCmd->Param(44).setAsLong() = porder->nClearMethod;
+	m_pSqlCmd->Param(45).setAsString() = porder->sMatchAcc;
 	if (!m_pSqlCmd->Execute())
 	{
 		m_pSqlCmd->Rollback();
@@ -2494,7 +2038,7 @@ bool RiskDll::ChgDateProcByMarket(char *market,char *curdate)
 		return true;
 	}
 	int i,j;
-	CTbl_Char_Key custlist;//保存此市场下所有的资金账号
+	CTbl_Char_Key custlist;//保存此市场下所有的交易账号
 	std::vector<S_MDB_CUST_TRADECODE *> tclist;
 	for (i=0 ; i < exlist.size(); i++)
 	{
@@ -2519,7 +2063,7 @@ bool RiskDll::ChgDateProcByMarket(char *market,char *curdate)
 	{
 		return false;
 	}
-	//重置这些资金账号的信息
+	//重置这些交易账号的信息
 	if (!ResetCustInfo(custlist))
 	{
 		return false;
@@ -2546,13 +2090,13 @@ bool RiskDll::ChgDateProcByExchange(char *exchange,char *curdate)
 	//根据交易所找客户
 
 	int j;
-	CTbl_Char_Key custlist;//保存此市场下所有的资金账号
+	CTbl_Char_Key custlist;//保存此市场下所有的交易账号
 	
 	std::vector<S_MDB_CUST_TRADECODE *> tclist;
 	if (!m_pMemDb->m_pDbTrader.m_pTradecode.SelectByExch(exchange,tclist))
 	{
-		//根据交易编码表查找此交易所对应的资金账号
-		m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"交易所[%s] 交易编码对应表未找到资金账号",exchange);
+		//根据交易编码表查找此交易所对应的交易账号
+		m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"交易所[%s] 交易编码对应表未找到交易账号",exchange);
 		return true;
 	}
 	for (j=0; j<tclist.size();j++)
@@ -2564,7 +2108,7 @@ bool RiskDll::ChgDateProcByExchange(char *exchange,char *curdate)
 	{
 		return false;
 	}
-	//重置这些资金账号的信息
+	//重置这些交易账号的信息
 	if (!ResetCustInfo(custlist))
 	{
 		return false;
@@ -2637,7 +2181,7 @@ bool RiskDll::ResetCustInfo(CTbl_Char_Key &custlist)
 		//删除客户特殊费率，待重新读取
 		if (!m_pMemDb->m_pDbSet.m_pCustFeeDetail.DeleteByAcc(stxacc))
 		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"删除资金账号[%s]的特殊费率设置出错",stxacc);
+			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"删除交易账号[%s]的特殊费率设置出错",stxacc);
 		}
 		//删除持仓风险信息
 		m_pMemDb->m_pDbTrader.m_pCustPosiRisk.Delete(stxacc);
@@ -2658,7 +2202,7 @@ bool RiskDll::ReadInfoFromDbByMarket(char *market)
 // 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Not connect risk database");
 // 		return false;
 // 	}
-	//找到此市场的所有客户  注意资金账号不能跨多个市场
+	//找到此市场的所有客户  注意交易账号不能跨多个市场
 	sprintf(m_sSql,"select distinct a.TX_ACC from CUST_TRADE_INFO a,EX_INFO b where a.EX_CODE=b.EX_CODE and b.EX_TYPE=:1");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = market;
@@ -2690,7 +2234,7 @@ bool RiskDll::ReadInfoFromDbByExch(char *exch)
 // 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Not connect risk database");
 // 		return false;
 // 	}
-	//找到此交易所的所有客户 注意资金账号不能跨多个交易所 
+	//找到此交易所的所有客户 注意交易账号不能跨多个交易所 
 	sprintf(m_sSql,"select distinct a.TX_ACC from CUST_TRADE_INFO a where a.EX_CODE=:1");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = exch;
@@ -2722,17 +2266,17 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 	int custrowid=-1;
 	int fundrowid  = -1;
 	int rowid;
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 开始读取 资金账号[%s]的信息",txacc);
-	//读资金账号信息
-	S_MDB_CUST_FUNDACC_INFO *pFundAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAcc((char *)txacc);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 开始读取 交易账号[%s]的信息",txacc);
+	//读交易账号信息
+	S_MDB_TRADEACC_INFO *pFundAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAcc((char *)txacc);
 	if (pFundAcc == NULL)
 	{
-		//没有此资金账号，是新增加的
-		S_MDB_CUST_FUNDACC_INFO info;
+		//没有此交易账号，是新增加的
+		S_MDB_TRADEACC_INFO info;
 		sprintf(m_sSql,"select TX_ACC,CUST_NO,ACC_TYPE,ACC_SIMPLENAME,SIGN_ORG,MANAGER_ORG,FUTURES_FLAG,ACC_LEVEL,EX_FEE,MEMBER_FEE,BROKERAGE_CODE,CURRENCY,FS_FEE_MODEL,ACC_NAME from CUST_FUNDACC_INFO where TX_ACC=:1 ");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsString() = txacc;
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取新增的 资金账号[%s]的信息  %s",txacc,m_sSql);
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取新增的 交易账号[%s]的信息  %s",txacc,m_sSql);
 		if (!m_pSqlCmd->Execute())
 		{
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
@@ -2744,7 +2288,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 #ifdef _ENGLISH_
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Table CUST_FUNDACC_INFO no %s data",txacc);
 #else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  资金账号CUST_FUNDACC_INFO表无 %s 数据 ",txacc);
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  交易账号CUST_FUNDACC_INFO表无 %s 数据 ",txacc);
 #endif
 			return true;
 		}
@@ -2761,26 +2305,25 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 		strcpy(info.sMemberFareModel,m_pSqlCmd->Field(9).asString());
 		info.nSysId = m_pSqlCmd->Field(10).asLong();
 		strcpy(info.sCurrency,m_pSqlCmd->Field(11).asString());
-		strcpy(info.sFsFeeModel,m_pSqlCmd->Field(12).asString());
-		strcpy(info.sCustName,m_pSqlCmd->Field(13).asString());
-		fundaccrid = m_pMemDb->m_pDbCust.m_pCustFundAcc.Insert(info);
+		strcpy(info.sAccName,m_pSqlCmd->Field(13).asString());
+		fundaccrid = m_pMemDb->m_pDbCust.m_pTradeAcc.Insert(info);
 		if (fundaccrid <0 )
 		{
 #ifdef _ENGLISH_
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  CUST_FUNDACC_INFO [%s] repeat",info.sTxAcc);
 #else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  资金账号CUST_FUNDACC_INFO表 [%s]重复",info.sTxAcc);
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  交易账号CUST_FUNDACC_INFO表 [%s]重复",info.sTxAcc);
 #endif
 			return false;
 		}
-		pFundAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(fundaccrid);
+		pFundAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(fundaccrid);
 		//读客户信息
 		S_MDB_CUSTINFO cinfo;
 		
 		sprintf(m_sSql,"select CUST_NO,CUST_NAME,CUST_TYPE,CUST_CERT,CUST_CERT_NO,CUST_PHONE,TXCHANNLE,PKI_CERT_SERIAL,PKI_CERT_DATE,CUST_STATUS,LAST_RISK_LEVEL from CUST_BASIC_INFO where CUST_NO=:1");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsString() = info.sCustNo;
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取新增的 资金账号[%s] 客户号[%s]的信息  %s",txacc,info.sCustNo,m_sSql);
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取新增的 交易账号[%s] 客户号[%s]的信息  %s",txacc,info.sCustNo,m_sSql);
 		if (!m_pSqlCmd->Execute())
 		{
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
@@ -2806,7 +2349,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 		strcpy(cinfo.sPkiCertNo,m_pSqlCmd->Field(7).asString());
 		strcpy(cinfo.sPkiCertDate,m_pSqlCmd->Field(8).asString());
 		strcpy(cinfo.sStatus,m_pSqlCmd->Field(9).asString());
-		cinfo.dLastRisk = m_pSqlCmd->Field(10).asDouble();
+		//cinfo.dLastRisk = m_pSqlCmd->Field(10).asDouble();
 		custrowid = m_pMemDb->m_pDbCust.m_pCustom.Insert(cinfo);
 		if (custrowid <0 )
 		{
@@ -2821,12 +2364,12 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 	}
 	else //更新模板信息
 	{
-		S_MDB_CUST_FUNDACC_INFO info;
+		S_MDB_TRADEACC_INFO info;
 		sprintf(m_sSql,"select TX_ACC,CUST_NO,ACC_TYPE,ACC_SIMPLENAME,SIGN_ORG,MANAGER_ORG,FUTURES_FLAG,ACC_LEVEL,EX_FEE,MEMBER_FEE,BROKERAGE_CODE,CURRENCY,FS_FEE_MODEL,ACC_NAME from CUST_FUNDACC_INFO where TX_ACC=:1 ");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsString() = txacc;
 
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 资金账号[%s]的 信息 更新 %s",txacc,m_sSql);
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 交易账号[%s]的 信息 更新 %s",txacc,m_sSql);
 		if (!m_pSqlCmd->Execute())
 		{
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
@@ -2838,7 +2381,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 #ifdef _ENGLISH_
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Table CUST_FUNDACC_INFO no data");
 #else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  资金账号CUST_FUNDACC_INFO表无数据 ");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  交易账号CUST_FUNDACC_INFO表无数据 ");
 #endif
 			return true;
 		}
@@ -2855,16 +2398,15 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 		strcpy(info.sMemberFareModel,m_pSqlCmd->Field(9).asString());
 		info.nSysId = m_pSqlCmd->Field(10).asLong();
 		strcpy(info.sCurrency,m_pSqlCmd->Field(11).asString());
-		strcpy(info.sFsFeeModel,m_pSqlCmd->Field(12).asString());
-		strcpy(info.sCustName,m_pSqlCmd->Field(13).asString());
+		strcpy(info.sAccName,m_pSqlCmd->Field(13).asString());
 		
-		fundaccrid = m_pMemDb->m_pDbCust.m_pCustFundAcc.Update(info);
+		fundaccrid = m_pMemDb->m_pDbCust.m_pTradeAcc.Update(info);
 		if (fundaccrid <0 )
 		{
 #ifdef _ENGLISH_
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  CUST_FUNDACC_INFO [%s] update error",info.sTxAcc);
 #else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  资金账号CUST_FUNDACC_INFO表 [%s] 更新失败",info.sTxAcc);
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  交易账号CUST_FUNDACC_INFO表 [%s] 更新失败",info.sTxAcc);
 #endif
 			return false;
 		}
@@ -2875,7 +2417,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 	sprintf(m_sSql,"select TX_ACC,CURRENCY,LAST_BAL,BALANCE,AVAIL_FUND,GET_FUND,BASE_MARGIN,INCOME_EXPENSE,FROZE_FUND,MARGIN,FEE,RESERVE,SURPLUS,FLOAT_SURPLUS,INCR_INTE,ARAP,RISK_LEVEL,RISK,TRADE_RIGHT from CUST_FUND where TX_ACC=:1");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = txacc;
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 资金账号[%s]的 资金信息 %s",txacc,m_sSql);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 交易账号[%s]的 资金信息 %s",txacc,m_sSql);
 	if (!m_pSqlCmd->Execute())
 	{
 		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
@@ -2884,7 +2426,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 	bret = m_pSqlCmd->FetchNext();
 	if (!bret)
 	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  资金账号[%s]在资金表中不存在",txacc);
+		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  交易账号[%s]在资金表中不存在",txacc);
 		return true;
 	}
 	bool acclockselect =false;
@@ -2909,7 +2451,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 		finfo.nRisk_level =m_pSqlCmd->Field(16).asLong();
 		finfo.dRisk =m_pSqlCmd->Field(17).asDouble();
 		strcpy(finfo.sTradeRight,m_pSqlCmd->Field(18).asString());
-		pFund =  m_pMemDb->m_pDbTrader.m_pFund.Select(finfo.sTxAcc,finfo.sCurrency);
+		pFund =  m_pMemDb->m_pDbTrader.m_pFund.Select(finfo.sTxAcc);
 		if (pFund == NULL)
 		{
 			fundrowid = m_pMemDb->m_pDbTrader.m_pFund.Insert(finfo);
@@ -2946,7 +2488,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 			pFund->dRisk = finfo.dRisk ;
 			strcpy(pFund->sTradeRight,finfo.sTradeRight);
 		}
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"读资金账号[%s %s]的资金信息 上日结存[%lf] 今日结存[%lf]",pFund->sTxAcc,pFund->sCurrency,pFund->dLast_bal,pFund->dBalance);
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"读交易账号[%s %s]的资金信息 上日结存[%lf] 今日结存[%lf]",pFund->sTxAcc,pFund->sCurrency,pFund->dLast_bal,pFund->dBalance);
 		bret = m_pSqlCmd->FetchNext();
 	}
 	
@@ -2955,7 +2497,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 	{
 		S_MDB_TXACC_LOCK  acclock;
 		strcpy(acclock.sTxAcc,finfo.sTxAcc);
-		acclock.nFundAccRowid=-1;
+		acclock.nTradeAccRowid=-1;
 		acclock.nCustRowid=-1;
 		int rid = m_pMemDb->InsertAccLock(acclock);
 		if (rid<0)
@@ -2970,7 +2512,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 		if (acclockselect)
 		{
 			//重新读取一遍,可能增加了币种
-			pacclock->nFundAccRowid = -1;
+			pacclock->nTradeAccRowid = -1;
 			pacclock=m_pMemDb->SelectLock((char *)txacc);
 		}
 	}
@@ -2979,7 +2521,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 	sprintf(m_sSql,"select TX_ACC,CURRENCY,FUND_TYPE,FUND_CODE,FUND_VALUE from CUST_FUND_DETAIL where TX_ACC=:1");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = txacc;
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 资金账号[%s]的 资金详细信息 %s",txacc,m_sSql);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 交易账号[%s]的 资金详细信息 %s",txacc,m_sSql);
 	if (!m_pSqlCmd->Execute())
 	{
 		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
@@ -3022,7 +2564,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = txacc;
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 资金账号[%s]的 特殊费率设置 %s",txacc,m_sSql);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 交易账号[%s]的 特殊费率设置 %s",txacc,m_sSql);
 	if (!m_pSqlCmd->Execute())
 	{
 		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
@@ -3056,11 +2598,11 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 
 	//读持仓信息
 	S_MDB_CUST_POSITION cpinfo;
-	sprintf(m_sSql,"select TX_ACC,CONTRACT_NO,CONTRACT_CODE,SEAT_ID,TX_CODE,TB_FLAG,LAST_PB,LAST_PS,CUR_PB,CUR_PS,CUR_CANUSE_PB,CUR_CANUSE_PS,DAY_PB,DAY_PS,DAY_COV_PB_FROZ,DAY_COV_PB,DAY_COV_PS_FROZ,DAY_COV_PS,DAY_DELI_PB_FROZ,DAY_DELI_PB,DAY_DELI_PS_FROZ,DAY_DELI_PS,DAY_MIDD_PB,DAY_MIDD_PS,PB_OPEN_AVG_PRICE,PS_OPEN_AVG_PRICE,PB_AVG_PRICE,PS_AVG_PRICE,PB_MARGIN,PS_MARGIN,DAY_PB_SURPLUS,DAY_PS_SURPLUS,LAST_SETTLE_PRICE,DAY_SETTLE_PRICE,VARIETY from CUST_POSI where TX_ACC=:1");
+	sprintf(m_sSql,"select TX_ACC,SECU_NO,SECU_CODE,SEAT_ID,TX_CODE,TB_FLAG,LAST_PB,LAST_PS,CUR_PB,CUR_PS,CUR_CANUSE_PB,CUR_CANUSE_PS,DAY_PB,DAY_PS,DAY_COV_PB_FROZ,DAY_COV_PB,DAY_COV_PS_FROZ,DAY_COV_PS,PB_OPEN_AVG_PRICE,PS_OPEN_AVG_PRICE,PB_AVG_PRICE,PS_AVG_PRICE,PB_MARGIN,PS_MARGIN,DAY_PB_SURPLUS,DAY_PS_SURPLUS,LAST_SETTLE_PRICE,DAY_SETTLE_PRICE,VARIETY,SECU_NAME from t_position where TX_ACC=:1");
 	m_pSqlCmd->setCommandText(m_sSql);
 	m_pSqlCmd->Param(1).setAsString() = txacc;
 
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 资金账号[%s]的 持仓信息 %s",txacc,m_sSql);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 交易账号[%s]的 持仓信息 %s",txacc,m_sSql);
 	if (!m_pSqlCmd->Execute())
 	{
 		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
@@ -3088,24 +2630,22 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 		cpinfo.nDAY_COV_PB =m_pSqlCmd->Field(15).asLong();
 		cpinfo.nDAY_COV_PS_Froze =m_pSqlCmd->Field(16).asLong();
 		cpinfo.nDAY_COV_PS =m_pSqlCmd->Field(17).asLong();
-		cpinfo.nDAY_DELI_PB_Froze =m_pSqlCmd->Field(18).asLong();
-		cpinfo.nDAY_DELI_PB =m_pSqlCmd->Field(19).asLong();
-		cpinfo.nDAY_DELI_PS_Froze =m_pSqlCmd->Field(20).asLong();
-		cpinfo.nDAY_DELI_PS =m_pSqlCmd->Field(21).asLong();
-		cpinfo.nDAY_MIDD_PB =m_pSqlCmd->Field(22).asLong();
-		cpinfo.nDAY_MIDD_PS =m_pSqlCmd->Field(23).asLong();
-		cpinfo.dPB_OAvp =m_pSqlCmd->Field(24).asDouble();
-		cpinfo.dPS_OAvp =m_pSqlCmd->Field(25).asDouble();
-		cpinfo.dPB_Avp =m_pSqlCmd->Field(26).asDouble();
-		cpinfo.dPS_Avp =m_pSqlCmd->Field(27).asDouble();
-		cpinfo.dPB_Margin =m_pSqlCmd->Field(28).asDouble();
-		cpinfo.dPS_Margin =m_pSqlCmd->Field(29).asDouble();
-		cpinfo.dDAY_PB_SURPLUS =m_pSqlCmd->Field(30).asDouble();
-		cpinfo.dDAY_PS_SURPLUS =m_pSqlCmd->Field(31).asDouble();
-		cpinfo.dLAST_SETTLE_PRICE = m_pSqlCmd->Field(32).asDouble();
-		cpinfo.dSETTLE_PRICE = m_pSqlCmd->Field(33).asDouble();
-		cpinfo.nVarietyId = m_pSqlCmd->Field(34).asLong();
-		S_MDB_CUST_POSITION *pcpinfo = m_pMemDb->m_pDbTrader.m_pPosition.Select(cpinfo.sTxAcc,cpinfo.sSeatNo,cpinfo.sShFlag,cpinfo.nContractNo);
+
+		cpinfo.dPB_OAvp =m_pSqlCmd->Field(18).asDouble();
+		cpinfo.dPS_OAvp =m_pSqlCmd->Field(19).asDouble();
+		cpinfo.dPB_Avp =m_pSqlCmd->Field(20).asDouble();
+		cpinfo.dPS_Avp =m_pSqlCmd->Field(21).asDouble();
+		cpinfo.dPB_Margin =m_pSqlCmd->Field(22).asDouble();
+		cpinfo.dPS_Margin =m_pSqlCmd->Field(23).asDouble();
+		cpinfo.dDAY_PB_SURPLUS =m_pSqlCmd->Field(24).asDouble();
+		cpinfo.dDAY_PS_SURPLUS =m_pSqlCmd->Field(25).asDouble();
+		cpinfo.dLAST_SETTLE_PRICE = m_pSqlCmd->Field(26).asDouble();
+		cpinfo.dSETTLE_PRICE = m_pSqlCmd->Field(27).asDouble();
+		cpinfo.nVarietyId = m_pSqlCmd->Field(28).asLong();
+
+		strcpy(cpinfo.sContractName, m_pSqlCmd->Field(29).asString());
+
+		S_MDB_CUST_POSITION *pcpinfo = m_pMemDb->m_pDbTrader.m_pPosition.Select(cpinfo.sTxAcc,cpinfo.sShFlag,cpinfo.sContractCode);
 		if (pcpinfo == NULL)
 		{
 			//新增
@@ -3143,12 +2683,6 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 			pcpinfo->nDAY_COV_PB = cpinfo.nDAY_COV_PB ;
 			pcpinfo->nDAY_COV_PS_Froze = cpinfo.nDAY_COV_PS_Froze ;
 			pcpinfo->nDAY_COV_PS = cpinfo.nDAY_COV_PS ;
-			pcpinfo->nDAY_DELI_PB_Froze = cpinfo.nDAY_DELI_PB_Froze ;
-			pcpinfo->nDAY_DELI_PB = cpinfo.nDAY_DELI_PB ;
-			pcpinfo->nDAY_DELI_PS_Froze = cpinfo.nDAY_DELI_PS_Froze ;
-			pcpinfo->nDAY_DELI_PS = cpinfo.nDAY_DELI_PS ;
-			pcpinfo->nDAY_MIDD_PB = cpinfo.nDAY_MIDD_PB ;
-			pcpinfo->nDAY_MIDD_PS = cpinfo.nDAY_MIDD_PS ;
 			pcpinfo->dPB_OAvp = cpinfo.dPB_OAvp ;
 			pcpinfo->dPS_OAvp = cpinfo.dPS_OAvp ;
 			pcpinfo->dPB_Avp = cpinfo.dPB_Avp ;
@@ -3160,173 +2694,13 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 			pcpinfo->dLAST_SETTLE_PRICE = 	cpinfo.dLAST_SETTLE_PRICE ;
 			pcpinfo->dSETTLE_PRICE = cpinfo.dSETTLE_PRICE ;
 		}
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 资金账号[%s]的 持仓信息 合约[%d %s] 投保[%s] 多仓[%d] 空仓[%d]",\
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 交易账号[%s]的 持仓信息 合约[%d %s] 投保[%s] 多仓[%d] 空仓[%d]",\
 			pcpinfo->sTxAcc,pcpinfo->nContractNo,pcpinfo->sContractCode,pcpinfo->sShFlag,pcpinfo->nCurPB,pcpinfo->nCurPS);
 		bret = m_pSqlCmd->FetchNext();
 	}
 	//出入金、报单、成交已在内存，不用重新读取了
 
-//	//读出入金
-//	S_MDB_FUND_FLOW flowinfo;
-//	sprintf(m_sSql,"select TX_DATE,TX_ACC,TX_SERIAL,BANK_ACC,BANK_NAME,CURRENCY,AMT,FUND_FLAG,LAST_AMT,CUR_AMT from FUND_FLOW where IS_REC='1' and TX_ACC=:1");
-//
-//	m_pSqlCmd->setCommandText(m_sSql);
-//	m_pSqlCmd->Param(1).setAsString() = txacc;
-//
-//	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 读取 资金账号[%s]的 出入金信息 %s",txacc,m_sSql);
-//	if (!m_pSqlCmd->Execute())
-//	{
-//		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
-//		return false;
-//	}
-//	bret = m_pSqlCmd->FetchNext();
-//	while (bret)
-//	{
-//		strcpy(flowinfo.sTxDate ,m_pSqlCmd->Field(0).asString());
-//		strcpy(flowinfo.sTxAcc,m_pSqlCmd->Field(1).asString());
-//		strcpy(flowinfo.sTxSerial,m_pSqlCmd->Field(2).asString());
-//		strcpy(flowinfo.sBankAcc,m_pSqlCmd->Field(3).asString());
-//		strcpy(flowinfo.sBankName,m_pSqlCmd->Field(4).asString());
-//		strcpy(flowinfo.sCurrency,m_pSqlCmd->Field(5).asString());
-//		flowinfo.dAmt = m_pSqlCmd->Field(6).asDouble();
-//		strcpy(flowinfo.sFundFlag,m_pSqlCmd->Field(7).asString());
-//		flowinfo.dLastAmt =m_pSqlCmd->Field(8).asDouble();
-//		flowinfo.dCurAmt =m_pSqlCmd->Field(9).asDouble();
-//
-//		if (m_pMemDb->m_pDbTrader.m_pFundFlow.Insert(flowinfo) <0 )
-//		{
-//#ifdef _ENGLISH_
-//			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  FUND_FLOW [%s] repeat",flowinfo.sTxAcc);
-//#else
-//			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  出入金表 FUND_FLOW [%s]重复",flowinfo.sTxAcc);
-//#endif
-//			return false;
-//		}
-//		bret = m_pSqlCmd->FetchNext();
-//	}
-//	//读报单
-//	S_MDB_ORDER_INFO orderinfo;
-//	sprintf(m_sSql,"select TX_ACC,EX_CODE,SEAT_NO,TX_CODE,CONTRACT_NO,CONTRACT_CODE,CLIENT_SERIAL,LOCAL_NO,SYSTEM_NO,ORDER_NUM,ORDER_PRICE,REMAIN_NUM,EO_FLAG,BS_FLAG,SH_FLAG,TXDATE,AMT,FROZ_AMT,EX_FARE,TX_TYPE,CMD_TYPE,CMD_ATTR,FORCE_FLAG,ORDER_STATUS,CANCEL_FLAG,ANS_TIME,ORDER_CHANNEL,ACC_ORG,TX_ORG,ORDER_OPER,CANCEL_CHANNEL,CANCEL_OPER,CANCEL_TIME,ORDER_RSP,FROZ_USEAMT,FROZ_OUTAMT,CANCEL_NUM,VARIETY from ORDER_INFO where TX_ACC=:1 ");
-//	m_pSqlCmd->setCommandText(m_sSql);
-//	m_pSqlCmd->Param(1).setAsString() = txacc;
-//	if (!m_pSqlCmd->Execute())
-//	{
-//		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
-//		return false;
-//	}
-//	
-//	bret = m_pSqlCmd->FetchNext();
-//	while (bret)
-//	{
-//		strcpy(orderinfo.sTxAcc ,m_pSqlCmd->Field(0).asString());
-//		strcpy(orderinfo.sExchCode,m_pSqlCmd->Field(1).asString());
-//		strcpy(orderinfo.sSeatNo,m_pSqlCmd->Field(2).asString());
-//		strcpy(orderinfo.sTxCode,m_pSqlCmd->Field(3).asString());
-//		orderinfo.nContractNo = m_pSqlCmd->Field(4).asLong();
-//		strcpy(orderinfo.sContractCode,m_pSqlCmd->Field(5).asString());
-//		strcpy(orderinfo.sClientSerial,m_pSqlCmd->Field(6).asString());
-//		strcpy(orderinfo.sLocalSerial,m_pSqlCmd->Field(7).asString());
-//		strcpy(orderinfo.sSystemNo,m_pSqlCmd->Field(8).asString());
-//		orderinfo.nOrderNum =m_pSqlCmd->Field(9).asLong();
-//		orderinfo.dOrderPrice =m_pSqlCmd->Field(10).asDouble();
-//		orderinfo.nRemainNum =m_pSqlCmd->Field(11).asLong();
-//		strcpy(orderinfo.sEoFlag ,m_pSqlCmd->Field(12).asString());
-//		strcpy(orderinfo.sBsFlag ,m_pSqlCmd->Field(13).asString());
-//		strcpy(orderinfo.sShFlag ,m_pSqlCmd->Field(14).asString());
-//		strcpy(orderinfo.sTxDate ,m_pSqlCmd->Field(15).asString());
-//		orderinfo.dAmt =m_pSqlCmd->Field(16).asDouble();
-//		orderinfo.dFrozAmt =m_pSqlCmd->Field(17).asDouble();
-//		orderinfo.dExFee =m_pSqlCmd->Field(18).asDouble();
-//		strcpy(orderinfo.sTxType ,m_pSqlCmd->Field(19).asString());
-//		strcpy(orderinfo.sCmdType ,m_pSqlCmd->Field(20).asString());
-//		strcpy(orderinfo.sCmdAttr,m_pSqlCmd->Field(21).asString());
-//		strcpy(orderinfo.sForceFlag ,m_pSqlCmd->Field(22).asString());
-//		strcpy(orderinfo.sOrderStatus ,m_pSqlCmd->Field(23).asString());
-//		strcpy(orderinfo.sCancelFlag ,m_pSqlCmd->Field(24).asString());
-//		strcpy(orderinfo.sAnsTime ,m_pSqlCmd->Field(25).asString());
-//		strcpy(orderinfo.sOrderChannel ,m_pSqlCmd->Field(26).asString());
-//		strcpy(orderinfo.sAccOrg ,m_pSqlCmd->Field(27).asString());
-//		strcpy(orderinfo.sTxOrg ,m_pSqlCmd->Field(28).asString());
-//		strcpy(orderinfo.sOrderOper ,m_pSqlCmd->Field(29).asString());
-//		strcpy(orderinfo.sCancelChannel ,m_pSqlCmd->Field(30).asString());
-//		strcpy(orderinfo.sCancelOper ,m_pSqlCmd->Field(31).asString());
-//		strcpy(orderinfo.sCancelTime ,m_pSqlCmd->Field(32).asString());
-//		strcpy(orderinfo.sOrderRsp ,m_pSqlCmd->Field(33).asString());
-//		orderinfo.dFrozUseamt = m_pSqlCmd->Field(34).asDouble();
-//		orderinfo.dFrozOutamt = m_pSqlCmd->Field(35).asDouble();
-//		orderinfo.nCancelNum = m_pSqlCmd->Field(36).asLong();
-//		orderinfo.nVarietyId = m_pSqlCmd->Field(37).asLong();
-//		if (m_pMemDb->m_pDbTrader.m_pOrder.Insert(orderinfo) <0 )
-//		{
-//#ifdef _ENGLISH_
-//			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  ORDER_INFO [%s] repeat",orderinfo.sTxAcc);
-//#else
-//			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  报单表 ORDER_INFO [%s]重复",orderinfo.sTxAcc);
-//#endif
-//			return false;
-//		}
-//		bret = m_pSqlCmd->FetchNext();
-//	}
-//	
-//	//读成交
-//	S_MDB_DONE_INFO doneinfo;
-//	sprintf(m_sSql,"select DONE_NO,SYSTEM_NO,EX_CODE,TX_CODE,LOCAL_NO,TX_ACC,DONE_DATE,DONE_TIME,CONTRACT_NO,CONTRACT_CODE,DONE_PRICE,DONE_QTY,BS_FLAG,SH_FLAG,EO_FLAG,TX_TYPE,ORDER_TYPE,DONE_ATTR,AMT,EX_FEE,MEMBER_FEE,EX_MARGIN,MEMBER_MARGIN,FLOAT_SURPLUS,COV_SURPLUS,TX_ORG,ACC_ORG,FORCE_FLAG,ORDER_CHANNEL,ORDER_OPER,SYSTEM_DATE,SEAT_NO,VARIETY from DONE_INFO where TX_ACC=:1");
-//	m_pSqlCmd->setCommandText(m_sSql);
-//	m_pSqlCmd->Param(1).setAsString() = txacc;
-//	if (!m_pSqlCmd->Execute())
-//	{
-//		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
-//		return false;
-//	}
-//	
-//	bret = m_pSqlCmd->FetchNext();
-//	while (bret)
-//	{
-//		strcpy(doneinfo.sDoneNo ,m_pSqlCmd->Field(0).asString());
-//		strcpy(doneinfo.sSystemNo,m_pSqlCmd->Field(1).asString());
-//		strcpy(doneinfo.sExchCode,m_pSqlCmd->Field(2).asString());
-//		strcpy(doneinfo.sTxCode,m_pSqlCmd->Field(3).asString());
-//		strcpy(doneinfo.sLocalNo,m_pSqlCmd->Field(4).asString());
-//		strcpy(doneinfo.sTxAcc,m_pSqlCmd->Field(5).asString());
-//		strcpy(doneinfo.sDoneDate,m_pSqlCmd->Field(6).asString());
-//		strcpy(doneinfo.sDoneTime,m_pSqlCmd->Field(7).asString());
-//		doneinfo.nContractNo =m_pSqlCmd->Field(8).asLong();
-//		strcpy(doneinfo.sContractCode,m_pSqlCmd->Field(9).asString());
-//		doneinfo.dDonePrice =m_pSqlCmd->Field(10).asDouble();
-//		doneinfo.nDoneNum = m_pSqlCmd->Field(11).asLong();
-//		strcpy(doneinfo.sEoFlag ,m_pSqlCmd->Field(12).asString());
-//		strcpy(doneinfo.sBsFlag ,m_pSqlCmd->Field(13).asString());
-//		strcpy(doneinfo.sShFlag ,m_pSqlCmd->Field(14).asString());
-//		strcpy(doneinfo.sTxType ,m_pSqlCmd->Field(15).asString());
-//		strcpy(doneinfo.sCmdType ,m_pSqlCmd->Field(16).asString());
-//		strcpy(doneinfo.sCmdAttr ,m_pSqlCmd->Field(17).asString());
-//		doneinfo.dAmt =m_pSqlCmd->Field(18).asDouble();
-//		doneinfo.dExFee =m_pSqlCmd->Field(19).asDouble();
-//		doneinfo.dMemberFee =m_pSqlCmd->Field(20).asDouble();
-//		doneinfo.dExMargin =m_pSqlCmd->Field(21).asDouble();
-//		doneinfo.dMemberMargin =m_pSqlCmd->Field(22).asDouble();
-//		doneinfo.dFloatSurplus =m_pSqlCmd->Field(23).asDouble();
-//		doneinfo.dCovSurplus =m_pSqlCmd->Field(24).asDouble();
-//		strcpy(doneinfo.sTxOrg ,m_pSqlCmd->Field(25).asString());
-//		strcpy(doneinfo.sAccOrg ,m_pSqlCmd->Field(26).asString());
-//		strcpy(doneinfo.sForceFlag ,m_pSqlCmd->Field(27).asString());
-//		strcpy(doneinfo.sOrderChannel ,m_pSqlCmd->Field(28).asString());
-//		strcpy(doneinfo.sOrderOper ,m_pSqlCmd->Field(29).asString());
-//		strcpy(doneinfo.sSystemDate ,m_pSqlCmd->Field(30).asString());
-//		strcpy(doneinfo.sSeatNo ,m_pSqlCmd->Field(31).asString());
-//		doneinfo.nVarietyId =m_pSqlCmd->Field(32).asLong();
-//		if (m_pMemDb->m_pDbTrader.m_pDone.Insert(doneinfo) <0 )
-//		{
-//#ifdef _ENGLISH_
-//			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  DONE_INFO [%s] repeat",doneinfo.sTxAcc);
-//#else
-//			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切 成交表 DONE_INFO [%s]重复",doneinfo.sTxAcc);
-//#endif
-//			return false;
-//		}
-//		bret = m_pSqlCmd->FetchNext();
-//	}
-//
+
 	//重新根据出入金、报单、成交计算资金持仓等
 	//加锁
 	CBF_PMutex pp(pacclock->mutex);
@@ -3340,7 +2714,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  处理[%s]出入金流水失败",pacclock->sTxAcc);
 			return false;
 		}
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 处理 资金账号[%s] 出入金[%d]条",pacclock->sTxAcc,flowlist.size());
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 处理 交易账号[%s] 出入金[%d]条",pacclock->sTxAcc,flowlist.size());
 	}
 	//持仓
 	//判断是否大边，进行大边处理 导入的持仓的保证金，已经在资金表里，但资金明细表没有。这里要经过持仓计算，分别得到买保证金、卖保证金，记录资金明细表。
@@ -3352,7 +2726,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  处理[%s]持仓失败",pacclock->sTxAcc);
 			return false;
 		}
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 处理 资金账号[%s] 持仓[%d]条",pacclock->sTxAcc,posilis.size());
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 处理 交易账号[%s] 持仓[%d]条",pacclock->sTxAcc,posilis.size());
 	}
 	
 	
@@ -3366,7 +2740,7 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切  处理[%s]成交失败",pacclock->sTxAcc);
 			return false;
 		}
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 处理 资金账号[%s] 成交[%d]条",pacclock->sTxAcc,donelist.size());
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 处理 交易账号[%s] 成交[%d]条",pacclock->sTxAcc,donelist.size());
 	}
 	//报单
 	std::vector<S_MDB_ORDER_INFO *> orderlist;
@@ -3378,52 +2752,11 @@ bool RiskDll::ReadOneCustInfo(const char *txacc)
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"日切 处理[%s]报单失败",pacclock->sTxAcc);
 			return false;
 		}
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 处理 资金账号[%s] 报单[%d]条",pacclock->sTxAcc,orderlist.size());
+		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切 处理 交易账号[%s] 报单[%d]条",pacclock->sTxAcc,orderlist.size());
 	}
-	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切  读取 资金账号[%s]的信息 完成",txacc);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"日切  读取 交易账号[%s]的信息 完成",txacc);
 	return true;
 }
-
-
-bool RiskDll::UpdateFeeTemplet()
-{
-	S_MDB_FEE_TEMPLET_DETAIL info;
-	sprintf(m_sSql,"select a.FEE_MODEL_CODE,a.PROD_TYPE,a.VARIETY_NO,a.VARIETY_CODE,a.CONTRACT_NO,a.CONTRACT_CODE,a.FEE_NO,a.FEE_MODE,a.FEE_VALUE from FEE_MODEL_DETAIL a ");
-	m_pSqlCmd->setCommandText(m_sSql);
-	if (!m_pSqlCmd->Execute())
-	{
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Execute <%s> error %d %s",m_sSql,m_pSqlCmd->m_dbconn.m_nErrCode,m_pSqlCmd->m_dbconn.m_sErrInfo.c_str());
-		return false;
-	}
-	bool bret = m_pSqlCmd->FetchNext();
-	while (bret)
-	{
-		strcpy(info.sFareModeCode ,m_pSqlCmd->Field(0).asString());
-		strcpy(info.sProdType,m_pSqlCmd->Field(1).asString());
-		info.nVarietyNo  = m_pSqlCmd->Field(2).asLong();
-		strcpy(info.sVarietyCode,m_pSqlCmd->Field(3).asString());
-		info.nContractNo  = m_pSqlCmd->Field(4).asLong();
-		strcpy(info.sContractCode,m_pSqlCmd->Field(5).asString());
-		strcpy(info.sFareNo,m_pSqlCmd->Field(6).asString());
-		strcpy(info.sFareMode,m_pSqlCmd->Field(7).asString());
-		info.dValue = m_pSqlCmd->Field(8).asDouble();
-		
-		if (m_pMemDb->m_pDbSet.m_pFeeTempletDetail.Update(info) <0 )
-		{
-#ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"FEE_MODEL_DETAIL [%s] Update error",info.sFareModeCode);
-#else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"费率模板设置表 FEE_MODEL_DETAIL [%s] 更新失败",info.sFareModeCode);
-#endif
-			return false;
-		}
-		bret = m_pSqlCmd->FetchNext();
-	}
-	
-	return true;
-}
-
-
 
 bool RiskDll::CalcRiskInfo(char *txacc, S_MDB_CONTRACT_INFO *coninfo, double newprice, S_MDB_CUST_FUND &fund)
 {
@@ -3433,16 +2766,16 @@ bool RiskDll::CalcRiskInfo(char *txacc, S_MDB_CONTRACT_INFO *coninfo, double new
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"txacc [%s] not found",txacc);
 		return false;
 	}
-	S_MDB_CUST_FUNDACC_INFO *pfundacc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(plock->nFundAccRowid);
+	S_MDB_TRADEACC_INFO *pfundacc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(plock->nTradeAccRowid);
 	if (pfundacc == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] not found",txacc);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s] not found",txacc);
 		return false;
 	}
-	S_MDB_CUST_FUND *pfund = m_pMemDb->GetFund(plock,coninfo->sCurrency);
+	S_MDB_CUST_FUND *pfund = m_pMemDb->GetFund(plock);
 	if (pfund == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s %s] not found",txacc,coninfo->sCurrency);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s %s] not found",txacc,coninfo->sCurrency);
 		return false;
 	}
 	
@@ -3536,7 +2869,7 @@ bool RiskDll::CalcRiskInfo(char *txacc, S_MDB_CONTRACT_INFO *coninfo, double new
 	int level = m_pKernelPub.GetRiskLevel(&fund,traderight);
 	if (level<0)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s] 取风险级别出错",txacc);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"交易账号[%s] 取风险级别出错",txacc);
 		return false;
 	}
 	fund.nRisk_level = level;
@@ -3551,91 +2884,74 @@ bool RiskDll::SyncOrder(S_MDB_ORDER_INFO *order)
 		order->sCancelFlag[0] = BOOL_FALSE;
 		order->sCancelFlag[1] = 0;
 	}
-	if (order->nSyncFlag == 1)
+	
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始更新报单表");
+	int flag = order->nSyncFlag;
+	sprintf(m_sSql,"select  REMAIN_VOL,CANCEL_FLAG,CANCEL_VOL from t_order_info where LOCAL_NO=:1");
+	m_pSqlCmd->setCommandText(m_sSql);
+	m_pSqlCmd->Param(1).setAsString() = order->sLocalSerial;
+	if (!m_pSqlCmd->Execute())
 	{
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始写入报单表");
-		if (!UpdateOrder2Db(order))
-		{
-			return false;
-		}
-		if (order->nSyncFlag == 1)
-		{
-			order->nSyncFlag = 0;
-		}
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"写入报单表完成");
+		m_pSqlCmd->Rollback();
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Execute %s error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
 		return true;
 	}
-	else if  (order->nSyncFlag >0 )//需要更新
+	if (!m_pSqlCmd->FetchNext())
 	{
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"开始更新报单表");
-		int flag = order->nSyncFlag;
-		sprintf(m_sSql,"select  REMAIN_NUM,CANCEL_FLAG,CANCEL_NUM from ORDER_INFO where LOCAL_NO=:1");
-		m_pSqlCmd->setCommandText(m_sSql);
-		m_pSqlCmd->Param(1).setAsString() = order->sLocalSerial;
-		if (!m_pSqlCmd->Execute())
-		{
-			m_pSqlCmd->Rollback();
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Execute %s error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
-			return true;
-		}
-		if (m_pSqlCmd->FetchNext())
-		{
-			if (order->nRemainNum > m_pSqlCmd->Field(0).asLong()) //表里的剩余数量小于，说明已经更新过了
-			{
-				if (order->nSyncFlag == flag)
-				{
-					order->nSyncFlag = 0;
-				}
-				return true;
-			}
-			if (m_pSqlCmd->Field(1).asString()[0] == BOOL_TRUE) //表里已是撤单，说明撤过了
-			{
-				if (order->nSyncFlag == flag)
-				{
-					order->nSyncFlag = 0;
-				}
-				return true;
-			}
-		}
-		else
-		{
-			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"无此报单[%s] 开始写入报单表",order->sLocalSerial);
-			if (!UpdateOrder2Db(order))
-			{
-				return false;
-			}
-			if (order->nSyncFlag == flag)
-			{
-				order->nSyncFlag = 0;
-			}
-			m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"写入报单表完成");
-			return true;
-		}
-
-		sprintf(m_sSql,"update ORDER_INFO set REMAIN_NUM=:1,CANCEL_FLAG=:2,CANCEL_NUM=:3,DONE_AVP=:4,ORDER_STATUS=:6,ORDER_RSP=:7 where LOCAL_NO=:5");
-		m_pSqlCmd->setCommandText(m_sSql);
-		m_pSqlCmd->Param(1).setAsLong() = order->nRemainNum;
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "无此报单[%s] 开始写入报单表", order->sLocalSerial);
+        if (!UpdateOrder2Db(order))
+        {
+            return false;
+        }
+        if (order->nSyncFlag == flag)
+        {
+            order->nSyncFlag = 0;
+        }
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "写入报单表完成");
+        return true;
 		
-		m_pSqlCmd->Param(2).setAsString() = order->sCancelFlag;
-		m_pSqlCmd->Param(3).setAsLong() = order->nCancelNum;
-		m_pSqlCmd->Param(4).setAsDouble() = order->dDoneAvp;
-		m_pSqlCmd->Param(5).setAsString() = order->sLocalSerial;
-		m_pSqlCmd->Param(6).setAsString() = order->sOrderStatus;
-		m_pSqlCmd->Param(7).setAsString() = order->sOrderRsp;
-		if (!m_pSqlCmd->Execute())
-		{
-			m_pSqlCmd->Rollback();
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Execute %s error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
-			return -1;
-		}
-		if (order->nSyncFlag == flag)
-		{
-			order->nSyncFlag = 0;
-		}
-		m_pSqlCmd->Commit();
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"更新报单表完成");
-		return true;
 	}
+    if (order->nRemainNum > m_pSqlCmd->Field(0).asLong()) //表里的剩余数量小于，说明已经更新过了
+    {
+        if (order->nSyncFlag == flag)
+        {
+            order->nSyncFlag = 0;
+        }
+        return true;
+    }
+    if (m_pSqlCmd->Field(1).asString()[0] == BOOL_TRUE) //表里已是撤单，说明撤过了
+    {
+        if (order->nSyncFlag == flag)
+        {
+            order->nSyncFlag = 0;
+        }
+        return true;
+    }
+	sprintf(m_sSql,"update t_order_info set REMAIN_VOL=:1,CANCEL_FLAG=:2,CANCEL_VOL=:3,DONE_AVP=:4,ORDER_STATUS=:6,ORDER_RSP=:7,CANCEL_CHANNEL=:8,CANCEL_OPER=:9,CANCEL_TIME=:10 where LOCAL_NO=:5");
+	m_pSqlCmd->setCommandText(m_sSql);
+	m_pSqlCmd->Param(1).setAsLong() = order->nRemainNum;
+		
+	m_pSqlCmd->Param(2).setAsString() = order->sCancelFlag;
+	m_pSqlCmd->Param(3).setAsLong() = order->nCancelNum;
+	m_pSqlCmd->Param(4).setAsDouble() = order->dDoneAvp;
+	m_pSqlCmd->Param(5).setAsString() = order->sLocalSerial;
+	m_pSqlCmd->Param(6).setAsString() = order->sOrderStatus;
+	m_pSqlCmd->Param(7).setAsString() = order->sOrderRsp;
+	m_pSqlCmd->Param(8).setAsString() = order->sCancelChannel;
+	m_pSqlCmd->Param(9).setAsString() = order->sCancelOper;
+	m_pSqlCmd->Param(10).setAsString() = order->sCancelTime;
+	if (!m_pSqlCmd->Execute())
+	{
+		m_pSqlCmd->Rollback();
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Execute %s error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
+		return -1;
+	}
+	if (order->nSyncFlag == flag)
+	{
+		order->nSyncFlag = 0;
+	}
+	m_pSqlCmd->Commit();
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"更新报单表完成");
 	return true;
 }
 
@@ -3643,7 +2959,7 @@ bool RiskDll::SyncDone(S_MDB_DONE_INFO *done)
 {
 	if (done->nSyncFlag == 3)
 	{
-		sprintf(m_sSql,"select DONE_NO from  DONE_INFO where DONE_NO=:1 and EX_CODE=:2 and BS_FLAG=:3 ");
+		sprintf(m_sSql,"select DONE_NO from  t_match_info where DONE_NO=:1 and EX_CODE=:2 and BS_FLAG=:3 ");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsString() = done->sDoneNo;
 		m_pSqlCmd->Param(2).setAsString() = done->sExchCode;
@@ -3659,7 +2975,7 @@ bool RiskDll::SyncDone(S_MDB_DONE_INFO *done)
 			return true;
 		}
 
-		sprintf(m_sSql,"insert into DONE_INFO(DONE_NO,SYSTEM_NO,EX_CODE,SEAT_NO,TX_CODE,LOCAL_NO,TX_ACC,DONE_DATE,DONE_TIME,CONTRACT_NO,CONTRACT_CODE,DONE_PRICE,DONE_QTY,BS_FLAG,SH_FLAG,EO_FLAG,TX_TYPE,ORDER_TYPE,DONE_ATTR,AMT,EX_FEE,MEMBER_FEE,EX_MARGIN,MEMBER_MARGIN,FLOAT_SURPLUS,COV_SURPLUS,TX_ORG,ACC_ORG,FORCE_FLAG,ORDER_CHANNEL,ORDER_OPER,SYSTEM_DATE,VARIETY) values(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33) ");
+		sprintf(m_sSql,"insert into t_match_info(DONE_NO,SYSTEM_NO,EX_CODE,SEAT_NO,TX_CODE,LOCAL_NO,TX_ACC,DONE_DATE,DONE_TIME,SECU_NO,SECU_CODE,SECU_NAME,DONE_PRICE,DONE_QTY,BS_FLAG,SH_FLAG,EO_FLAG,ORDER_PRICE,TX_TYPE,CMD_TYPE,CMD_ATTR,AMT,EX_FEE,MEMBER_FEE,EX_MARGIN,MEMBER_MARGIN,FLOAT_SURPLUS,COV_SURPLUS,TX_ORG,ACC_ORG,FORCE_FLAG,ORDER_CHANNEL,ORDER_OPER,SYSTEM_DATE,VARIETY,RULE_ALGO_CODE,CLEAR_SPEED) values(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37) ");
 		m_pSqlCmd->setCommandText(m_sSql);
 		m_pSqlCmd->Param(1).setAsString() = done->sDoneNo;
 		m_pSqlCmd->Param(2).setAsString() = done->sSystemNo;
@@ -3672,28 +2988,32 @@ bool RiskDll::SyncDone(S_MDB_DONE_INFO *done)
 		m_pSqlCmd->Param(9).setAsString() = done->sDoneTime;
 		m_pSqlCmd->Param(10).setAsLong() = done->nContractNo;
 		m_pSqlCmd->Param(11).setAsString() = done->sContractCode;
-		m_pSqlCmd->Param(12).setAsDouble() = done->dDonePrice;
-		m_pSqlCmd->Param(13).setAsLong() = done->nDoneNum;
-		m_pSqlCmd->Param(14).setAsString() = done->sBsFlag;
-		m_pSqlCmd->Param(15).setAsString() = done->sShFlag;
-		m_pSqlCmd->Param(16).setAsString() = done->sEoFlag;
-		m_pSqlCmd->Param(17).setAsString() = done->sTxType;
-		m_pSqlCmd->Param(18).setAsString() = done->sCmdType;
-		m_pSqlCmd->Param(19).setAsString() = done->sCmdAttr;
-		m_pSqlCmd->Param(20).setAsDouble() = done->dAmt;
-		m_pSqlCmd->Param(21).setAsDouble() = done->dExFee;
-		m_pSqlCmd->Param(22).setAsDouble() = done->dMemberFee;
-		m_pSqlCmd->Param(23).setAsDouble() = done->dExMargin;
-		m_pSqlCmd->Param(24).setAsDouble() = done->dMemberMargin;
-		m_pSqlCmd->Param(25).setAsDouble() = done->dFloatSurplus;
-		m_pSqlCmd->Param(26).setAsDouble() = done->dCovSurplus;
-		m_pSqlCmd->Param(27).setAsString() = done->sTxOrg;
-		m_pSqlCmd->Param(28).setAsString() = done->sAccOrg;
-		m_pSqlCmd->Param(29).setAsString() = done->sForceFlag;
-		m_pSqlCmd->Param(30).setAsString() = done->sOrderChannel;
-		m_pSqlCmd->Param(31).setAsString() = done->sOrderOper;
-		m_pSqlCmd->Param(32).setAsString() = done->sSystemDate;
-		m_pSqlCmd->Param(33).setAsLong() = done->nVarietyId;
+		m_pSqlCmd->Param(12).setAsString() = done->sContractName;
+		m_pSqlCmd->Param(13).setAsDouble() = done->dDonePrice;
+		m_pSqlCmd->Param(14).setAsLong() = done->nDoneNum;
+		m_pSqlCmd->Param(15).setAsString() = done->sBsFlag;
+		m_pSqlCmd->Param(16).setAsString() = done->sShFlag;
+		m_pSqlCmd->Param(17).setAsString() = done->sEoFlag;
+		m_pSqlCmd->Param(18).setAsDouble() = done->dOrderPrice;
+		m_pSqlCmd->Param(19).setAsString() = done->sTxType;
+		m_pSqlCmd->Param(20).setAsString() = done->sCmdType;
+		m_pSqlCmd->Param(21).setAsString() = done->sCmdAttr;
+		m_pSqlCmd->Param(22).setAsDouble() = done->dAmt;
+		m_pSqlCmd->Param(23).setAsDouble() = done->dExFee;
+		m_pSqlCmd->Param(24).setAsDouble() = done->dMemberFee;
+		m_pSqlCmd->Param(25).setAsDouble() = done->dExMargin;
+		m_pSqlCmd->Param(26).setAsDouble() = done->dMemberMargin;
+		m_pSqlCmd->Param(27).setAsDouble() = done->dFloatSurplus;
+		m_pSqlCmd->Param(28).setAsDouble() = done->dCovSurplus;
+		m_pSqlCmd->Param(29).setAsString() = done->sTxOrg;
+		m_pSqlCmd->Param(30).setAsString() = done->sAccOrg;
+		m_pSqlCmd->Param(31).setAsString() = done->sForceFlag;
+		m_pSqlCmd->Param(32).setAsString() = done->sOrderChannel;
+		m_pSqlCmd->Param(33).setAsString() = done->sOrderOper;
+		m_pSqlCmd->Param(34).setAsString() = done->sSystemDate;
+		m_pSqlCmd->Param(35).setAsLong() = done->nVarietyId;
+		m_pSqlCmd->Param(36).setAsString() = done->sRuleAlgoCode;
+		m_pSqlCmd->Param(37).setAsLong() = done->nClearSpeed;
 		if (!m_pSqlCmd->Execute())
 		{
 			m_pSqlCmd->Rollback();
@@ -3706,6 +3026,25 @@ bool RiskDll::SyncDone(S_MDB_DONE_INFO *done)
 	}
 	return true;
 }
+bool RiskDll::SyncBond(S_MDB_BOND_INFO* bond)
+{
+    sprintf(m_sSql, "update  sys_bond_ext_info set MARKET_SCOPE=:2,DV01=:3,APPR_VALUE=:4   where BOND_CODE=:1 ");
+    m_pSqlCmd->setCommandText(m_sSql);
+    m_pSqlCmd->Param(1).setAsString() = bond->sBondCode;
+    m_pSqlCmd->Param(2).setAsDouble() = bond->dMarketScope;
+    m_pSqlCmd->Param(3).setAsDouble() = bond->dDv01;
+	m_pSqlCmd->Param(4).setAsDouble() = bond->dApprValue;
+    if (!m_pSqlCmd->Execute())
+    {
+		m_pSqlCmd->Rollback();
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Execute %s error %s", m_sSql, m_pSqlCmd->GetCmdErrInfo());
+        return false;
+    }  
+    m_pSqlCmd->Commit();
+    return true;
+
+}
+
 bool RiskDll::ComputeProd(const char *compdate)
 {
 	int ret;
@@ -3764,8 +3103,8 @@ bool RiskDll::ComputeProd(const char *compdate)
 		
 		for (j=0; j<prodcustlist.size(); j++)
 		{
-			//某一个资金账号
-			//根据资金账号去取资金，结存及保证金
+			//某一个交易账号
+			//根据交易账号去取资金，结存及保证金
 			fundlist.clear();
 			if (!m_pMemDb->m_pDbTrader.m_pFund.Select(prodcustlist[j]->sTxAcc,fundlist))
 			{
@@ -3802,7 +3141,7 @@ bool RiskDll::ComputeProd(const char *compdate)
 					dMargin+=dMarginTmp;
 				}
 			}
-			//某一个资金账号的持仓
+			//某一个交易账号的持仓
 			//取持仓，计算持仓总价值  合约轧差占比
 			posilist.clear();
 			if (m_pMemDb->m_pDbTrader.m_pPosition.SelectByAcc(prodcustlist[j]->sTxAcc,posilist))
@@ -3890,10 +3229,11 @@ bool RiskDll::ComputeProd(const char *compdate)
 		{
 			risk.dRisk = dMargin/dBal;//保证金/权益
 		}
-		risk.nRiskLevel = m_pKernelPub.GetProdRiskLevel(risk.sProdCode,risk.dUnitValue,risk.dRisk,traderight,risk.sRiskDesc);
+		double posiValue=GetProdPosiTotalValue(risk.sProdCode);	//取产品持仓总规模
+		risk.nRiskLevel = m_pKernelPub.GetProdFundRiskLevel(risk.sProdCode,risk.dUnitValue,risk.dRisk, posiValue,traderight,risk.sRiskDesc);
 		strcpy(risk.sRight,traderight);
 
-		posirisk.nRiskLevel = m_pKernelPub.GetProdRiskLevel(risk.sProdCode,posirisk.dMarginRate,posirisk.dPosiValueRate,posirisk.dPosiDiffValueRate,posirisk.sRight,posirisk.sRiskDesc);
+		posirisk.nRiskLevel = m_pKernelPub.GetProdPosiRiskLevel(risk.sProdCode,posirisk.dMarginRate,posirisk.dPosiValueRate,posirisk.dPosiDiffValueRate,posirisk.sRight,posirisk.sRiskDesc);
 		
 		bool issendfund=false;
 		bool issendposi=false;
@@ -3973,7 +3313,8 @@ bool RiskDll::ComputeProd(const char *compdate)
 			}
 			else
 			{
-				Send2OperProdOrgRiskMsg(pProd->sOrgCode,risk.sRight[0],riskdata,riskdatalen,9821);
+				//Send2OperProdOrgRiskMsg(pProd->sOrgCode,risk.sRight[0],riskdata,riskdatalen,9821);
+				ReleaseBroadcast(riskdata,riskdatalen,0,atoi(risk.sProdCode),9932);
 			}
 			
 		}
@@ -4000,7 +3341,8 @@ bool RiskDll::ComputeProd(const char *compdate)
 			}
 			else
 			{
-				Send2OperProdOrgRiskMsg(pProd->sOrgCode,risk.sRight[0],riskdata,riskdatalen,9822);
+				//Send2OperProdOrgRiskMsg(pProd->sOrgCode,risk.sRight[0],riskdata,riskdatalen,9822);
+				ReleaseBroadcast(riskdata, riskdatalen, 0, atoi(risk.sProdCode), 9933);
 			}
 		}
 		pProd = m_pMemDb->m_pDbBaseinfo.m_pProd.Next();
@@ -4011,8 +3353,8 @@ bool RiskDll::ComputeOrg(const char *compdate)
 {
 	int ret;
 	int i,j,k;
-	std::vector<S_MDB_CUST_FUNDACC_INFO *> orgcustlist;
-	std::vector<S_MDB_CUST_FUNDACC_INFO *> orgmgrcustlist;
+	std::vector<S_MDB_TRADEACC_INFO*> orgcustlist;
+	std::vector<S_MDB_TRADEACC_INFO*> orgmgrcustlist;
 	std::vector<S_MDB_ORG_INFO *>orglist;
 	std::vector<S_MDB_ORG_INFO *>calcorglist;
 	//计算机构资金
@@ -4031,7 +3373,7 @@ bool RiskDll::ComputeOrg(const char *compdate)
 		{
 			//顶级机构，取所有资金账户
 			isTopOrg = true;
-			if (!m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectAll(orgcustlist))
+			if (!m_pMemDb->m_pDbCust.m_pTradeAcc.SelectAll(orgcustlist))
 			{
 				//无资金账户
 				continue;
@@ -4048,9 +3390,9 @@ bool RiskDll::ComputeOrg(const char *compdate)
 			//逐个按机构取资金账户
 			for (j=0; j<calcorglist.size(); j++)
 			{
-				m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAccOrg(calcorglist[j]->sOrgCode,orgcustlist);
+				m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAccOrg(calcorglist[j]->sOrgCode,orgcustlist);
 
-				m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByMgrOrg(calcorglist[j]->sOrgCode,orgmgrcustlist);
+				m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByMgrOrg(calcorglist[j]->sOrgCode,orgmgrcustlist);
 			}
 		}
 		ComputeOneOrg(compdate,orglist[i]->sOrgCode,orglist[i]->sOrgName,"0",orgcustlist);//计算所属机构
@@ -4058,7 +3400,7 @@ bool RiskDll::ComputeOrg(const char *compdate)
 	}
 	return true;
 }
-bool RiskDll::ComputeOneOrg(const char *compdate,char *orgcode, const char *orgname,const char *risktype,std::vector<S_MDB_CUST_FUNDACC_INFO *> orgcustlist)
+bool RiskDll::ComputeOneOrg(const char *compdate,char *orgcode, const char *orgname,const char *risktype,std::vector<S_MDB_TRADEACC_INFO*> orgcustlist)
 {
 	double dBal;//结存 权益
 	double dMargin;//保证金
@@ -4100,8 +3442,8 @@ bool RiskDll::ComputeOneOrg(const char *compdate,char *orgcode, const char *orgn
 	m_pDate.Update();
 	for (j=0; j<orgcustlist.size(); j++)
 	{
-		//某一个资金账号
-		//根据资金账号去取资金，结存及保证金
+		//某一个交易账号
+		//根据交易账号去取资金，结存及保证金
 		fundlist.clear();
 		if (!m_pMemDb->m_pDbTrader.m_pFund.Select(orgcustlist[j]->sTxAcc,fundlist))
 		{
@@ -4138,7 +3480,7 @@ bool RiskDll::ComputeOneOrg(const char *compdate,char *orgcode, const char *orgn
 				dMargin+=dMarginTmp;
 			}
 		}
-		//某一个资金账号的持仓
+		//某一个交易账号的持仓
 		//取持仓，计算持仓总价值  合约轧差占比
 		posilist.clear();
 		if (m_pMemDb->m_pDbTrader.m_pPosition.SelectByAcc(orgcustlist[j]->sTxAcc,posilist))
@@ -4226,10 +3568,11 @@ bool RiskDll::ComputeOneOrg(const char *compdate,char *orgcode, const char *orgn
 	{
 		risk.dRisk = dMargin/dBal;//保证金/权益
 	}
-	risk.nRiskLevel = m_pKernelPub.GetOrgRiskLevel(risk.sOrgCode,risk.dUnitValue,risk.dRisk,traderight,risk.sRiskDesc);
+	double posiValue=GetOrgPosiTotalValue(risk.sOrgCode); //取机构持仓总规模
+	risk.nRiskLevel = m_pKernelPub.GetOrgFundRiskLevel(risk.sOrgCode,risk.dUnitValue,risk.dRisk, posiValue,traderight,risk.sRiskDesc);
 	strcpy(risk.sRight,traderight);
 
-	posirisk.nRiskLevel = m_pKernelPub.GetOrgRiskLevel(risk.sOrgCode,posirisk.dMarginRate,posirisk.dPosiValueRate,posirisk.dPosiDiffValueRate,posirisk.sRight,posirisk.sRiskDesc);
+	posirisk.nRiskLevel = m_pKernelPub.GetOrgPosiRiskLevel(risk.sOrgCode,posirisk.dMarginRate,posirisk.dPosiValueRate,posirisk.dPosiDiffValueRate,posirisk.sRight,posirisk.sRiskDesc);
 
 	bool issendfund=false;
 	bool issendposi=false;
@@ -4310,7 +3653,7 @@ bool RiskDll::ComputeOneOrg(const char *compdate,char *orgcode, const char *orgn
 		}
 		else
 		{
-			Send2OperProdOrgRiskMsg(orgcode,risk.sRight[0],riskdata,riskdatalen,9849);
+			ReleaseBroadcast(riskdata,riskdatalen,0,atoi(risk.sOrgCode),9934);	//公共key是机构代码
 		}
 
 	}
@@ -4338,144 +3681,25 @@ bool RiskDll::ComputeOneOrg(const char *compdate,char *orgcode, const char *orgn
 		}
 		else
 		{
-			Send2OperProdOrgRiskMsg(orgcode,risk.sRight[0],riskdata,riskdatalen,9850);
+			ReleaseBroadcast(riskdata, riskdatalen, 0, atoi(risk.sOrgCode), 9935);	//公共key是机构代码
 		}
 	}
 
 	return true;
 }
-void RiskDll::Send2OperProdOrgRiskMsg(char *orgcode, char traderight,const char *riskdata,int riskdatalen,int funcno)
-{
-	if (*g_nSvrHostStatus != 	ARBSTATUS_MASTER && *g_nSvrHostStatus != ARBSTATUS_MASTER_AYN && *g_nSvrHostStatus!=MASTERHOST)
-	{
-		m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"Send2CustRiskMsg 不是主机，略过");
-		return;
-	}
-	//发送给操作员，代理该产品的操作员或该产品的上级机构操作员，操作员已登录且订阅了消息
-	
 
-	//查找在线并且订阅了风险的操作员
-	std::vector<S_MDB_SUBSCRIBE *> sublist;
-	if (!m_pMemDb->m_pDbTrader.m_pSubcribe.Select((char *)"0",sublist))
-	{
-		return;
-	}
-	int i,j;
-	std::vector<S_MDB_OPER_ONLINE *> onlist;
-	for (i=0;i<sublist.size(); i++)
-	{
-		//查看操作员是否在线，是否有权限
-		onlist.clear();
-		if (!m_pMemDb->m_pDbPublic.m_pOperOnline.Select(sublist[i]->sOper,onlist))
-		{
-			continue;
-		}
-		for (j=0 ; j<onlist.size(); j++)
-		{
-			//是否登录
-			if (onlist[j]->sOnlineStatus[0] != LOGIN_STATUS_OK )
-			{
-				continue;
-			}
-			//查找操作员机构
-			S_MDB_OPER_INFO *poper = m_pMemDb->m_pDbPublic.m_pOper.Select(onlist[j]->sOperCode);
-			if (poper== NULL)
-			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]在操作员表中不存在",onlist[j]->sOperCode);
-				continue;
-			}
-			//查看机构是否有权限
-			if (m_pKernelPub.CheckRight(orgcode,poper->sOrgCode))
-			{
-				S_TRADE_DATA sdata;
-				//有权限，发送报文
-//				sdata.pData = (PBPCCOMMSTRU)m_pMemPool->PoolMalloc();
-				if (m_pClientLink->PoolMalloc(sdata)<0)
-				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"PoolMalloc error");
-					return ;
-				}
-				bzero(&(sdata.pData->sDBHead),DREBHEADLEN);
-				
-				memcpy(sdata.pData->sBuffer,riskdata,riskdatalen);
-				sdata.pData->sDBHead.nLen = riskdatalen;
-				
-				
-				sdata.pData->sDBHead.cRaflag = 0;
-				sdata.pData->sDBHead.cCmd = CMD_DPPUSH;
-				sdata.pData->sDBHead.d_Dinfo.d_nServiceNo = funcno;
-				if (strcmp(onlist[j]->sTermType,TERM_TYPE_RPCAPI) ==0)
-				{
-					//socket
-					sdata.src = 1;
-					sdata.pData->sBpcHead.nIndex = onlist[j]->nGateIndex;
-					sdata.pData->sBpcHead.nConnectTime = onlist[j]->nTimeStamp;
-				}
-				else //总线
-				{
-					sdata.src = 0;
-					sdata.pData->sDBHead.d_Dinfo.d_nNodeId = onlist[j]->nDrebId;
-					sdata.pData->sDBHead.d_Dinfo.d_cNodePrivateId = onlist[j]->nDrebPid;
-					sdata.pData->sDBHead.d_Dinfo.d_nSvrMainId = onlist[j]->nSvrId;
-					sdata.pData->sDBHead.d_Dinfo.d_cSvrPrivateId = onlist[j]->nSvrPid;
-					sdata.pData->sDBHead.s_Sinfo.s_nGateIndex = onlist[j]->nGateIndex;
-					sdata.pData->sDBHead.s_Sinfo.s_nHook = onlist[j]->nTimeStamp;
-					
-				}
-				m_pClientLink->Send2Client(sdata);
-			}
-		}
-	}
-	
-}
-
-
-void RiskDll::SendOrderPush(S_MDB_TXACC_LOCK *acclock,S_MDB_ORDER_INFO *info)
+void RiskDll::SendOrderBroadcast(S_MDB_TXACC_LOCK *acclock,S_MDB_ORDER_INFO *info)
 {
 	//准备数据
 	m_pXdp->ResetData();
-	m_pXdp->SetFieldValue((unsigned short)40,(int)atoi(info->sTxDate),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)101,info->sSeatNo,strlen(info->sSeatNo),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)102,info->sTxAcc,strlen(info->sTxAcc),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)100,info->sContractCode,strlen(info->sContractCode),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)5,(short)info->sEoFlag[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)6,(short)info->sBsFlag[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)7,(short)info->sShFlag[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)8,(short)info->sTxType[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)9,(short)info->sCmdType[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)10,(short)info->sCmdAttr[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)11,(short)info->sForceFlag[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)41,info->nOrderNum,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)60,info->dOrderPrice,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)103,info->sLocalSerial,strlen(info->sLocalSerial),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)104,info->sSystemNo,strlen(info->sSystemNo),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)14,(short)info->sOrderStatus[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)105,info->sOrderOper,strlen(info->sOrderOper),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)106,info->sExchCode,strlen(info->sExchCode),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)107,info->sTxCode,strlen(info->sTxCode),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)20,(unsigned int)info->nContractNo,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)108,info->sClientSerial,strlen(info->sClientSerial),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)42,(int)info->nRemainNum,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)61,info->dAmt,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)62,info->dFrozAmt,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)63,info->dExFee,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)109,info->sCancelFlag,strlen(info->sCancelFlag),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)110,info->sAnsTime,strlen(info->sAnsTime),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)111,info->sOrderChannel,strlen(info->sOrderChannel),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)112,info->sAccOrg,strlen(info->sAccOrg),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)113,info->sTxOrg,strlen(info->sTxOrg),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)114,info->sCancelChannel,strlen(info->sCancelChannel),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)115,info->sCancelOper,strlen(info->sCancelOper),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)116,info->sCancelTime,strlen(info->sCancelTime),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)66,info->dDoneAvp,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)23,info->nCancelNum,m_sErrMsg);
+	Xdp2Struct::ConvertOrderBroadcast2Xdp(*info,m_pXdp);
+	
+	S_MDB_TRADEACC_INFO *pFundAcc=NULL;
 
-	S_MDB_CUST_FUNDACC_INFO *pFundAcc=NULL;
-
-	pFundAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(acclock->nFundAccRowid);
+	pFundAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(acclock->nTradeAccRowid);
 	if (pFundAcc != NULL)
 	{
-		m_pXdp->SetFieldValue((unsigned short)119,pFundAcc->sCustName,strlen(pFundAcc->sCustName),m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)110,pFundAcc->sAccName,strlen(pFundAcc->sAccName),m_sErrMsg);
 	} 
 	char sPushdata[2000];
 	unsigned int len = sizeof(sPushdata);
@@ -4484,58 +3708,20 @@ void RiskDll::SendOrderPush(S_MDB_TXACC_LOCK *acclock,S_MDB_ORDER_INFO *info)
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Xdp ToBuffer error");
 		return ;
 	}
-	Send2CustPushMsg(acclock,sPushdata,len,9831);
-	Send2OperPushMsg(acclock,sPushdata,len,9831);
+	ReleaseBroadcast(sPushdata, len, atoi(pFundAcc->sTxAcc), 0, 9936);
 }
 
-void RiskDll::SendDonePush(S_MDB_TXACC_LOCK *acclock ,S_MDB_DONE_INFO *info)
+void RiskDll::SendDoneBroadcast(S_MDB_TXACC_LOCK *acclock ,S_MDB_DONE_INFO *info)
 {
 	//准备数据
 	m_pXdp->ResetData();
-	
-	m_pXdp->SetFieldValue((unsigned short)100,info->sTxAcc,strlen(info->sTxAcc),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)101,info->sExchCode,strlen(info->sExchCode),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)102,info->sSeatNo,strlen(info->sSeatNo),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)103,info->sTxCode,strlen(info->sTxCode),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)20,info->nContractNo,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)104,info->sContractCode,strlen(info->sContractCode),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)5,(short)info->sEoFlag[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)6,(short)info->sBsFlag[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)7,(short)info->sShFlag[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)8,(short)info->sTxType[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)9,(short)info->sCmdType[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)10,(short)info->sCmdAttr[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)11,(short)info->sForceFlag[0],m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)41,(int)info->nDoneNum,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)60,info->dDonePrice,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)105,info->sDoneDate,strlen(info->sDoneDate),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)106,info->sDoneTime,strlen(info->sDoneTime),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)107,info->sDoneNo,strlen(info->sDoneNo),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)108,info->sLocalNo,strlen(info->sLocalNo),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)109,info->sSystemNo,strlen(info->sSystemNo),m_sErrMsg);
-	
-	m_pXdp->SetFieldValue((unsigned short)61,info->dAmt,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)62,info->dExFee,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)63,info->dMemberFee,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)64,info->dExMargin,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)65,info->dMemberMargin,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)66,info->dFloatSurplus,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)67,info->dCovSurplus,m_sErrMsg);
-	
-	m_pXdp->SetFieldValue((unsigned short)110,info->sAccOrg,strlen(info->sAccOrg),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)111,info->sTxOrg,strlen(info->sTxOrg),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)112,info->sOrderChannel,strlen(info->sOrderChannel),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)113,info->sOrderOper,strlen(info->sOrderOper),m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)114,info->sSystemDate,strlen(info->sSystemDate),m_sErrMsg);
+	Xdp2Struct::ConvertDoneBroadcast2Xdp(*info,m_pXdp);
+	S_MDB_TRADEACC_INFO *pFundAcc=NULL;
 
-	m_pXdp->SetFieldValue((unsigned short)68,info->dUnfrozeAmt,m_sErrMsg);
-	m_pXdp->SetFieldValue((unsigned short)69,info->dUnfrozeFee,m_sErrMsg);
-	S_MDB_CUST_FUNDACC_INFO *pFundAcc=NULL;
-
-	pFundAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(acclock->nFundAccRowid);
+	pFundAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(acclock->nTradeAccRowid);
 	if (pFundAcc != NULL)
 	{
-		m_pXdp->SetFieldValue((unsigned short)119,pFundAcc->sCustName,strlen(pFundAcc->sCustName),m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)110, pFundAcc->sAccName,strlen(pFundAcc->sAccName),m_sErrMsg);
 	} 
 	char sPushdata[2000];
 	unsigned int len = sizeof(sPushdata);
@@ -4544,8 +3730,7 @@ void RiskDll::SendDonePush(S_MDB_TXACC_LOCK *acclock ,S_MDB_DONE_INFO *info)
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Xdp ToBuffer error");
 		return ;
 	}
-	Send2CustPushMsg(acclock,sPushdata,len,9834);
-	Send2OperPushMsg(acclock,sPushdata,len,9834);
+    ReleaseBroadcast(sPushdata,len,atoi(pFundAcc->sTxAcc),0,9938);
 }
 
 void RiskDll::SendMoneyIOPush(S_MDB_TXACC_LOCK *acclock ,S_MDB_FUND_FLOW *info)
@@ -4561,12 +3746,12 @@ void RiskDll::SendMoneyIOPush(S_MDB_TXACC_LOCK *acclock ,S_MDB_FUND_FLOW *info)
 	
 	m_pXdp->SetFieldValue((unsigned short)2,(unsigned short)info->sCurrency[0],m_sErrMsg);
 	m_pXdp->SetFieldValue((unsigned short)103,info->sTxSerial,strlen(info->sTxSerial),m_sErrMsg);
-	S_MDB_CUST_FUNDACC_INFO *pFundAcc=NULL;
+	S_MDB_TRADEACC_INFO *pFundAcc=NULL;
 
-	pFundAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(acclock->nFundAccRowid);
+	pFundAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(acclock->nTradeAccRowid);
 	if (pFundAcc != NULL)
 	{
-		m_pXdp->SetFieldValue((unsigned short)119,pFundAcc->sCustName,strlen(pFundAcc->sCustName),m_sErrMsg);
+		m_pXdp->SetFieldValue((unsigned short)119,pFundAcc->sAccName,strlen(pFundAcc->sAccName),m_sErrMsg);
 	} 
 	char sPushdata[1000];
 	unsigned int len = sizeof(sPushdata);
@@ -4575,166 +3760,18 @@ void RiskDll::SendMoneyIOPush(S_MDB_TXACC_LOCK *acclock ,S_MDB_FUND_FLOW *info)
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Xdp ToBuffer error");
 		return ;
 	}
-	Send2CustPushMsg(acclock,sPushdata,len,9835);
-	Send2OperPushMsg(acclock,sPushdata,len,9835);	
-}
-
-void RiskDll::Send2CustPushMsg(S_MDB_TXACC_LOCK *acc, const char *pushdata,int pushdatalen,int funcno)
-{
-	S_TRADE_DATA sdata;
-	//查找登录表，推送消息
-	S_MDB_CUSTINFO *cust=	m_pMemDb->m_pDbCust.m_pCustom.At(acc->nCustRowid);
-	if (cust == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Send2CustPushMsg cust is NULL");
-		return;
-	}
-	std::vector<S_MDB_CUST_ONLINE *> onlist;
-	bool bret = m_pMemDb->m_pDbTrader.m_pCustOnline.Select(cust->sCustNo,onlist);
-	if (!bret)
-	{
-		return;
-	}
-
-	for (int i=0; i<onlist.size();i++)
-	{
-		if (onlist[i]->sOnlineStatus[0] != LOGIN_STATUS_OK)
-		{
-			continue;
-		}
-		if (m_pClientLink->PoolMalloc(sdata)<0)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"PoolMalloc error");
-			return ;
-		}
-		bzero(&(sdata.pData->sDBHead),DREBHEADLEN);
-
-		memcpy(sdata.pData->sBuffer,pushdata,pushdatalen);
-		sdata.pData->sDBHead.nLen = pushdatalen;
-
-		
-		sdata.pData->sDBHead.cRaflag = 0;
-		sdata.pData->sDBHead.cCmd = CMD_DPPUSH;
-		sdata.pData->sDBHead.d_Dinfo.d_nServiceNo = funcno;
-		if (strcmp(onlist[i]->sTermType,TERM_TYPE_RPCAPI) ==0)
-		{
-			//socket
-			sdata.src = 1;
-			sdata.pData->sBpcHead.nIndex = onlist[i]->nGateIndex;
-			sdata.pData->sBpcHead.nConnectTime = onlist[i]->nTimeStamp;
-		}
-		else //总线
-		{
-			sdata.src = 0;
-			sdata.pData->sDBHead.d_Dinfo.d_nNodeId = onlist[i]->nDrebId;
-			sdata.pData->sDBHead.d_Dinfo.d_cNodePrivateId = onlist[i]->nDrebPid;
-			sdata.pData->sDBHead.d_Dinfo.d_nSvrMainId = onlist[i]->nSvrId;
-			sdata.pData->sDBHead.d_Dinfo.d_cSvrPrivateId = onlist[i]->nSvrPid;
-			sdata.pData->sDBHead.s_Sinfo.s_nGateIndex = onlist[i]->nGateIndex;
-			sdata.pData->sDBHead.s_Sinfo.s_nHook = onlist[i]->nTimeStamp;
-			
-		}
-		m_pClientLink->Send2Client(sdata);
-	}
-}
-
-void RiskDll::Send2OperPushMsg(S_MDB_TXACC_LOCK *acc,const char *pushdata,int pushdatalen,int funcno)
-{
-	//发送给操作员，代理该客户的操作员或该客户的上级机构操作员，操作员已登录
-	S_MDB_CUST_FUNDACC_INFO *pcust = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(acc->nFundAccRowid);
-	if (pcust == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号为空 [%d]",acc->nFundAccRowid);
-		return;
-	}
-	//资金账号所属机构
-	int len = strlen(pcust->sSignOrg);
-	//查找在线并操作员
-	int i,j;
-	std::vector<S_MDB_OPER_ONLINE *> onlist;
-	
-	char sStatus[2];
-	sStatus[0] =LOGIN_STATUS_OK;
-	sStatus[1] =0;
-	//查看操作员是否在线，是否有权限
-	if (!m_pMemDb->m_pDbPublic.m_pOperOnline.SelectByStatus(sStatus,onlist))
-	{
-		return;
-	}
-	for (j=0 ; j<onlist.size(); j++)
-	{
-		//查找操作员机构
-		S_MDB_OPER_INFO *poper = m_pMemDb->m_pDbPublic.m_pOper.Select(onlist[j]->sOperCode);
-		if (poper== NULL)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"操作员[%s]在操作员表中不存在",onlist[j]->sOperCode);
-			continue;
-		}
-		//查看是否有权限
-		if (m_pKernelPub.CheckRight(pcust->sSignOrg,poper->sOrgCode))
-		{
-			S_TRADE_DATA sdata;
-			//有权限，发送报文
-			if (m_pClientLink->PoolMalloc(sdata)<0)
-			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"PoolMalloc error");
-				return ;
-			}
-			bzero(&(sdata.pData->sDBHead),DREBHEADLEN);
-			
-			memcpy(sdata.pData->sBuffer,pushdata,pushdatalen);
-			sdata.pData->sDBHead.nLen = pushdatalen;
-			
-			
-			sdata.pData->sDBHead.cRaflag = 0;
-			sdata.pData->sDBHead.cCmd = CMD_DPPUSH;
-			sdata.pData->sDBHead.d_Dinfo.d_nServiceNo = funcno;
-			if (strcmp(onlist[j]->sTermType,TERM_TYPE_RPCAPI) ==0)
-			{
-				//socket
-				sdata.src = 1;
-				sdata.pData->sBpcHead.nIndex = onlist[j]->nGateIndex;
-				sdata.pData->sBpcHead.nConnectTime = onlist[j]->nTimeStamp;
-			}
-			else //总线
-			{
-				sdata.src = 0;
-				sdata.pData->sDBHead.d_Dinfo.d_nNodeId = onlist[j]->nDrebId;
-				sdata.pData->sDBHead.d_Dinfo.d_cNodePrivateId = onlist[j]->nDrebPid;
-				sdata.pData->sDBHead.d_Dinfo.d_nSvrMainId = onlist[j]->nSvrId;
-				sdata.pData->sDBHead.d_Dinfo.d_cSvrPrivateId = onlist[j]->nSvrPid;
-				sdata.pData->sDBHead.s_Sinfo.s_nGateIndex = onlist[j]->nGateIndex;
-				sdata.pData->sDBHead.s_Sinfo.s_nHook = onlist[j]->nTimeStamp;
-				
-			}
-			m_pClientLink->Send2Client(sdata);
-		}
-	}
-	
-	
+ /*   Send2CustPushMsg(acclock, sPushdata, len, 9835);
+    Send2OperPushMsg(acclock, sPushdata, len, 9835);*/
 }
 
 
-
-
-int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po,S_MDB_CONTRACT_INFO *pc,S_MDB_EXCH_INFO *pexch,S_MDB_DONE_INFO &info)
+int RiskDll::ProcessDone(S_MDB_TRADEACC_INFO *pcustacc, S_MDB_ORDER_INFO *po,S_MDB_CONTRACT_INFO *pc,S_MDB_EXCH_INFO *pexch,S_MDB_DONE_INFO &info)
 {
 	
 	info.dUnfrozeFee = po->dExFee * info.nDoneNum/po->nOrderNum*(-1.0);  //变为正数
 	info.dUnfrozeAmt = po->dFrozAmt * info.nDoneNum/po->nOrderNum*(-1.0);  //变为负数
 
-	strcpy(info.sTxOrg,po->sTxOrg);
-	strcpy(info.sAccOrg,po->sAccOrg);
-	strcpy(info.sTxType,po->sTxType);
-	strcpy(info.sCmdType,po->sCmdType);
-	strcpy(info.sCmdAttr,po->sCmdAttr);
-	strcpy(info.sOrderOper,po->sOrderOper);
-	strcpy(info.sTxCode,po->sTxCode);
-	strcpy(info.sSeatNo,po->sSeatNo);
-	strcpy(info.sBsFlag,po->sBsFlag);
-	strcpy(info.sEoFlag,po->sEoFlag);
-	strcpy(info.sShFlag,po->sShFlag);
-	info.nVarietyId = pc->nProdId;
+	
 	//成交金额
 	info.dAmt = info.dDonePrice * info.nDoneNum*pc->dTxUnit;
 	
@@ -4753,12 +3790,12 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 				//开仓要算手续费和保证金
 				if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,1,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 					return -1;
 				}
 				if (!m_pKernelPub.GetMarginValue(pc,pcustacc,0,info.nDoneNum,info.dAmt,dExchMargin,dMemberMargin))
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取保证金出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取保证金出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 					return -1;
 				}
 			}
@@ -4769,7 +3806,7 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 					//平仓要算手续费
 					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,3,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 						return -1;
 					}
 				}
@@ -4778,26 +3815,27 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 					//平仓要算手续费
 					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,2,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 						return -1;
 					}
 				}
 			}
 			break;
 		case PROD_TYPE_OPTION://期权
+		case PROD_TYPE_OPTION_SEC://期权
 			if (info.sEoFlag[0] == EO_FLAG_OPEN) //开仓
 			{
 				//开仓要算冻结和手续费
 				if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,1,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 					return -1;
 				}
 				if (info.sBsFlag[0] == BS_FLAG_SELL) //卖开要冻结保证金
 				{
 					if (!m_pKernelPub.GetMarginValue(pc,pcustacc,1,info.nDoneNum,info.dAmt,dExchMargin,dMemberMargin))
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取保证金出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取保证金出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 						return -1;
 					}
 				}
@@ -4810,7 +3848,7 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 					//平仓要算手续费
 					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,3,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 						return -1;
 					}
 				}
@@ -4819,7 +3857,7 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 					//平仓要算手续费
 					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,2,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 						return -1;
 					}
 				}
@@ -4842,7 +3880,7 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 					//买要算手续费及金额
 					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,1,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 						return -1;
 					}
 				}
@@ -4851,19 +3889,21 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 					//卖要算手续费	
 					if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,2,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 					{
-						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+						m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 						return -1;
 					}
 				}
 			}
 			break;
+		case PROD_TYPE_BOND_BANK://银行间债券
+		case PROD_TYPE_BOND://交易所债券
 		case PROD_TYPE_SEC://证券
 			if (info.sBsFlag[0] == BS_FLAG_BUY)
 			{
 				//买要算手续费及金额
 				if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,1,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 					return -1;
 				}
 			}
@@ -4872,13 +3912,13 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 				//卖要算手续费
 				if (!m_pKernelPub.GetTradeFeeValue(pc,pcustacc,2,info.nDoneNum,info.dAmt,dExchFee,dMemberFee))
 				{
-					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+					m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知取手续费出错 本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 					return -1;
 				}
 			}
 			break;
 		default:
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知合约代码[%s]的品种类别[%s]不符 资金账号[%s] 成交号[%s]",info.sContractCode,pc->sProd_type,info.sTxAcc,info.sDoneNo);
+			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知合约代码[%s]的品种类别[%s]不符 交易账号[%s] 成交号[%s]",info.sContractCode,pc->sProd_type,info.sTxAcc,info.sDoneNo);
 			return -1;
 	}
 	info.dExFee = dExchFee*(-1.0);//交易所手续费  为负数
@@ -4890,13 +3930,13 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 	S_MDB_TXACC_LOCK *acclock = m_pMemDb->SelectLock(info.sTxAcc);
 	if (acclock == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知 找不到资金账号信息 [%s]",info.sTxAcc);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知 找不到交易账号信息 [%s]",info.sTxAcc);
 		return -1;
 	}
-	S_MDB_CUST_FUND *pfund = m_pMemDb->GetFund(acclock,pc->sCurrency);
+	S_MDB_CUST_FUND *pfund = m_pMemDb->GetFund(acclock);
 	if (pfund == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知 找不到资金账号资金信息 [%s]",info.sTxAcc);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知 找不到交易账号资金信息 [%s]",info.sTxAcc);
 		return -1;
 	}
 	//写成交表
@@ -4912,11 +3952,11 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知 本地报单号[%s] rowid[%d]不存在",info.sLocalNo,rid);
 		return -1;
 	}
-
+	m_pMemDb->m_pDbTrader.m_pDone.SetUpdate(rid);//设置成交写入db的标志
 	//更新资金、冻结等
 	if (!m_pKernelPub.ComputeNewDone(acclock,pfund,pdone,po,pc))
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知 更新资金 持仓等失败  本地报单号[%s] 资金账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"成交通知 更新资金 持仓等失败  本地报单号[%s] 交易账号[%s] 成交号[%s]",info.sLocalNo,info.sTxAcc,info.sDoneNo);
 		return -1;
 	}
 	//通知要对此客户进行风险计算
@@ -4925,9 +3965,12 @@ int RiskDll::ProcessDone(S_MDB_CUST_FUNDACC_INFO *pcustacc, S_MDB_ORDER_INFO *po
 
 	m_nEndTime = CBF_Date_Time::GetTickUS();
 	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"成交通知 处理完成 成交号[%s] 本地报单号[%s] 耗时[%ld]微秒",info.sDoneNo,info.sLocalNo,m_nEndTime-m_nBeginTime);
-	//发送回报推送
-	SendDonePush(acclock,pdone);
-	SendOrderPush(acclock,po);
+    if (*g_nSvrHostStatus == ARBSTATUS_MASTER || *g_nSvrHostStatus == ARBSTATUS_MASTER_AYN || *g_nSvrHostStatus == MASTERHOST)
+    {
+        //是主机发送回报推送
+        SendOrderBroadcast(acclock, po);
+        SendDoneBroadcast(acclock, pdone);
+    }
 	return 0;
 }
 
@@ -4941,7 +3984,7 @@ bool RiskDll::UpdateFundLock(const char *txacc,char *currency,const char fundfla
 		info =  m_pMemDb->SelectLock((char *)txacc);
 		if (info == NULL)
 		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无此资金账号[%s]",txacc);
+			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无此交易账号[%s]",txacc);
 			return false;
 		}
 		lockrowid = info->nLockRowid;
@@ -4950,14 +3993,14 @@ bool RiskDll::UpdateFundLock(const char *txacc,char *currency,const char fundfla
 	info =  m_pMemDb->SelectLock((char *)txacc);
 	if (info == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无此资金账号[%s]",txacc);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"无此交易账号[%s]",txacc);
 		return false;
 	}
 	lockrowid = info->nLockRowid;
-	S_MDB_CUST_FUND *fund = m_pMemDb->GetFund(info,currency);
+	S_MDB_CUST_FUND *fund = m_pMemDb->GetFund(info);
 	if (fund == NULL)
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金表无此资金账号[%s]",txacc);
+		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金表无此交易账号[%s]",txacc);
 		return false;
 	}
 	return m_pKernelPub.UpdateFund(info,fund,fundflag,fundcode,amt,isadd,true);
@@ -4990,6 +4033,7 @@ bool RiskDll::DeleteMoneyIO(CTbl_Char_Key &custlist,char *curdate)
 
 int RiskDll::Order(S_TRADE_DATA &data)
 {
+    INT64_  nBeginTime = CBF_Date_Time::GetTickUS();
 	if (!m_pXdp->FromBuffer(data.pData->sBuffer,data.pData->sDBHead.nLen,m_sErrMsg))
 	{
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"请求非XDP数据 [%s]",m_sErrMsg);
@@ -4998,633 +4042,54 @@ int RiskDll::Order(S_TRADE_DATA &data)
 		AnsData(data);
 		return -1;
 	}
-	//101	varchar2	席位代码	6	n	没有席位默认’$’
-	//102	varchar3	交易账号	20	Y	资金账号
-	//108	varchar9	客户端流水	18	y	请求方的流水，自己保证当天唯一，回报对应
-	//20	uint1	合约编号	9	N	合约编号和合约代码必须输入一个，合约编号输入了代码就不起作用。
-	//100	varchar1	合约代码	20	n	
-	//5	short1	投保标志	1	Y	asc
-	//6	short2	开平标志	1	Y	asc
-	//7	short3	买卖标志	1	Y	asc
-	//8	short4	交易类型	1	Y	asc
-	//9	short5	指令类型	1	Y	报单类型 asc
-	//13	short9	报单属性	1	Y	成交属性 asc
-	//10	short6	强平标志	1	n	标识会员发起强平 asc
-	//41	int2	委托数量	8	Y	
-	//60	double1	委托价格	18.4	Y	
-
-	//92	char3	操作员代码	16	Y	交易员/客户号
-	//91	char2	渠道	2	Y	
-
+	
 	S_MDB_ORDER_INFO order;
 	bzero(&order,sizeof(S_MDB_ORDER_INFO));
-	unsigned int len;
+	Xdp2Struct::ConvertOrder(m_pXdp,order);
 	int nRet;
-	char sChannel[11];
-	char sTxOrg[21];
-	bzero(sChannel,sizeof(sChannel));
-	bzero(sTxOrg,sizeof(sTxOrg));
-	int fieldtype;
-	short nShortValue;
-	S_MDB_CONTRACT_INFO *pc=NULL;
-	S_MDB_QUOTATION *pq=NULL;
-	S_MDB_EXCH_INFO *pe = NULL;
-	S_MDB_CONTRACT_SETTLE_PRICE *psp=NULL;
-	S_MDB_VARIETY_INFO *pv=NULL;
-	S_MDB_CUST_FUNDACC_INFO *pCustFuncAcc=NULL;
-	S_MDB_CUSTINFO *pCust=NULL;
-	S_MDB_CUST_FUND *pCustFund=NULL;
-	S_MDB_ORG_INFO  *pOrg = NULL;
-	S_MDB_TXACC_LOCK *pAcclock=NULL;
-	S_MDB_ORDER_INFO *pOrder=NULL;
-	bool iscust=false;
-
-	len = sizeof(order.sSeatNo);
-	if (!m_pXdp->GetFieldValue((unsigned short)101,order.sSeatNo,len,fieldtype,m_sErrMsg))
+	S_ORDER_PUB order_pub;
+	//报单检查
+	nRet = OrderCheck(order,order_pub);
+	if (nRet != 0)
 	{
-		strcpy(order.sSeatNo,"$");
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "报单检查未通过");
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = nRet;
+        AnsData(data);
+        return -1;
 	}
-	len  = sizeof(order.sTxAcc);
-	if (!m_pXdp->GetFieldValue((unsigned short)102,order.sTxAcc,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Input error [%s]",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
-		AnsData(data);
-		return -1;
-	}
-	len = sizeof(order.sClientSerial);
-	if (!m_pXdp->GetFieldValue((unsigned short)108,order.sClientSerial,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Input error [%s]",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
-		AnsData(data);
-		return -1;
-	}
-	if (!m_pXdp->GetFieldValue((unsigned short)20,order.nContractNo,m_sErrMsg))
-	{
-		len = sizeof(order.sContractCode);
-		if (!m_pXdp->GetFieldValue((unsigned short)100,order.sContractCode,len,fieldtype,m_sErrMsg))
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"Input error [%s]",m_sErrMsg);
-			data.pData->sDBHead.nLen = 0;
-			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
-			AnsData(data);
-			return -1;
-		}
-		pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(order.sContractCode);
-		if (pc == NULL)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"合约代码 [%s] 不存在",order.sContractCode);
-			data.pData->sDBHead.nLen = 0;
-			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CONTRACTINPUT;
-			AnsData(data);
-			return -1;
-		}
-		order.nContractNo = pc->nContractId;
-	}
-	else
-	{
-		pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(order.nContractNo);
-		if (pc == NULL)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"合约编号 [%d] 不存在",order.nContractNo);
-			data.pData->sDBHead.nLen = 0;
-			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CONTRACTINPUT;
-			AnsData(data);
-			return -1;
-		}
-		strcpy(order.sContractCode,pc->sContractCode);
-	}
-	strcpy(order.sExchCode,pc->sExcode);
-	//取交易所信息
-	pe = m_pMemDb->m_pDbBaseinfo.m_pExchange.Select(pc->sExcode);
-	if (pe == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"合约编号[%d %s] 的交易所[%s]不存在",order.nContractNo,order.sContractCode,pc->sExcode);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_EXCHANGE;
-		AnsData(data);
-		return -1;
-	}
-	if (!m_pXdp->GetFieldValue((unsigned short)5,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托无投保标志 %s",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SHFLAG;
-		AnsData(data);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托投保标志不符 %d",nShortValue);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SHFLAG;
-		AnsData(data);
-		return -1;
-	}
-	order.sShFlag[0] = nShortValue;
-	if (!m_pXdp->GetFieldValue((unsigned short)6,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托无开平标志 %s",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_EOFLAG;
-		AnsData(data);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托开平标志不符 %d",nShortValue);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_EOFLAG;
-		AnsData(data);
-		return -1;
-	}
-	order.sEoFlag[0] = nShortValue;
-
-	if (!m_pXdp->GetFieldValue((unsigned short)7,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托无买卖标志 %s",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
-		AnsData(data);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托买卖标志不符 %d",nShortValue);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
-		AnsData(data);
-		return -1;
-	}
-	order.sBsFlag[0] = nShortValue;
-
-	if (!m_pXdp->GetFieldValue((unsigned short)8,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托无交易类型 %s",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
-		AnsData(data);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托交易类型不符 %d",nShortValue);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_TXTYPE;
-		AnsData(data);
-		return -1;
-	}
-	order.sTxType[0] = nShortValue;
-
-	if (!m_pXdp->GetFieldValue((unsigned short)9,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托无报单类型 %s",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERTYPE;
-		AnsData(data);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托报单类型不符 %d",nShortValue);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERTYPE;
-		AnsData(data);
-		return -1;
-	}
-	order.sCmdType[0] = nShortValue;
-
-	if (!m_pXdp->GetFieldValue((unsigned short)13,nShortValue,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托无报单属性 %s",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR;
-		AnsData(data);
-		return -1;
-	}
-	if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托报单属性不符 %d",nShortValue);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR;
-		AnsData(data);
-		return -1;
-	}
-	order.sCmdAttr[0] = nShortValue;
-
-	order.nRemainNum = order.nOrderNum;//剩余数量默认为委托数量
-	order.sCancelFlag[0] = BOOL_FALSE;
-	order.sCancelFlag[1] =0;
-
-	//强平标志
-	if (m_pXdp->GetFieldValue((unsigned short)10,nShortValue,m_sErrMsg))
-	{
-		if (nShortValue != BOOL_ASC_FALSE && nShortValue != BOOL_ASC_TRUE)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托强平标志不符 %d",nShortValue);
-			data.pData->sDBHead.nLen = 0;
-			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
-			AnsData(data);
-			return -1;
-		}
-		order.sForceFlag[0] = nShortValue;
-	}
-	else
-	{
-		order.sForceFlag[0] = '0';
-	}
-
-	//委托数量
-	if (!m_pXdp->GetFieldValue((unsigned short)41,order.nOrderNum,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托无委托数量 %s",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
-		AnsData(data);
-		return -1;
-	}
-	if (order.nOrderNum<1)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托委托数量不符 %d",order.nOrderNum);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
-		AnsData(data);
-		return -1;
-	}
-	//委托价格
-	
-	//如果是市价委托，取合约的最新价，以便计算手续费、保证金
-	if (order.sCmdType[0] == ORDER_TYPE_MARKET || order.sCmdType[0] == ORDER_TYPE_MS_LOSS ||  order.sCmdType[0] == ORDER_TYPE_MS_PROFIT || order.sCmdType[0] == ORDER_TYPE_LEVEL1_M || order.sCmdType[0] == ORDER_TYPE_LEVEL5_M)
-	{
-		pq = m_pMemDb->m_pDbTrader.m_pQuotation.Select(order.nContractNo);
-		if (pq == NULL)
-		{
-			//行情没有，取结算价
-			psp = m_pMemDb->m_pDbBaseinfo.m_pSettlePrice.Select(order.nContractNo);
-			if (psp == NULL)
-			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托  市价无行情且取不到此合约[%d %s]的结算价 %s",order.nContractNo,order.sContractCode);
-				data.pData->sDBHead.nLen = 0;
-				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERPRICE;
-				AnsData(data);
-				return -1;
-			}
-			order.dOrderPrice = psp->dSettlePrice;
-		}
-		else
-		{
-			order.dOrderPrice = pq->dNewPrice;
-		}
-	}
-	else
-	{
-		if (!m_pXdp->GetFieldValue((unsigned short)60,order.dOrderPrice,m_sErrMsg))
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托无委托价格 %s",m_sErrMsg);
-			data.pData->sDBHead.nLen = 0;
-			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERPRICE;
-			AnsData(data);
-			return -1;
-		}
-	}
-	//发起渠道
-	len  = sizeof(sChannel);
-	if (!m_pXdp->GetFieldValue((unsigned short)91,sChannel,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 发起渠道未输入 [%s]",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CHANNEL;
-		AnsData(data);
-		return -1;
-	}
-	strcpy(order.sOrderChannel,sChannel);
-	//客户、交易员
-	len  = sizeof(order.sOrderOper);
-	if (!m_pXdp->GetFieldValue((unsigned short)92,order.sOrderOper,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 发起客户/交易员未输入 [%s]",m_sErrMsg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTOPER;
-		AnsData(data);
-		return -1;
-	}
-	len  = sizeof(sTxOrg);
-	if (!m_pXdp->GetFieldValue((unsigned short)93,sTxOrg,len,fieldtype,m_sErrMsg))
-	{
-		m_pLog->LogMp(LOG_PROMPT,__FILE__,__LINE__,"委托 交易网点未输入，取资金账户开户网点");
-	}
-	//取品种
-	if (pc->sProd_type[0] == PROD_TYPE_OPTION)
-	{
-		S_MDB_CONTRACT_INFO *pco = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(pc->nProdId);
-		if (pco != NULL)
-		{
-			pv = m_pMemDb->m_pDbBaseinfo.m_pVariety.Select(pco->nProdId);
-		}
-		else
-		{
-			pv = NULL;
-		}
-	}
-	else
-	{
-		pv = m_pMemDb->m_pDbBaseinfo.m_pVariety.Select(pc->nProdId);
-	}
-	order.nVarietyId = pc->nProdId;
-	if (pv == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 合约[%d %s] 取品种信息出错",pc->nContractId,pc->sContractCode);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEMPARA;
-		AnsData(data);
-		return -1;
-	}
-    //是否有此资金账号
-	pAcclock = m_pMemDb->SelectLock(order.sTxAcc);
-	if (pAcclock == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号[%s]非法不存在",order.sTxAcc);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTFUNDACC;
-		AnsData(data);
-		return -1;
-	}
-	pCustFuncAcc = m_pMemDb->m_pDbCust.m_pCustFundAcc.At(pAcclock->nFundAccRowid);
-//	pCustFuncAcc  = m_pMemDb->m_pDbCust.m_pCustFundAcc.SelectByAcc(order.sTxAcc);
-	if (pCustFuncAcc == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号[%s] 非法，不存在",order.sTxAcc);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTFUNDACC;
-		AnsData(data);
-		return -1;
-	}
-	pCust =  m_pMemDb->m_pDbCust.m_pCustom.At(pAcclock->nCustRowid);
-//	pCust = m_pMemDb->m_pDbCust.m_pCustom.SelectByNo(pCustFuncAcc->sCustNo);
-	if (pCust == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号[%s]的客户号[%s]不存在",order.sTxAcc,pCustFuncAcc->sCustNo);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTNO;
-		AnsData(data);
-		return -1;
-	}
-	//比较资金账号对应的客户号是否和输入的相同
-	if (strcmp(pCustFuncAcc->sCustNo,order.sOrderOper) == 0)
-	{
-		iscust = true;
-	}
-	else
-	{
-	    iscust= false;//不是客户发起
-	}
-	//取资金表，按账号+币种
-	pCustFund = m_pMemDb->GetFund(pAcclock,pc->sCurrency);
-//	pCustFund = m_pMemDb->m_pDbTrader.m_pFund.Select(order.sTxAcc,pc->sCurrency);
-	if (pCustFund == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号[%s]+合约[%d %s]对应的币种[%s]在资金表不存在",order.sTxAcc,order.nContractNo,order.sContractCode,pc->sCurrency);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTFUND;
-		AnsData(data);
-		return -1;
-	}
-	//判断开通渠道
-	int nChannel= atoi(order.sOrderChannel);
-	if (nChannel<=0 || nChannel>59)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托渠道[%s]非法",order.sOrderChannel);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CHANNEL;
-		AnsData(data);
-		return -1;
-	}
-	if (pCust->sChannleOpen[nChannel] != '1')
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 客户号[%s]资金账号[%s]未开通此渠道[%s]",pCustFuncAcc->sCustNo,order.sTxAcc,order.sOrderChannel);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CHANNELOPEN;
-		AnsData(data);
-		return -1;
-	}
-	if (!iscust) //判断操作员是否有此账号权限
-	{
-		if (!m_pKernelPub.CheckOperAccRight(order.sOrderOper,order.sTxAcc))
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 操作员[%s] 无资金账号[%s] 的操作权限",order.sOrderOper,order.sTxAcc);
-			data.pData->sDBHead.nLen = 0;
-			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NO_RIGHT;
-			AnsData(data);
-			return -1;
-		}
-	}
-	strcpy(order.sTxDate,pe->sTradeDate);
-	m_pDate.Update();
-	strcpy(order.sAnsTime,m_pDate.ToStringDT17().c_str());
-	strcpy(order.sAccOrg,pCustFuncAcc->sSignOrg);
-	//取交易网点
-	if (strlen(sTxOrg)<1)
-	{
-		strcpy(order.sTxOrg,pCustFuncAcc->sSignOrg);
-	}
-	else
-	{
-		strcpy(order.sTxOrg,sTxOrg);	
-	}
-	//交易网点是否存在
-	pOrg = m_pMemDb->m_pDbPublic.m_pOrg.Select(order.sTxOrg);
-	if (pOrg == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 网点[%s]不存在",order.sTxOrg);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_TXORG;
-		AnsData(data);
-		return -1;
-	}
-	//判断委托类型、成交属性
-	int nTxCmd = atoi(order.sCmdType);
-	if (nTxCmd<0 || nTxCmd>11)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 报单类型[%s]非法",order.sCmdType);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERTYPE;
-		AnsData(data);
-		return -1;
-	}
-	int nTxAttr = atoi(order.sCmdAttr);
-	if (nTxAttr<0 || nTxAttr>99)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 成交属性[%s]非法",order.sCmdAttr);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR;
-		AnsData(data);
-		return -1;
-	}
-	if (pc->sOrderCmd[nTxCmd] != '1')
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 报单类型[%s]此合约[%d %s]不支持",order.sCmdType,order.nContractNo,order.sContractCode);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERTYPE_SUPPORT;
-		AnsData(data);
-		return -1;
-	}
-	if (pc->sDoneAttr[nTxAttr*10+nTxAttr] != '1')
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 成交属性+报单位类型[%s %s]此合约[%d %s]不支持",order.sCmdAttr,order.sCmdType,order.nContractNo,order.sContractCode);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR_SUPPORT;
-		AnsData(data);
-		return -1;
-	}
-	
-	//取交易编码
-	S_MDB_CUST_TRADECODE *ptx = m_pMemDb->m_pDbTrader.m_pTradecode.Select(order.sTxAcc,order.sExchCode,order.sSeatNo);
-	if (ptx == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号[%s]交易所代码[%s]席位号[%s]无对应的交易编码",order.sTxAcc,order.sExchCode,order.sSeatNo);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_TRADECODE;
-		AnsData(data);
-		return -1;
-	}
-	strcpy(order.sTxCode,ptx->sTradeCode);
-	
-
-	//这里可以根据网点，判断是否可以交易，后续根据需要增加
-
-	//客户风险度，是否有交易权限
-	if (pCustFund->sTradeRight[0] == TR_NONE)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号[%s] 币种[%s]交易所代码[%s]席位号[%s]无交易权限[%c] 风险度[%.2f] ",order.sTxAcc,order.sExchCode,order.sSeatNo,pCustFund->sCurrency,pCustFund->sTradeRight[0],pCustFund->dRisk);
-		data.pData->sDBHead.nLen = 0;
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_TRADERIGHT;
-		AnsData(data);
-		return -1;
-	}
-
-	order.dAmt = order.dOrderPrice*pc->dTxUnit*order.nOrderNum;//金额
+	order.dAmt = order.dOrderPrice* order_pub.pc->dTxUnit*order.nOrderNum;//金额
 
 	//生成本地报单号
-	sprintf(order.sLocalSerial,INT64PFM,g_pPubData->GetLocalSerial());
-
+	sprintf(order.sLocalSerial,INT64PFM,g_pPubData->GetLocalSerial());//  会定时写到文件里面，重启从文件读取并根据报单表的最大本地单号更新
 	order.nSyncFlag = 1; //报入同步
-
+	int orderrid;
 	//报单状态默认为正申报
 	order.sOrderStatus[0] = ORDER_STATUS_SENDOK;//正在申报
 	order.sOrderStatus[1]=0;
-
-	//算出保证金手续费
-	double dExchFee=0.0;//交易所手续费
-	double dMemberFee=0.0;//会员手续费
-	double dExchMargin=0.0;//交易所保证金
-	double dMemberMargin=0.0;//会员保证金
-	int orderrid;
-	m_pSendXdp.XdpCopy(m_pXdp);
-	//设置xdp报文
-	// 101	varchar2	席位代码	6	y	没有席位默认’$’
-	//	102	varchar3	交易账号	20	Y	
-	//	103	Varchar4	本地报单号	20	Y	
-	//	104	Varchar5	交易编码	20	y	
-
-	//	20	uint1	合约编号	9	y	
-	//	100	varchar1	合约代码	20	y	
-	//	5	short1	投保标志	1	Y	asc
-	//	6	short2	开平标志	1	Y	asc
-	//	7	short3	买卖标志	1	Y	asc
-	//	8	short4	交易类型	1	Y	asc
-	//	9	short5	指令类型	1	Y	报单类型 asc
-	//	13	short9	报单属性	1	Y	成交属性 asc
-	//	10	short6	强平标志	1	n	标识会员发起强平 asc
-	//	41	int2	委托数量	8	Y	
-	//	60	double1	委托价格	18.4	Y	
-
-	//	92	char3	操作员代码	16	Y	交易员/客户号
-	//	91	char2	渠道	2	Y	
-
-	//  61	Double2	金额	18.4	y	
-	//	63	Double4	手续费	18.4	y	
-	//	62	Double3	冻结资金	18.4	y	不含手续费
-	//	22	Uint2	品种编号	8	y	
-	//  109	varchar10	委托状态	1	y	
-	//	117	Varchar18	报单响应	100	y	
-	//	116	Varchar17	报单时间	17	y	
-
-	m_pSendXdp.SetFieldValue((unsigned short)101,order.sSeatNo,strlen(order.sSeatNo),m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)103,order.sLocalSerial,strlen(order.sLocalSerial),m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)104,order.sTxCode,strlen(order.sTxCode),m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)20,order.nContractNo,m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)100,order.sContractCode,strlen(order.sContractCode),m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)10,(short)order.sForceFlag[0],m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)60,order.dOrderPrice,m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)61,order.dAmt,m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)109,order.sOrderStatus,strlen(order.sOrderStatus),m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)117,order.sOrderRsp,strlen(order.sOrderRsp),m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)116,order.sAnsTime,strlen(order.sAnsTime),m_sErrMsg);
-
-	m_pSendXdp.SetFieldValue((unsigned short)22,order.nVarietyId,m_sErrMsg);
-	nRet = m_pKernelPub.GetFeeMargin(&order,pc,pCustFuncAcc,dExchFee,dMemberFee,dExchMargin,dMemberMargin);
-	if (nRet != 0)
-	{
-		order.sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
-		order.sOrderStatus[1]=0;
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"资金账号[%s]交易所代码[%s]席位号[%s]本地报单号[%s]取手续费保证金出错 [%d]",order.sTxAcc,order.sExchCode,order.sSeatNo,order.sLocalSerial, nRet);
-		switch (nRet)
-		{
-			case -1:
-				strcpy(order.sOrderRsp,"取手续费出错");
-				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_GETFEE;
-				break;
-			case -2:
-				strcpy(order.sOrderRsp,"取保证金出错");
-				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_GETMARGIN;
-				break;
-			case -3:
-				strcpy(order.sOrderRsp,"合约对应的品种类型不符");
-				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEMPARA;
-				break;
-			default:
-				break;
-		}
-		data.pData->sDBHead.nLen = 0;
-		AnsData(data);
-		//同步到备机
-		m_pSendXdp.SetFieldValue((unsigned short)109,order.sOrderStatus,strlen(order.sOrderStatus),m_sErrMsg);
-		m_pSendXdp.SetFieldValue((unsigned short)117,order.sOrderRsp,strlen(order.sOrderRsp),m_sErrMsg);
-		if (SendBus(&m_pSendXdp,0,9848,0,CMD_DPABC) !=0 )
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"发送报单同步 9848出错 本地报单号[%s]",order.sLocalSerial);
-		}
-		//写入报单表
-		orderrid = m_pMemDb->m_pDbTrader.m_pOrder.Insert(order);
-		if (orderrid <0)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 写委托表出错 本地报单号[%s]",order.sLocalSerial);
+	//复制一份xdp
+    nRet = m_pKernelPub.GetOrderFeeAmt(order, order_pub.pc, order_pub.pCustFuncAcc);
+    if (nRet != 0)
+    {
+        order.sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+        order.sOrderStatus[1] = 0;
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = nRet;
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "交易账号[%s]交易所代码[%s]席位号[%s]本地报单号[%s]取手续费保证金出错 [%d]", order.sTxAcc, order.sExchCode, order.sSeatNo, order.sLocalSerial, nRet);
+        data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        //写入报单表
+        orderrid = m_pMemDb->m_pDbTrader.m_pOrder.Insert(order);
+        if (orderrid < 0)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 写委托表出错 本地报单号[%s]", order.sLocalSerial);
 			return -1;
-		}
-		pOrder = m_pMemDb->m_pDbTrader.m_pOrder.At(orderrid);
-		if (pOrder == NULL)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 委托表出错 rowid[%d]找不到委托 本地报单号[%s]",orderrid,order.sLocalSerial);
-			return -1;
-		}
-		return -1;
-	}
-	order.dExFee = 0.0 - (dExchFee+dMemberFee);//总手续费 为负数
-	order.dFrozAmt = dExchMargin+dMemberMargin;//总保证金
-
-	//发送报单同步广播
-	
-	m_pSendXdp.SetFieldValue((unsigned short)63,order.dExFee,m_sErrMsg);
-	m_pSendXdp.SetFieldValue((unsigned short)62,order.dFrozAmt,m_sErrMsg);
-	
-	if (SendBus(&m_pSendXdp,0,9848,0,CMD_DPABC) !=0 )
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"发送报单同步 9848出错 本地报单号[%s]",order.sLocalSerial);
-	}
-
+        }
+		m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(orderrid);
+        //同步到备机
+        Xdp2Struct::ConvertOrderHost2Xdp(order, &m_pSendXdp);
+        ReleaseBroadcast(&m_pSendXdp, 0, 0, 9926);
+        return -1;
+    }
 	//写入报单表
 	orderrid = m_pMemDb->m_pDbTrader.m_pOrder.Insert(order);
 	if (orderrid <0)
@@ -5635,8 +4100,9 @@ int RiskDll::Order(S_TRADE_DATA &data)
 		AnsData(data);
 		return -1;
 	}
-	pOrder = m_pMemDb->m_pDbTrader.m_pOrder.At(orderrid);
-	if (pOrder == NULL)
+	
+	order_pub.pOrder = m_pMemDb->m_pDbTrader.m_pOrder.At(orderrid);
+	if (order_pub.pOrder == NULL)
 	{
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托  委托表出错 rowid[%d]找不到委托",orderrid);
 		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
@@ -5644,187 +4110,890 @@ int RiskDll::Order(S_TRADE_DATA &data)
 		AnsData(data);
 		return -1;
 	}
-	//发送报单给柜台或交易所
-	S_MDB_BROKERAGE_INFO *pbrok = m_pMemDb->m_pDbSet.m_pBrokerage.Select(pCustFuncAcc->nSysId);
-	if (pbrok == NULL)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号无所属经纪公司[%d]",pCustFuncAcc->nSysId);
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
-		data.pData->sDBHead.nLen = 0;
-		AnsData(data);
-		pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
-		pOrder->sOrderStatus[1]=0;
-		strcpy(pOrder->sOrderRsp,"资金账号无所属经纪公司");
-		pOrder->nSyncFlag = 5; //回报同步
-		return -1;
-	}
-	int drebsvrid;
-	//0 不清算，导入柜台数据
-	//1 清算       直接连交易所
-	//	2 不清算   但连柜台的多个PG
-	//	3 不清算       直接连交易所
-	if (pbrok->nClearFlag == 0) //对接的是柜台
-	{
-		drebsvrid = pbrok->nSvrId;
-	}
-	else if (pbrok->nClearFlag == 2) //对接的是柜台的多个PG
-	{
-		CBF_Slist slist;
-		slist.SetSeparateString("-");
-		S_MDB_BROKERAGE_PG *pginfo =NULL;
-		//brokerid-客户号
-		int nRet = slist.FillSepString(pCustFuncAcc->sCustSimpleName);
-		if (nRet !=2 )
-		{
-			pginfo = m_pMemDb->m_pDbSet.m_pBrokeragePg.Select(pCustFuncAcc->nSysId,pCustFuncAcc->sCustSimpleName);
-		}
-		else
-		{
-			pginfo = m_pMemDb->m_pDbSet.m_pBrokeragePg.Select(pCustFuncAcc->nSysId,(char *)slist.GetAt(0).c_str());
-		}
-		if (pginfo == NULL)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"配置为连接多个PG，但BROKERAGE_PG表里无pg配置[%d %s]",pCustFuncAcc->nSysId,pCustFuncAcc->sCustSimpleName);
-			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
-			data.pData->sDBHead.nLen = 0;
-			AnsData(data);
-			pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
-			pOrder->sOrderStatus[1]=0;
-			strcpy(pOrder->sOrderRsp,"资金账号对应的pg参数未配置");
-			pOrder->nSyncFlag = 5; //回报同步
-			return -1;
-		}
-		drebsvrid = pginfo->nSvrId;
-	}
-	else //直接对接的交易所
-	{
-
-		if (strcmp(pOrder->sSeatNo,"$") == 0)
-		{
-			std::vector<S_MDB_BROKERAGE_EXCHANGE *> belist;
-			//没有输入的度位号，说明只有一个席位
-			if (!m_pMemDb->m_pDbSet.m_pBrokerageExchange.Select(pCustFuncAcc->nSysId,pOrder->sExchCode,belist))
-			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号所属经纪公司[%d] 无对应的交易所[%s]信息",pCustFuncAcc->nSysId,pOrder->sExchCode);
-				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
-				data.pData->sDBHead.nLen = 0;
-				AnsData(data);
-				pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
-				pOrder->sOrderStatus[1]=0;
-				strcpy(pOrder->sOrderRsp,"资金账号所属经纪公司无对应的交易所信息");
-				pOrder->nSyncFlag = 5; //回报同步
-				return -1;
-			}
-			if (belist.size() != 1)
-			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号所属经纪公司[%d] 对应的交易所[%s]有多条信息",pCustFuncAcc->nSysId,pOrder->sExchCode);
-				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
-				data.pData->sDBHead.nLen = 0;
-				AnsData(data);
-				pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
-				pOrder->sOrderStatus[1]=0;
-				strcpy(pOrder->sOrderRsp,"资金账号所属经纪公司对应多个交易所席位信息");
-				pOrder->nSyncFlag = 5; //回报同步
-				return -1;
-			}
-			drebsvrid = belist[0]->nSvrId;
-		}
-		else
-		{
-			S_MDB_BROKERAGE_EXCHANGE *pbrokexch = m_pMemDb->m_pDbSet.m_pBrokerageExchange.Select(pCustFuncAcc->nSysId,pOrder->sExchCode,pOrder->sSeatNo);
-			if (pbrokexch == NULL)
-			{
-				m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 资金账号所属经纪公司[%d] 交易所[%s] 无席位[%s]信息",pCustFuncAcc->nSysId,pOrder->sExchCode,pOrder->sSeatNo);
-				data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
-				data.pData->sDBHead.nLen = 0;
-				AnsData(data);
-				pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
-				pOrder->sOrderStatus[1]=0;
-				strcpy(pOrder->sOrderRsp,"资金账号所属经纪公司无席位信息");
-				pOrder->nSyncFlag = 5; //回报同步
-				return -1;
-			}
-			drebsvrid =pbrokexch->nSvrId;
-		}
-
-	}
+    //同步到备机
+    Xdp2Struct::ConvertOrderHost2Xdp(order, &m_pSendXdp);
+    ReleaseBroadcast(&m_pSendXdp, 0, 0, 9926);
 	//冻结资金持仓等等
-	nRet = m_pKernelPub.ComputeNewOrder(pAcclock,pCustFund,pOrder,pc,true);
+	nRet = m_pKernelPub.ComputeNewOrder(order_pub.pAcclock, order_pub.pCustFund, order_pub.pOrder, order_pub.pc,true);
 	if (nRet != SUCCESS)
 	{
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 计算出错 返回[%d]",nRet);
 		data.pData->sDBHead.a_Ainfo.a_nRetCode = nRet;
 		data.pData->sDBHead.nLen = 0;
 		AnsData(data);
-		pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
-		pOrder->sOrderStatus[1]=0;
-		strcpy(pOrder->sOrderRsp,"委托计算出错");
-		pOrder->nSyncFlag = 5; //回报同步
+		order_pub.pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+		order_pub.pOrder->sOrderStatus[1]=0;
+		strcpy(order_pub.pOrder->sOrderRsp,"委托计算出错");
+		order_pub.pOrder->nSyncFlag = 5; //回报同步
+		m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(orderrid);
 		return -1;
 	}
-	if (SendBus(&m_pSendXdp,drebsvrid,9206,GetNextSerial(),CMD_DPCALL) !=0 )
+	m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(orderrid);
+	//发送报单给柜台或交易所
+	S_TRADE_DATA rpcdata;
+	//申请一块内存
+    if (m_pClientLink->PoolMalloc(rpcdata) < 0)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "PoolMalloc error");
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = nRet;
+        data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        order_pub.pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+        order_pub.pOrder->sOrderStatus[1] = 0;
+        strcpy(order_pub.pOrder->sOrderRsp, "PoolMalloc error");
+        order_pub.pOrder->nSyncFlag = 5; //回报同步
+        m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(orderrid);
+        return -1;
+    }
+	unsigned int len;
+	m_nRpcSerial = m_pClientLink->GetSerial();
+	Xdp2Struct::ConvertOrderBroadcast2Xdp(*(order_pub.pOrder), m_pXdp);
+
+    len = sizeof(rpcdata.pData->sBuffer);
+	//生成rpc的xdp数据
+    if (!m_pXdp->ToBuffer(rpcdata.pData->sBuffer, len, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "xdp ToBuffer error");
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+        data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        order_pub.pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+        order_pub.pOrder->sOrderStatus[1] = 0;
+        strcpy(order_pub.pOrder->sOrderRsp, "xdp ToBuffer error");
+        order_pub.pOrder->nSyncFlag = 5; //回报同步
+        m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(orderrid);
+		m_pClientLink->PoolFree(rpcdata);
+		return -1;
+    }
+	//准备报文头
+	bzero(&(rpcdata.pData->sDBHead),DREBHEADLEN);
+	rpcdata.pData->sDBHead.nLen = len;
+	rpcdata.pData->sDBHead.cCmd = CMD_DPCALL;
+	rpcdata.pData->sDBHead.d_Dinfo.d_nServiceNo = 9924;   // 交易所报单接口
+	rpcdata.pData->sDBHead.d_Dinfo.d_nSvrMainId = atoi(order_pub.pExTrader->sPara);//交易所、席位对应的在总线上注册的服务号
+	//rpc调用
+    if (m_pClientLink->RpcRequest(rpcdata, m_nRpcSerial, [=](S_TRADE_DATA& rpcdata, S_TRADE_DATA& ansdata) -> int
+        {
+			//报单响应处理
+			return OrderRsp(rpcdata,ansdata);
+        }
+
+    ) < 0)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "调用 RpcRequest 返回<0");
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+        data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+		order_pub.pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+		order_pub.pOrder->sOrderStatus[1] = 0;
+        strcpy(order_pub.pOrder->sOrderRsp, "发送报单 出错");
+		order_pub.pOrder->nSyncFlag = 5; //回报同步
+		m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(orderrid);
+        return -1;
+    }
+    //应答回去
+	Xdp2Struct::ConvertOrderBroadcast2Xdp(*(order_pub.pOrder),m_pXdp);
+	len = sizeof(data.pData->sBuffer);
+	if (!m_pXdp->ToBuffer(data.pData->sBuffer, len, m_sErrMsg))
 	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 发送总线出错");
-		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+		m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "RpcRequest 返回<0");
 		data.pData->sDBHead.nLen = 0;
-		AnsData(data);
-		pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
-		pOrder->sOrderStatus[1]=0;
-		strcpy(pOrder->sOrderRsp,"发送报单 出错");
-		pOrder->nSyncFlag = 5; //回报同步
-		return -1;
 	}
-	nRet = GetAnsData(m_pSendData,5000);
-	while (nRet == 0)
+	else
 	{
-		if (m_pSendData.pData == NULL)
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 取应答，指针为NULL");
-			data.pData->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
-			data.pData->sDBHead.nLen = 0;
-			AnsData(data);
-			return -1;
-		}
-		if (m_pSendData.pData->sDBHead.s_Sinfo.s_nSerial != GetCurSerial())
-		{
-			m_pClientLink->PoolFree(m_pSendData);
-			nRet = GetAnsData(m_pSendData,5000);
-			continue;
-		}
-		if (m_pSendData.pData->sDBHead.a_Ainfo.a_nRetCode == SUCCESS)
-		{
-			break;
-		}
-		else
-		{
-			m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 接口返回出错[%d]",m_pSendData.pData->sDBHead.a_Ainfo.a_nRetCode);
-			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
-			data.pData->sDBHead.nLen = 0;
-			AnsData(data);
-			pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
-			pOrder->sOrderStatus[1]=0;
-			strcpy(pOrder->sOrderRsp,"发送报单 返回错");
-			pOrder->nSyncFlag = 5; //回报同步
-			return -1;
-		}
+		data.pData->sDBHead.nLen = len;
 	}
-	if (nRet != 0)
-	{
-		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 接口返回超时出错");
-		//没有收到应答
-	}
-	//应答回去
-	data.pData->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
-	data.pData->sDBHead.nLen = 0;
-	AnsData(data);
-	
+    data.pData->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
+    AnsData(data);
+	m_pLog->LogMp(LOG_DEBUG,__FILE__,__LINE__,"报单[%s] 内部处理延时[%d]微秒",order_pub.pOrder->sLocalSerial, CBF_Date_Time::GetTickUS()- nBeginTime);
 	return 0;
 }
 
+int RiskDll::BilateralOrder(S_TRADE_DATA& data)
+{
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+        AnsData(data);
+        return -1;
+    }
+    //101	varchar2	席位代码	6	n	没有席位默认’$’
+    //102	varchar3	交易账号	20	Y	交易账号
+    //108	varchar9	客户端流水	18	y	请求方的流水，自己保证当天唯一，回报对应
+    //20	uint1	合约编号	9	N	合约编号和合约代码必须输入一个，合约编号输入了代码就不起作用。
+    //100	varchar1	合约代码	20	n	
+    //5	short1	投保标志	1	Y	asc
+    //6	short2	开平标志	1	Y	asc
+    //7	short3	买卖标志	1	Y	asc
+    //8	short4	交易类型	1	Y	asc
+    //9	short5	指令类型	1	Y	报单类型 asc
+    //13	short9	报单属性	1	Y	成交属性 asc
+    //10	short6	强平标志	1	n	标识会员发起强平 asc
+    //41	int2	委托数量	8	Y	
+    //60	double1	委托价格	18.4	Y	
+
+    //92	char3	操作员代码	16	Y	交易员/客户号
+    //91	char2	渠道	2	Y	
+
+    S_MDB_ORDER_INFO order;
+    bzero(&order, sizeof(S_MDB_ORDER_INFO));
+    unsigned int len;
+    int nRet;
+    char sChannel[11];
+    char sTxOrg[21];
+    bzero(sChannel, sizeof(sChannel));
+    bzero(sTxOrg, sizeof(sTxOrg));
+    int fieldtype;
+    short nShortValue;
+    S_MDB_CONTRACT_INFO* pc = NULL;
+    S_MDB_QUOTATION* pq = NULL;
+    S_MDB_EXCH_INFO* pe = NULL;
+    S_MDB_CONTRACT_SETTLE_PRICE* psp = NULL;
+    S_MDB_VARIETY_INFO* pv = NULL;
+    S_MDB_TRADEACC_INFO* pCustFuncAcc = NULL;
+    S_MDB_CUSTINFO* pCust = NULL;
+    S_MDB_CUST_FUND* pCustFund = NULL;
+    S_MDB_ORG_INFO* pOrg = NULL;
+    S_MDB_TXACC_LOCK* pAcclock = NULL;
+    S_MDB_ORDER_INFO* pOrder = NULL;
+    bool iscust = false;
+
+    len = sizeof(order.sSeatNo);
+    if (!m_pXdp->GetFieldValue((unsigned short)101, order.sSeatNo, len, fieldtype, m_sErrMsg))
+    {
+        strcpy(order.sSeatNo, "$");
+    }
+    len = sizeof(order.sTxAcc);
+    if (!m_pXdp->GetFieldValue((unsigned short)102, order.sTxAcc, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Input error [%s]", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+        AnsData(data);
+        return -1;
+    }
+    len = sizeof(order.sClientSerial);
+    if (!m_pXdp->GetFieldValue((unsigned short)108, order.sClientSerial, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Input error [%s]", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+        AnsData(data);
+        return -1;
+    }
+    if (!m_pXdp->GetFieldValue((unsigned short)20, order.nContractNo, m_sErrMsg))
+    {
+        len = sizeof(order.sContractCode);
+        if (!m_pXdp->GetFieldValue((unsigned short)100, order.sContractCode, len, fieldtype, m_sErrMsg))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Input error [%s]", m_sErrMsg);
+            data.pData->sDBHead.nLen = 0;
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+            AnsData(data);
+            return -1;
+        }
+        pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(order.sContractCode);
+        if (pc == NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约代码 [%s] 不存在", order.sContractCode);
+            data.pData->sDBHead.nLen = 0;
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CONTRACTINPUT;
+            AnsData(data);
+            return -1;
+        }
+        order.nContractNo = pc->nContractId;
+    }
+    else
+    {
+        pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(order.nContractNo);
+        if (pc == NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约编号 [%d] 不存在", order.nContractNo);
+            data.pData->sDBHead.nLen = 0;
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CONTRACTINPUT;
+            AnsData(data);
+            return -1;
+        }
+        strcpy(order.sContractCode, pc->sContractCode);
+    }
+    strcpy(order.sExchCode, pc->sExcode);
+    //取交易所信息
+    pe = m_pMemDb->m_pDbBaseinfo.m_pExchange.Select(pc->sExcode);
+    if (pe == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约编号[%d %s] 的交易所[%s]不存在", order.nContractNo, order.sContractCode, pc->sExcode);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_EXCHANGE;
+        AnsData(data);
+        return -1;
+    }
+    if (!m_pXdp->GetFieldValue((unsigned short)5, nShortValue, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托无投保标志 %s", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SHFLAG;
+        AnsData(data);
+        return -1;
+    }
+    if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托投保标志不符 %d", nShortValue);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SHFLAG;
+        AnsData(data);
+        return -1;
+    }
+    order.sShFlag[0] = nShortValue;
+    if (!m_pXdp->GetFieldValue((unsigned short)6, nShortValue, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托无开平标志 %s", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_EOFLAG;
+        AnsData(data);
+        return -1;
+    }
+    if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托开平标志不符 %d", nShortValue);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_EOFLAG;
+        AnsData(data);
+        return -1;
+    }
+    order.sEoFlag[0] = nShortValue;
+
+    if (!m_pXdp->GetFieldValue((unsigned short)7, nShortValue, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托无买卖标志 %s", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
+        AnsData(data);
+        return -1;
+    }
+    if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托买卖标志不符 %d", nShortValue);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
+        AnsData(data);
+        return -1;
+    }
+    order.sBsFlag[0] = nShortValue;
+
+    if (!m_pXdp->GetFieldValue((unsigned short)8, nShortValue, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托无交易类型 %s", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
+        AnsData(data);
+        return -1;
+    }
+    if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托交易类型不符 %d", nShortValue);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_TXTYPE;
+        AnsData(data);
+        return -1;
+    }
+    order.sTxType[0] = nShortValue;
+
+    if (!m_pXdp->GetFieldValue((unsigned short)9, nShortValue, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托无报单类型 %s", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERTYPE;
+        AnsData(data);
+        return -1;
+    }
+    if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托报单类型不符 %d", nShortValue);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERTYPE;
+        AnsData(data);
+        return -1;
+    }
+    order.sCmdType[0] = nShortValue;
+
+    if (!m_pXdp->GetFieldValue((unsigned short)13, nShortValue, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托无报单属性 %s", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR;
+        AnsData(data);
+        return -1;
+    }
+    if (nShortValue <MINASCIINUM || nShortValue>MAXASCIINUM)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托报单属性不符 %d", nShortValue);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR;
+        AnsData(data);
+        return -1;
+    }
+    order.sCmdAttr[0] = nShortValue;
+
+    order.nRemainNum = order.nOrderNum;//剩余数量默认为委托数量
+    order.sCancelFlag[0] = BOOL_FALSE;
+    order.sCancelFlag[1] = 0;
+
+    //强平标志
+    if (m_pXdp->GetFieldValue((unsigned short)10, nShortValue, m_sErrMsg))
+    {
+        if (nShortValue != BOOL_ASC_FALSE && nShortValue != BOOL_ASC_TRUE)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托强平标志不符 %d", nShortValue);
+            data.pData->sDBHead.nLen = 0;
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
+            AnsData(data);
+            return -1;
+        }
+        order.sForceFlag[0] = nShortValue;
+    }
+    else
+    {
+        order.sForceFlag[0] = '0';
+    }
+
+    //委托数量
+    if (!m_pXdp->GetFieldValue((unsigned short)41, order.nOrderNum, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托无委托数量 %s", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
+        AnsData(data);
+        return -1;
+    }
+    if (order.nOrderNum < 1)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托委托数量不符 %d", order.nOrderNum);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_BSFLAG;
+        AnsData(data);
+        return -1;
+    }
+    //委托价格
+
+    //如果是市价委托，取合约的最新价，以便计算手续费、保证金
+    if (order.sCmdType[0] == ORDER_TYPE_MARKET || order.sCmdType[0] == ORDER_TYPE_MS_LOSS || order.sCmdType[0] == ORDER_TYPE_MS_PROFIT || order.sCmdType[0] == ORDER_TYPE_LEVEL1_M || order.sCmdType[0] == ORDER_TYPE_LEVEL5_M)
+    {
+        pq = m_pMemDb->m_pDbTrader.m_pQuotation.Select(order.nContractNo);
+        if (pq == NULL)
+        {
+            //行情没有，取结算价
+            psp = m_pMemDb->m_pDbBaseinfo.m_pSettlePrice.Select(order.nContractNo);
+            if (psp == NULL)
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托  市价无行情且取不到此合约[%d %s]的结算价 %s", order.nContractNo, order.sContractCode);
+                data.pData->sDBHead.nLen = 0;
+                data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERPRICE;
+                AnsData(data);
+                return -1;
+            }
+            order.dOrderPrice = psp->dSettlePrice;
+        }
+        else
+        {
+            order.dOrderPrice = pq->dNewPrice;
+        }
+    }
+    else
+    {
+        if (!m_pXdp->GetFieldValue((unsigned short)60, order.dOrderPrice, m_sErrMsg))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托无委托价格 %s", m_sErrMsg);
+            data.pData->sDBHead.nLen = 0;
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERPRICE;
+            AnsData(data);
+            return -1;
+        }
+    }
+    //发起渠道
+    len = sizeof(sChannel);
+    if (!m_pXdp->GetFieldValue((unsigned short)91, sChannel, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 发起渠道未输入 [%s]", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CHANNEL;
+        AnsData(data);
+        return -1;
+    }
+    strcpy(order.sOrderChannel, sChannel);
+    //客户、交易员
+    len = sizeof(order.sOrderOper);
+    if (!m_pXdp->GetFieldValue((unsigned short)92, order.sOrderOper, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 发起客户/交易员未输入 [%s]", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTOPER;
+        AnsData(data);
+        return -1;
+    }
+    len = sizeof(sTxOrg);
+    if (!m_pXdp->GetFieldValue((unsigned short)93, sTxOrg, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "委托 交易网点未输入，取资金账户开户网点");
+    }
+    //取品种
+    if (pc->sProd_type[0] == PROD_TYPE_OPTION)
+    {
+        S_MDB_CONTRACT_INFO* pco = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(pc->nProdId);
+        if (pco != NULL)
+        {
+            pv = m_pMemDb->m_pDbBaseinfo.m_pVariety.Select(pco->nProdId);
+        }
+        else
+        {
+            pv = NULL;
+        }
+    }
+    else
+    {
+        pv = m_pMemDb->m_pDbBaseinfo.m_pVariety.Select(pc->nProdId);
+    }
+    order.nVarietyId = pc->nProdId;
+    if (pv == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 合约[%d %s] 取品种信息出错", pc->nContractId, pc->sContractCode);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEMPARA;
+        AnsData(data);
+        return -1;
+    }
+    //是否有此交易账号
+    pAcclock = m_pMemDb->SelectLock(order.sTxAcc);
+    if (pAcclock == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s]非法不存在", order.sTxAcc);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTFUNDACC;
+        AnsData(data);
+        return -1;
+    }
+    pCustFuncAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(pAcclock->nTradeAccRowid);
+    if (pCustFuncAcc == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s] 非法，不存在", order.sTxAcc);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTFUNDACC;
+        AnsData(data);
+        return -1;
+    }
+    pCust = m_pMemDb->m_pDbCust.m_pCustom.At(pAcclock->nCustRowid);
+    //	pCust = m_pMemDb->m_pDbCust.m_pCustom.SelectByNo(pCustFuncAcc->sCustNo);
+    if (pCust == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s]的客户号[%s]不存在", order.sTxAcc, pCustFuncAcc->sCustNo);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTNO;
+        AnsData(data);
+        return -1;
+    }
+    //比较交易账号对应的客户号是否和输入的相同
+    if (strcmp(pCustFuncAcc->sCustNo, order.sOrderOper) == 0)
+    {
+        iscust = true;
+    }
+    else
+    {
+        iscust = false;//不是客户发起
+    }
+    //取资金表，按账号+币种
+    pCustFund = m_pMemDb->GetFund(pAcclock);
+    if (pCustFund == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s]+合约[%d %s]对应的币种[%s]在资金表不存在", order.sTxAcc, order.nContractNo, order.sContractCode, pc->sCurrency);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CUSTFUND;
+        AnsData(data);
+        return -1;
+    }
+    //判断开通渠道
+    int nChannel = atoi(order.sOrderChannel);
+    if (nChannel <= 0 || nChannel > 59)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托渠道[%s]非法", order.sOrderChannel);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CHANNEL;
+        AnsData(data);
+        return -1;
+    }
+    if (pCust->sChannleOpen[nChannel] != '1')
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 客户号[%s]交易账号[%s]未开通此渠道[%s]", pCustFuncAcc->sCustNo, order.sTxAcc, order.sOrderChannel);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CHANNELOPEN;
+        AnsData(data);
+        return -1;
+    }
+    if (!iscust) //判断操作员是否有此账号权限
+    {
+        if (!m_pKernelPub.CheckOperAccRight(order.sOrderOper, order.sTxAcc))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 操作员[%s] 无交易账号[%s] 的操作权限", order.sOrderOper, order.sTxAcc);
+            data.pData->sDBHead.nLen = 0;
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NO_RIGHT;
+            AnsData(data);
+            return -1;
+        }
+    }
+    strcpy(order.sTxDate, pe->sTradeDate);
+    m_pDate.Update();
+    strcpy(order.sAnsTime, m_pDate.ToStringDT17().c_str());
+    strcpy(order.sAccOrg, pCustFuncAcc->sSignOrg);
+    //取交易网点
+    if (strlen(sTxOrg) < 1)
+    {
+        strcpy(order.sTxOrg, pCustFuncAcc->sSignOrg);
+    }
+    else
+    {
+        strcpy(order.sTxOrg, sTxOrg);
+    }
+    //交易网点是否存在
+    pOrg = m_pMemDb->m_pDbPublic.m_pOrg.Select(order.sTxOrg);
+    if (pOrg == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 网点[%s]不存在", order.sTxOrg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_TXORG;
+        AnsData(data);
+        return -1;
+    }
+    //判断委托类型、成交属性
+    int nTxCmd = atoi(order.sCmdType);
+    if (nTxCmd < 0 || nTxCmd>11)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 报单类型[%s]非法", order.sCmdType);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERTYPE;
+        AnsData(data);
+        return -1;
+    }
+    int nTxAttr = atoi(order.sCmdAttr);
+    if (nTxAttr < 0 || nTxAttr>99)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 成交属性[%s]非法", order.sCmdAttr);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR;
+        AnsData(data);
+        return -1;
+    }
+    if (pc->sOrderCmd[nTxCmd] != '1')
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 报单类型[%s]此合约[%d %s]不支持", order.sCmdType, order.nContractNo, order.sContractCode);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERTYPE_SUPPORT;
+        AnsData(data);
+        return -1;
+    }
+    if (pc->sDoneAttr[nTxAttr * 10 + nTxAttr] != '1')
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 成交属性+报单位类型[%s %s]此合约[%d %s]不支持", order.sCmdAttr, order.sCmdType, order.nContractNo, order.sContractCode);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR_SUPPORT;
+        AnsData(data);
+        return -1;
+    }
+
+    //取交易编码
+    S_MDB_CUST_TRADECODE* ptx = m_pMemDb->m_pDbTrader.m_pTradecode.Select(order.sTxAcc, order.sExchCode);
+    if (ptx == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s]交易所代码[%s]席位号[%s]无对应的交易编码", order.sTxAcc, order.sExchCode, order.sSeatNo);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_TRADECODE;
+        AnsData(data);
+        return -1;
+    }
+    strcpy(order.sTxCode, ptx->sTradeCode);
+
+
+    //这里可以根据网点，判断是否可以交易，后续根据需要增加
+
+    //客户风险度，是否有交易权限
+    if (pCustFund->sTradeRight[0] == TR_NONE)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s] 币种[%s]交易所代码[%s]席位号[%s]无交易权限[%c] 风险度[%.2f] ", order.sTxAcc, order.sExchCode, order.sSeatNo, pCustFund->sCurrency, pCustFund->sTradeRight[0], pCustFund->dRisk);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_TRADERIGHT;
+        AnsData(data);
+        return -1;
+    }
+
+    order.dAmt = order.dOrderPrice * pc->dTxUnit * order.nOrderNum;//金额
+
+    //生成本地报单号
+    sprintf(order.sLocalSerial, INT64PFM, g_pPubData->GetLocalSerial());
+
+    order.nSyncFlag = 1; //报入同步
+
+    //报单状态默认为正申报
+    order.sOrderStatus[0] = ORDER_STATUS_SENDOK;//正在申报
+    order.sOrderStatus[1] = 0;
+
+    //算出保证金手续费
+    double dExchFee = 0.0;//交易所手续费
+    double dMemberFee = 0.0;//会员手续费
+    double dExchMargin = 0.0;//交易所保证金
+    double dMemberMargin = 0.0;//会员保证金
+    int orderrid;
+    m_pSendXdp.XdpCopy(m_pXdp);
+    //设置xdp报文
+    // 101	varchar2	席位代码	6	y	没有席位默认’$’
+    //	102	varchar3	交易账号	20	Y	
+    //	103	Varchar4	本地报单号	20	Y	
+    //	104	Varchar5	交易编码	20	y	
+
+    //	20	uint1	合约编号	9	y	
+    //	100	varchar1	合约代码	20	y	
+    //	5	short1	投保标志	1	Y	asc
+    //	6	short2	开平标志	1	Y	asc
+    //	7	short3	买卖标志	1	Y	asc
+    //	8	short4	交易类型	1	Y	asc
+    //	9	short5	指令类型	1	Y	报单类型 asc
+    //	13	short9	报单属性	1	Y	成交属性 asc
+    //	10	short6	强平标志	1	n	标识会员发起强平 asc
+    //	41	int2	委托数量	8	Y	
+    //	60	double1	委托价格	18.4	Y	
+
+    //	92	char3	操作员代码	16	Y	交易员/客户号
+    //	91	char2	渠道	2	Y	
+
+    //  61	Double2	金额	18.4	y	
+    //	63	Double4	手续费	18.4	y	
+    //	62	Double3	冻结资金	18.4	y	不含手续费
+    //	22	Uint2	品种编号	8	y	
+    //  109	varchar10	委托状态	1	y	
+    //	117	Varchar18	报单响应	100	y	
+    //	116	Varchar17	报单时间	17	y	
+
+    m_pSendXdp.SetFieldValue((unsigned short)101, order.sSeatNo, strlen(order.sSeatNo), m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)103, order.sLocalSerial, strlen(order.sLocalSerial), m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)104, order.sTxCode, strlen(order.sTxCode), m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)20, order.nContractNo, m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)100, order.sContractCode, strlen(order.sContractCode), m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)10, (short)order.sForceFlag[0], m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)60, order.dOrderPrice, m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)61, order.dAmt, m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)109, order.sOrderStatus, strlen(order.sOrderStatus), m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)117, order.sOrderRsp, strlen(order.sOrderRsp), m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)116, order.sAnsTime, strlen(order.sAnsTime), m_sErrMsg);
+
+    m_pSendXdp.SetFieldValue((unsigned short)22, order.nVarietyId, m_sErrMsg);
+    nRet = m_pKernelPub.GetFeeMargin(&order, pc, pCustFuncAcc, dExchFee, dMemberFee, dExchMargin, dMemberMargin);
+    if (nRet != 0)
+    {
+        order.sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+        order.sOrderStatus[1] = 0;
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "交易账号[%s]交易所代码[%s]席位号[%s]本地报单号[%s]取手续费保证金出错 [%d]", order.sTxAcc, order.sExchCode, order.sSeatNo, order.sLocalSerial, nRet);
+        switch (nRet)
+        {
+        case -1:
+            strcpy(order.sOrderRsp, "取手续费出错");
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_GETFEE;
+            break;
+        case -2:
+            strcpy(order.sOrderRsp, "取保证金出错");
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_GETMARGIN;
+            break;
+        case -3:
+            strcpy(order.sOrderRsp, "合约对应的品种类型不符");
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEMPARA;
+            break;
+        default:
+            break;
+        }
+        data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        //同步到备机
+        m_pSendXdp.SetFieldValue((unsigned short)109, order.sOrderStatus, strlen(order.sOrderStatus), m_sErrMsg);
+        m_pSendXdp.SetFieldValue((unsigned short)117, order.sOrderRsp, strlen(order.sOrderRsp), m_sErrMsg);
+        if (SendBus(&m_pSendXdp, 0, 9848, 0, CMD_DPABC) != 0)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "发送报单同步 9848出错 本地报单号[%s]", order.sLocalSerial);
+        }
+        //写入报单表
+        orderrid = m_pMemDb->m_pDbTrader.m_pOrder.Insert(order);
+        if (orderrid < 0)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 写委托表出错 本地报单号[%s]", order.sLocalSerial);
+            return -1;
+        }
+        pOrder = m_pMemDb->m_pDbTrader.m_pOrder.At(orderrid);
+        if (pOrder == NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 委托表出错 rowid[%d]找不到委托 本地报单号[%s]", orderrid, order.sLocalSerial);
+            return -1;
+        }
+        return -1;
+    }
+    order.dExFee = 0.0 - (dExchFee + dMemberFee);//总手续费 为负数
+    order.dFrozAmt = dExchMargin + dMemberMargin;//总保证金
+
+    //发送报单同步广播
+
+    m_pSendXdp.SetFieldValue((unsigned short)63, order.dExFee, m_sErrMsg);
+    m_pSendXdp.SetFieldValue((unsigned short)62, order.dFrozAmt, m_sErrMsg);
+
+    if (SendBus(&m_pSendXdp, 0, 9848, 0, CMD_DPABC) != 0)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "发送报单同步 9848出错 本地报单号[%s]", order.sLocalSerial);
+    }
+
+    //写入报单表
+    orderrid = m_pMemDb->m_pDbTrader.m_pOrder.Insert(order);
+    if (orderrid < 0)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 写委托表出错 本地报单号[%s]", order.sLocalSerial);
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+        data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    pOrder = m_pMemDb->m_pDbTrader.m_pOrder.At(orderrid);
+    if (pOrder == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托  委托表出错 rowid[%d]找不到委托", orderrid);
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+        data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    //发送报单给柜台或交易所
+    int drebsvrid = 0;
+    //if (strcmp(pOrder->sSeatNo,"$") == 0)
+    //{
+    //	std::vector<S_MDB_BROKERAGE_EXCHANGE *> belist;
+    //	//没有输入的度位号，说明只有一个席位
+    //	if (!m_pMemDb->m_pDbSet.m_pBrokerageExchange.Select(pCustFuncAcc->nSysId,pOrder->sExchCode,belist))
+    //	{
+    //		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 交易账号所属经纪公司[%d] 无对应的交易所[%s]信息",pCustFuncAcc->nSysId,pOrder->sExchCode);
+    //		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+    //		data.pData->sDBHead.nLen = 0;
+    //		AnsData(data);
+    //		pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+    //		pOrder->sOrderStatus[1]=0;
+    //		strcpy(pOrder->sOrderRsp,"交易账号所属经纪公司无对应的交易所信息");
+    //		pOrder->nSyncFlag = 5; //回报同步
+    //		return -1;
+    //	}
+    //	if (belist.size() != 1)
+    //	{
+    //		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 交易账号所属经纪公司[%d] 对应的交易所[%s]有多条信息",pCustFuncAcc->nSysId,pOrder->sExchCode);
+    //		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+    //		data.pData->sDBHead.nLen = 0;
+    //		AnsData(data);
+    //		pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+    //		pOrder->sOrderStatus[1]=0;
+    //		strcpy(pOrder->sOrderRsp,"交易账号所属经纪公司对应多个交易所席位信息");
+    //		pOrder->nSyncFlag = 5; //回报同步
+    //		return -1;
+    //	}
+    //	drebsvrid = belist[0]->nSvrId;
+    //}
+    //else
+    //{
+    //	S_MDB_BROKERAGE_EXCHANGE *pbrokexch = m_pMemDb->m_pDbSet.m_pBrokerageExchange.Select(pCustFuncAcc->nSysId,pOrder->sExchCode,pOrder->sSeatNo);
+    //	if (pbrokexch == NULL)
+    //	{
+    //		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"委托 交易账号所属经纪公司[%d] 交易所[%s] 无席位[%s]信息",pCustFuncAcc->nSysId,pOrder->sExchCode,pOrder->sSeatNo);
+    //		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+    //		data.pData->sDBHead.nLen = 0;
+    //		AnsData(data);
+    //		pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+    //		pOrder->sOrderStatus[1]=0;
+    //		strcpy(pOrder->sOrderRsp,"交易账号所属经纪公司无席位信息");
+    //		pOrder->nSyncFlag = 5; //回报同步
+    //		return -1;
+    //	}
+    //	drebsvrid =pbrokexch->nSvrId;
+    //}
+
+
+    //冻结资金持仓等等
+    nRet = m_pKernelPub.ComputeNewOrder(pAcclock, pCustFund, pOrder, pc, true);
+    if (nRet != SUCCESS)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 计算出错 返回[%d]", nRet);
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = nRet;
+        data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+        pOrder->sOrderStatus[1] = 0;
+        strcpy(pOrder->sOrderRsp, "委托计算出错");
+        pOrder->nSyncFlag = 5; //回报同步
+        return -1;
+    }
+    if (SendBus(&m_pSendXdp, drebsvrid, 9206, GetNextSerial(), CMD_DPCALL) != 0)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 发送总线出错");
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+        data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+        pOrder->sOrderStatus[1] = 0;
+        strcpy(pOrder->sOrderRsp, "发送报单 出错");
+        pOrder->nSyncFlag = 5; //回报同步
+        return -1;
+    }
+    nRet = GetAnsData(m_pSendData, 5000);
+    while (nRet == 0)
+    {
+        if (m_pSendData.pData == NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 取应答，指针为NULL");
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
+            data.pData->sDBHead.nLen = 0;
+            AnsData(data);
+            return -1;
+        }
+        if (m_pSendData.pData->sDBHead.s_Sinfo.s_nSerial != GetCurSerial())
+        {
+            m_pClientLink->PoolFree(m_pSendData);
+            nRet = GetAnsData(m_pSendData, 5000);
+            continue;
+        }
+        if (m_pSendData.pData->sDBHead.a_Ainfo.a_nRetCode == SUCCESS)
+        {
+            break;
+        }
+        else
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 接口返回出错[%d]", m_pSendData.pData->sDBHead.a_Ainfo.a_nRetCode);
+            data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_SYSTEM;
+            data.pData->sDBHead.nLen = 0;
+            AnsData(data);
+            pOrder->sOrderStatus[0] = ORDER_STATUS_INVALID;//无效单
+            pOrder->sOrderStatus[1] = 0;
+            strcpy(pOrder->sOrderRsp, "发送报单 返回错");
+            pOrder->nSyncFlag = 5; //回报同步
+            return -1;
+        }
+    }
+    if (nRet != 0)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 接口返回超时出错");
+        //没有收到应答
+    }
+    //应答回去
+    data.pData->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
+    data.pData->sDBHead.nLen = 0;
+    AnsData(data);
+
+    return 0;
+}
+
+int RiskDll::CancelOrder(S_TRADE_DATA& data)
+{
+	return 0;
+}
 
 int RiskDll::SendBus(CXdp *xdp,int svrid,int funcno,int serial,short cmd)
 {
-	bzero(&m_pSendData,sizeof(S_TRADE_DATA));
 	if (m_pClientLink->PoolMalloc(m_pSendData) !=0 )
 	{
 		m_pLog->LogMp(LOG_ERROR_GENERAL,__FILE__,__LINE__,"发送总线 %d 分配内存出错",funcno);
@@ -5859,124 +5028,1442 @@ int RiskDll::GetCurSerial()
 	return m_nCallSerial;
 }
 
-
-
-bool RiskDll::ReadContract()
+int RiskDll::ProcSyncFund(S_TRADE_DATA& data)
 {
-	bool bret;
-	//合约表
-	S_MDB_CONTRACT_INFO info;
-	S_MDB_VARIETY_INFO *pv=NULL;
-	S_MDB_CONTRACT_INFO *pc=NULL;
-	sprintf(m_sSql,"select a.CONTRACT_NO,a.CONTRACT_CODE,a.CONTRACT_NAME,a.EX_CODE,a.PROD_TYPE,a.PROD_CODE,a.PROD_NO,a.MIN_CHG_PRICE,a.IST0,a.ISBAIL,a.BAIL_RATE,a.UL_LIMIT,a.UPPER_LIMIT_VALUE,a.LOWER_LIMIT_VALUE,a.ACTIVE_FLAG,a.TX_STATUS,a.REF_PRICE,a.RCV_RATE,a.BUSI_MODE,a.MAX_HAND,a.MIN_HAND,a.EX_UNIT,a.PRICE_UNIT,a.ORDER_CMD,a.ORDER_ATTR,a.DUE_DATE,a.LAST_DATE,a.DELI_DAYS,a.IS_BIGMARGIN,a.ISCALL,a.VARIETY_NO from CONTRACT_INFO a,VARIETY_INFO b where a.VARIETY_NO=b.VARIETY_NO order by a.CONTRACT_NO");
-	try
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+        m_pClientLink->PoolFree(data);
+        return -1;
+    }
+    m_pClientLink->PoolFree(data);
+	S_MDB_CUST_FUND fund;
+	bzero(&fund,sizeof(S_MDB_CUST_FUND));
+	Xdp2Struct::ConvertFund(m_pXdp,fund);
+	m_pMemDb->m_pDbTrader.m_pFund.Update(fund);
+	return 0;
+}
+int RiskDll::ProcSyncPosi(S_TRADE_DATA& data)
+{
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+		m_pClientLink->PoolFree(data);
+        return -1;
+    }
+	m_pClientLink->PoolFree(data);
+
+	S_MDB_CUST_POSITION info;
+    bzero(&info, sizeof(S_MDB_CUST_POSITION));
+	Xdp2Struct::ConvertPosition(m_pXdp,info);
+	m_pMemDb->m_pDbTrader.m_pPosition.Update(info);
+    return 0;
+}
+int RiskDll::ProcBondScope(S_TRADE_DATA& data)
+{
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+        m_pClientLink->PoolFree(data);
+        return -1;
+    }
+    m_pClientLink->PoolFree(data);
+
+    char sSecuCode[21];
+	double dScope;
+	int fieldtype;
+	unsigned int len=sizeof(sSecuCode);
+	m_pXdp->GetFieldValue((unsigned short)80, sSecuCode, len, fieldtype, m_sErrMsg);
+	m_pXdp->GetFieldValue((unsigned short)50, dScope, m_sErrMsg);
+	S_MDB_BOND_INFO *pb = m_pMemDb->m_pDbBaseinfo.m_pBond.Select(sSecuCode);
+	if (NULL == pb)
 	{
-		if (!m_pSqlCmd->setCommandText(m_sSql))
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"setCommandText error <%s>",m_sSql);
-			return false;
-		}
-		if (!m_pSqlCmd->Execute())
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Execute <%s> error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
-			return false;
-		}
+		S_MDB_BOND_INFO bond;
+		bzero(&bond,sizeof(S_MDB_BOND_INFO));
+		strcpy(bond.sBondCode,sSecuCode);
+		bond.dMarketScope = dScope;
+		int rid = m_pMemDb->m_pDbBaseinfo.m_pBond.Insert(bond);
+		m_pMemDb->m_pDbBaseinfo.m_pBond.SetUpdate(rid);
+		return 0;
+	}
+	pb->dMarketScope = dScope;
+	m_pMemDb->m_pDbBaseinfo.m_pBond.SetUpdate(*pb);
+    return 0;
+}
+int RiskDll::ProcBondValue(S_TRADE_DATA& data)
+{
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+        m_pClientLink->PoolFree(data);
+        return -1;
+    }
+    m_pClientLink->PoolFree(data);
 
-		bret = m_pSqlCmd->FetchNext();
-		if ( !bret )
-		{
-#ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table CONTRACT_INFO no data");
-#else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"合约表无数据");
-#endif
-			return false;
-		}
-		while (bret)
-		{
-			info.nContractId = m_pSqlCmd->Field(0).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sContractName,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sExcode,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sProd_type,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sProd_code,m_pSqlCmd->Field(5).asString());
-			info.nProdId = m_pSqlCmd->Field(6).asLong();
-			info.dMinChgPrice = m_pSqlCmd->Field(7).asDouble();
-			strcpy(info.sIsT0,m_pSqlCmd->Field(8).asString());
-			strcpy(info.sIsMargin,m_pSqlCmd->Field(9).asString());
-			info.dMarginRate = m_pSqlCmd->Field(10).asDouble();
-			strcpy(info.sIsUpDownLimit,m_pSqlCmd->Field(11).asString());
-			info.dUpRate = m_pSqlCmd->Field(12).asDouble();
-			info.dDownRate = m_pSqlCmd->Field(13).asDouble();
-			strcpy(info.sActiveFlag,m_pSqlCmd->Field(14).asString());
-			strcpy(info.sStatus,m_pSqlCmd->Field(15).asString());
-			info.dRefPrice = m_pSqlCmd->Field(16).asDouble();
-			info.dSellGetRate = m_pSqlCmd->Field(17).asDouble();
-			strcpy(info.sDeliMode,m_pSqlCmd->Field(18).asString());
-			info.nMaxHand = m_pSqlCmd->Field(19).asLong();
-			info.nMinHand = m_pSqlCmd->Field(20).asLong();
-			info.dTxUnit = m_pSqlCmd->Field(21).asDouble();
-			strcpy(info.sOrderUnit,m_pSqlCmd->Field(22).asString());
-			strcpy(info.sOrderCmd,m_pSqlCmd->Field(23).asString());
-			strcpy(info.sDoneAttr,m_pSqlCmd->Field(24).asString());
-			strcpy(info.sDueDate,m_pSqlCmd->Field(25).asString());
-			strcpy(info.sLastDate,m_pSqlCmd->Field(26).asString());
-			info.nDeliDays = m_pSqlCmd->Field(27).asLong();
-			strcpy(info.sIsBigMargin,m_pSqlCmd->Field(28).asString());
-			strcpy(info.sIsOptionCall,m_pSqlCmd->Field(29).asString());
-			info.nVariety = m_pSqlCmd->Field(30).asLong();
+    char sSecuCode[21];
+    double dValue;
+    int fieldtype;
+    unsigned int len = sizeof(sSecuCode);
+    m_pXdp->GetFieldValue((unsigned short)80, sSecuCode, len, fieldtype, m_sErrMsg);
+    m_pXdp->GetFieldValue((unsigned short)50, dValue, m_sErrMsg);
+    S_MDB_BOND_INFO* pb = m_pMemDb->m_pDbBaseinfo.m_pBond.Select(sSecuCode);
+    if (NULL == pb)
+    {
+        S_MDB_BOND_INFO bond;
+        bzero(&bond, sizeof(S_MDB_BOND_INFO));
+        strcpy(bond.sBondCode, sSecuCode);
+        bond.dApprValue = dValue;
+        int rid = m_pMemDb->m_pDbBaseinfo.m_pBond.Insert(bond);
+        m_pMemDb->m_pDbBaseinfo.m_pBond.SetUpdate(rid);
+        return 0;
+    }
+    pb->dApprValue = dValue;
+    m_pMemDb->m_pDbBaseinfo.m_pBond.SetUpdate(*pb);
+    return 0;
+}
+int RiskDll::ProcBondDv01(S_TRADE_DATA& data)
+{
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+        m_pClientLink->PoolFree(data);
+        return -1;
+    }
+    m_pClientLink->PoolFree(data);
 
-			//去品种表取币种
-			switch (info.sProd_type[0])
-			{
-			case PROD_TYPE_FUTURES:
-			case PROD_TYPE_SEC:
-			case PROD_TYPE_SPOT:
-				pv = m_pMemDb->m_pDbBaseinfo.m_pVariety.Select(info.nProdId);
-				if (pv == NULL)
-				{
-					m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"合约[%d %s]的品种[%d]在品种表不存在",info.nContractId,info.sContractCode,info.nProdId);
-					bret = m_pSqlCmd->FetchNext();
-					continue;
-				}
-				strcpy(info.sCurrency,pv->sCurrency);
-				break;
-			case PROD_TYPE_OPTION:
-				pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(info.nProdId);
-				if (pc == NULL)
-				{
-					m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"期权合约[%d %s]的标的合约[%d]在合约表不存在",info.nContractId,info.sContractCode,info.nProdId);
-					bret = m_pSqlCmd->FetchNext();
-					continue;
-				}
-				pv = m_pMemDb->m_pDbBaseinfo.m_pVariety.Select(pc->nProdId);
-				if (pv == NULL)
-				{
-					m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"期权合约[%d %s]的品种[%d]在品种表不存在",info.nContractId,info.sContractCode,pc->nProdId);
-					bret = m_pSqlCmd->FetchNext();
-					continue;
-				}
-				strcpy(info.sCurrency,pv->sCurrency);
-				break;
-			default:
-				info.sCurrency[0]= CURRENCY_CNY;
-				info.sCurrency[1]=0;
-				break;
-			}
-			if (m_pMemDb->m_pDbBaseinfo.m_pContract.Insert(info) <0 )
-			{
-			}
-			bret = m_pSqlCmd->FetchNext();
+    char sSecuCode[21];
+    double dValue;
+    int fieldtype;
+    unsigned int len = sizeof(sSecuCode);
+    m_pXdp->GetFieldValue((unsigned short)80, sSecuCode, len, fieldtype, m_sErrMsg);
+    m_pXdp->GetFieldValue((unsigned short)50, dValue, m_sErrMsg);
+    S_MDB_BOND_INFO* pb = m_pMemDb->m_pDbBaseinfo.m_pBond.Select(sSecuCode);
+    if (NULL == pb)
+    {
+        S_MDB_BOND_INFO bond;
+        bzero(&bond, sizeof(S_MDB_BOND_INFO));
+        strcpy(bond.sBondCode, sSecuCode);
+        bond.dDv01 = dValue;
+        int rid = m_pMemDb->m_pDbBaseinfo.m_pBond.Insert(bond);
+        m_pMemDb->m_pDbBaseinfo.m_pBond.SetUpdate(rid);
+        return 0;
+    }
+    pb->dDv01 = dValue;
+    m_pMemDb->m_pDbBaseinfo.m_pBond.SetUpdate(*pb);
+    return 0;
+}
+//处理外部发来的普通报单风控检查
+int RiskDll::OrderRiskCheck(S_TRADE_DATA& data)
+{
+    
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+        data.pData->sDBHead.nLen = 0;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+        AnsData(data);
+        return -1;
+    }
+	S_MDB_ORDER_INFO info;
+	bzero(&info,sizeof(S_MDB_ORDER_INFO));
+	Xdp2Struct::ConvertOrder(m_pXdp,info);
+	unsigned int len=0;
+
+	//黑白名单检查
+	data.pData->sDBHead.a_Ainfo.a_nRetCode = CheckBwgMenu(&info, info.sOrderRsp);
+	if (data.pData->sDBHead.a_Ainfo.a_nRetCode != 0)
+	{
+		//校验不通过，返回应答
+        m_pXdp->SetFieldValue((unsigned short)10, (unsigned int)data.pData->sDBHead.a_Ainfo.a_nRetCode, m_sErrMsg);
+        m_pXdp->SetFieldValue((unsigned short)120, info.sOrderRsp, strlen(info.sOrderRsp), m_sErrMsg);
+        len = BPUDATASIZE;
+        if (!m_pXdp->ToBuffer(data.pData->sBuffer, len, m_sErrMsg))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Xdp ToBuffer error");
+            m_pClientLink->PoolFree(data);
+            return -1;
+        }
+        data.pData->sDBHead.nLen = len;
+        AnsData(data);
+        return -1;
+	}
+	S_MDB_CONTRACT_INFO *pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(info.sContractCode);
+	if (pc == NULL)
+	{
+        sprintf(info.sOrderRsp, "证券代码[%s]在证券信息表中不存在", info.sContractCode);
+        m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, info.sOrderRsp);
+
+        m_pXdp->SetFieldValue((unsigned short)10, (unsigned int)RET_ERR_CONTRACTINPUT, m_sErrMsg);
+        m_pXdp->SetFieldValue((unsigned short)120, info.sOrderRsp, strlen(info.sOrderRsp), m_sErrMsg);
+        len = BPUDATASIZE;
+        if (!m_pXdp->ToBuffer(data.pData->sBuffer, len, m_sErrMsg))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Xdp ToBuffer error");
+            m_pClientLink->PoolFree(data);
+            return -1;
+        }
+        data.pData->sDBHead.nLen = len;
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_CONTRACTINPUT;
+        AnsData(data);
+		return -1;
+	}
+	//价格限定检查
+	data.pData->sDBHead.a_Ainfo.a_nRetCode = CheckPriceLimit(&info,pc,info.sOrderRsp);
+    if (data.pData->sDBHead.a_Ainfo.a_nRetCode != 0)
+    {
+        //校验不通过，返回应答
+        m_pXdp->SetFieldValue((unsigned short)10, (unsigned int)data.pData->sDBHead.a_Ainfo.a_nRetCode, m_sErrMsg);
+        m_pXdp->SetFieldValue((unsigned short)120, info.sOrderRsp, strlen(info.sOrderRsp), m_sErrMsg);
+        len = BPUDATASIZE;
+        if (!m_pXdp->ToBuffer(data.pData->sBuffer, len, m_sErrMsg))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Xdp ToBuffer error");
+            m_pClientLink->PoolFree(data);
+            return -1;
+        }
+        data.pData->sDBHead.nLen = len;
+        AnsData(data);
+        return -1;
+    }
+	//检查风险合约
+	data.pData->sDBHead.a_Ainfo.a_nRetCode = CheckRiskContract(&info, pc, info.sOrderRsp);
+    if (data.pData->sDBHead.a_Ainfo.a_nRetCode != 0)
+    {
+        //校验不通过，返回应答
+        m_pXdp->SetFieldValue((unsigned short)10, (unsigned int)data.pData->sDBHead.a_Ainfo.a_nRetCode, m_sErrMsg);
+        m_pXdp->SetFieldValue((unsigned short)120, info.sOrderRsp, strlen(info.sOrderRsp), m_sErrMsg);
+        len = BPUDATASIZE;
+        if (!m_pXdp->ToBuffer(data.pData->sBuffer, len, m_sErrMsg))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Xdp ToBuffer error");
+            m_pClientLink->PoolFree(data);
+            return -1;
+        }
+        data.pData->sDBHead.nLen = len;
+        AnsData(data);
+        return -1;
+    }
+    m_pXdp->SetFieldValue((unsigned short)10, (unsigned int)data.pData->sDBHead.a_Ainfo.a_nRetCode, m_sErrMsg);
+    len= BPUDATASIZE;
+    if (!m_pXdp->ToBuffer(data.pData->sBuffer, len, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Xdp ToBuffer error");
+        m_pClientLink->PoolFree(data);
+        return -1;
+    }
+    data.pData->sDBHead.nLen = len;
+    AnsData(data);
+	return 0;
+}
+//处理外部发来的双边报价风控检查
+int RiskDll::BilateralOrderRiskCheck(S_TRADE_DATA& data)
+{
+    data.pData->sDBHead.nLen = 0;
+    data.pData->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
+    AnsData(data);
+    return 0;
+}
+int RiskDll::OrderRtn(S_TRADE_DATA& data)
+{
+
+    return 0;
+}
+
+int RiskDll::OrderSync(S_TRADE_DATA& data)
+{
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "请求非XDP数据 [%s]", m_sErrMsg);
+        m_pClientLink->PoolFree(data);
+        return -1;
+    }
+    m_pClientLink->PoolFree(data);
+   
+    S_MDB_ORDER_INFO order;
+    bzero(&order, sizeof(S_MDB_ORDER_INFO));
+	Xdp2Struct::ConvertOrder(m_pXdp,order);
+    int fieldtype;
+    unsigned int len = sizeof(order.sLocalSerial);
+    if (!m_pXdp->GetFieldValue((unsigned short)95, order.sLocalSerial, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 本地报单号为空");
+        return -1;
+    }
+    len = sizeof(order.sSystemNo);
+    m_pXdp->GetFieldValue((unsigned short)96, order.sSystemNo, len, fieldtype, m_sErrMsg);
+
+    len = sizeof(order.sOrderStatus);
+    if (!m_pXdp->GetFieldValue((unsigned short)97, order.sOrderStatus, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 报单状态为空");
+        return -1;
+    }
+    if (!m_pXdp->GetFieldValue((unsigned short)51, order.dAmt, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 无金额");
+        return -1;
+    }
+    if (!m_pXdp->GetFieldValue((unsigned short)51, order.dExFee, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 无手续费");
+        return -1;
+    }
+    if (!m_pXdp->GetFieldValue((unsigned short)51, order.dFrozAmt, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 无冻结资金");
+        return -1;
+    }
+    len = sizeof(order.sAnsTime);
+    if (!m_pXdp->GetFieldValue((unsigned short)98, order.sAnsTime, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "委托同步广播 报单时间为空");
+    }
+    len = sizeof(order.sOrderRsp);
+    if (!m_pXdp->GetFieldValue((unsigned short)120, order.sOrderRsp, len, fieldtype, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "委托同步广播 报单响应为空");
+    }
+    int nRet;
+    S_MDB_CONTRACT_INFO* pc = NULL;
+    S_MDB_QUOTATION* pq = NULL;
+    S_MDB_EXCH_INFO* pe = NULL;
+    S_MDB_CONTRACT_SETTLE_PRICE* psp = NULL;
+    S_MDB_VARIETY_INFO* pv = NULL;
+    S_MDB_TRADEACC_INFO* pCustFuncAcc = NULL;
+    S_MDB_CUSTINFO* pCust = NULL;
+    S_MDB_CUST_FUND* pCustFund = NULL;
+    S_MDB_ORG_INFO* pOrg = NULL;
+    S_MDB_TXACC_LOCK* pAcclock = NULL;
+    S_MDB_ORDER_INFO* pOrder = NULL;
+    bool iscust = false;
+
+    //比较更新共享内存中的报单号
+    g_pPubData->UpdateLocalSerial(atoll(order.sLocalSerial));
+    pOrder = m_pMemDb->m_pDbTrader.m_pOrder.Select(order.sLocalSerial);
+    if (pOrder != NULL)
+    {
+        m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "委托同步广播 本地报单号[%s]已处理", order.sLocalSerial);
+        return -1;
+    }
+    pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(order.sContractCode);
+    if (pc == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 合约[%d %s] 在合约表中不存在", order.nContractNo, order.sContractCode);
+        return -1;
+    }
+	order.nContractNo = pc->nContractId;
+    strcpy(order.sExchCode, pc->sExcode);
+    //取交易所信息
+    pe = m_pMemDb->m_pDbBaseinfo.m_pExchange.Select(order.sExchCode);
+    if (pe == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 合约编号[%d %s] 的交易所[%s]不存在", order.nContractNo, order.sContractCode, pc->sExcode);
+        return -1;
+    }
+    order.nRemainNum = order.nOrderNum;//剩余数量默认为委托数量
+    order.sCancelFlag[0] = BOOL_FALSE;
+    order.sCancelFlag[1] = 0;
+    //客户、交易员
+    strcpy(order.sTxDate, pe->sTradeDate);
+    strcpy(order.sAccOrg, pCustFuncAcc->sSignOrg);
+    //取交易网点
+    if (strlen(order.sTxOrg) < 1)
+    {
+        strcpy(order.sTxOrg, pCustFuncAcc->sSignOrg);
+    }
+    //是否有此交易账号
+    pAcclock = m_pMemDb->SelectLock(order.sTxAcc);
+    if (pAcclock == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 交易账号[%s]非法不存在", order.sTxAcc);
+        return -1;
+    }
+    pCustFuncAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(pAcclock->nTradeAccRowid);
+    if (pCustFuncAcc == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 交易账号[%s] 非法，不存在", order.sTxAcc);
+        return -1;
+    }
+    pCust = m_pMemDb->m_pDbCust.m_pCustom.At(pAcclock->nCustRowid);
+    if (pCust == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 交易账号[%s]的客户号[%s]不存在", order.sTxAcc, pCustFuncAcc->sCustNo);
+        return -1;
+    }
+    //取资金表，按账号+币种
+    pCustFund = m_pMemDb->GetFund(pAcclock);
+    if (pCustFund == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 交易账号[%s]+合约[%d %s]对应的币种[%s]在资金表不存在", order.sTxAcc, order.nContractNo, order.sContractCode, pc->sCurrency);
+        return -1;
+    }
+
+    order.nSyncFlag = 1; //报入同步
+
+    //写入报单表
+    int orderrid = m_pMemDb->m_pDbTrader.m_pOrder.Insert(order);
+    if (orderrid < 0)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 写委托表出错 本地报单号[%s]", order.sLocalSerial);
+        return -1;
+    }
+    pOrder = m_pMemDb->m_pDbTrader.m_pOrder.At(orderrid);
+    if (pOrder == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播  委托表出错 rowid[%d]找不到委托", orderrid);
+        return -1;
+    }
+	if (pOrder->sOrderStatus[0] == ORDER_STATUS_INVALID || pOrder->sOrderStatus[0] == ORDER_STATUS_CANCEL || pOrder->sOrderStatus[0] == ORDER_STATUS_SC)
+	{
+		m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 报单状态[%s]为无效单,不用去计算资金持仓了", pOrder->sOrderStatus);
+		return -1;
+	}
+    //冻结资金持仓等等
+    nRet = m_pKernelPub.ComputeNewOrder(pAcclock, pCustFund, pOrder, pc, true);
+    if (nRet != SUCCESS)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托同步广播 委托计算出错 返回[%d]", nRet);
+        return -1;
+    }
+    return 0;
+}
+int RiskDll::CheckBwgMenu(S_MDB_ORDER_INFO* order,  char* msg)
+{
+    if (order->sTxType[0] == TX_TYPE_CLICK)
+    {
+		//点击成交要检查白名单
+		S_MDB_BOND_BWG_INFO* bwg = m_pMemDb->m_pDbSet.m_pBondBwgInfo.Select(order->sMatchAcc);
+		if (bwg == NULL)
+		{
+			//没有配置黑白灰名单
+			sprintf(msg, "点击成交对手方账号[%s]在黑名灰名单中未配置", order->sMatchAcc);
+			m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, msg);
+			return RET_ERR_BWG_MENU;
+		}
+		if (bwg->sBwgFlag[0] != BWG_FLAG_BLACK)
+		{
+			sprintf(msg, "不在在白名单当中，校验不通过", order->sMatchAcc);
+			m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, msg);
+			return RET_ERR_BWG_MENU;
 		}
 	}
-	catch (...)
+	return 0;
+}
+int RiskDll::CheckPriceLimit(S_MDB_ORDER_INFO* order, S_MDB_CONTRACT_INFO* pc, char* msg)
+{
+    //价格偏离度控制
+    S_MDB_PRICE_LIMIT* pl = m_pMemDb->m_pDbSet.m_pPriceLimit.Select(pc->sProd_type, pc->sContractCode);
+    if (NULL == pl)
+    {
+        //按品种取配置
+        pl = m_pMemDb->m_pDbSet.m_pPriceLimit.Select(pc->sProd_type, "$");
+        if (NULL == pl)	 //没有配置，通过
+        {
+            m_pXdp->SetFieldValue((unsigned short)10, (unsigned int)0, m_sErrMsg);
+            return 0;
+        }
+    }
+    if (order->sBsFlag[0] == BS_FLAG_BUY)
+    {
+		//买
+        if (pl->sLimitType[0] == PRICE_LIMIT_PRICE)	//直接价格
+        {
+			//直接价格控制
+            if (order->dOrderPrice > pl->dUpLimit)
+            {
+				sprintf(msg,"直接价格限定 委托价[%.4f] > 限定价[%.4f]", order->dOrderPrice, pl->dUpLimit);
+			    return RET_ERR_ORDERPRICE;
+            }
+        }
+		else if (pl->sLimitType[0] == PRICE_LIMIT_SP_RATE) //结算价比率
+		{
+			S_MDB_CONTRACT_SETTLE_PRICE *sp = m_pMemDb->m_pDbBaseinfo.m_pSettlePrice.Select(pc->sContractCode);
+			if (NULL == sp)	//无结算价
+			{
+				sprintf(msg,"证券代码[%s]结算价未设置", pc->sContractCode);
+				return RET_ERR_SETTLE_PRICE;
+			}
+			if (order->dOrderPrice > (1.0 + pl->dUpLimit) * sp->dSettlePrice)
+			{
+                sprintf(msg, "结算价比率限定 委托价[%.4f] > 限定价[%.4f]  结算价[%.4f]比率[%.4f]", order->dOrderPrice, (1.0 + pl->dUpLimit) * sp->dSettlePrice, sp->dSettlePrice, pl->dUpLimit);
+                return RET_ERR_ORDERPRICE;
+			}
+		}
+        else if (pl->sLimitType[0] == PRICE_LIMIT_NP_RATE) //最新价比率
+        {
+            S_MDB_QUOTATION* quo = m_pMemDb->m_pDbTrader.m_pQuotation.Select(pc->sContractCode);
+            if (NULL == quo)	//无行情
+            {
+                sprintf(msg, "证券代码[%s]无最新行情信息", pc->sContractCode);
+                return RET_ERR_SETTLE_PRICE;
+            }
+            if (order->dOrderPrice > (1.0 + pl->dUpLimit) * quo->dNewPrice)
+            {
+                sprintf(msg, "最新价比率限定 委托价[%.4f] > 限定价[%.4f]  最新价[%.4f]比率[%.4f]", order->dOrderPrice, (1.0 + pl->dUpLimit) * quo->dNewPrice, quo->dNewPrice, pl->dUpLimit);
+                return RET_ERR_ORDERPRICE;
+            }
+        }
+        else if (pl->sLimitType[0] == PRICE_LIMIT_VALUE_RATE) //中证估值比率
+        {
+            S_MDB_BOND_INFO *bond = m_pMemDb->m_pDbBaseinfo.m_pBond.Select(pc->sContractCode);
+            if (NULL == bond)	//无估值信息
+            {
+                sprintf(msg, "债券代码[%s]无估值等信息", pc->sContractCode);
+                return RET_ERR_SETTLE_PRICE;
+            }
+            if (order->dOrderPrice > (1.0 + pl->dUpLimit) * bond->dApprValue)
+            {
+                sprintf(msg, "估值比率限定 委托价[%.4f] > 限定价[%.4f]  估值[%.4f]比率[%.4f]", order->dOrderPrice, (1.0 + pl->dUpLimit) * bond->dApprValue, bond->dApprValue, pl->dUpLimit);
+                return RET_ERR_ORDERPRICE;
+            }
+        }
+    }
+    else
+    {
+        //卖
+        if (pl->sLimitType[0] == PRICE_LIMIT_PRICE)	//直接价格
+        {
+            //直接价格控制
+            if (order->dOrderPrice < pl->dDownLimit)
+            {
+                sprintf(msg, "直接价格限定 委托价[%.4f] < 限定价[%.4f]", order->dOrderPrice, pl->dDownLimit);
+                return RET_ERR_ORDERPRICE;
+            }
+        }
+        else if (pl->sLimitType[0] == PRICE_LIMIT_SP_RATE) //结算价比率
+        {
+            S_MDB_CONTRACT_SETTLE_PRICE* sp = m_pMemDb->m_pDbBaseinfo.m_pSettlePrice.Select(pc->sContractCode);
+            if (NULL == sp)	//无结算价
+            {
+                sprintf(msg, "证券代码[%s]结算价未设置", pc->sContractCode);
+                return RET_ERR_SETTLE_PRICE;
+            }
+            if (order->dOrderPrice < (1.0 - pl->dDownLimit) * sp->dSettlePrice)
+            {
+                sprintf(msg, "结算价比率限定 委托价[%.4f] < 限定价[%.4f]  结算价[%.4f]比率[%.4f]", order->dOrderPrice, (1.0 - pl->dDownLimit) * sp->dSettlePrice, sp->dSettlePrice, pl->dUpLimit);
+                return RET_ERR_ORDERPRICE;
+            }
+        }
+        else if (pl->sLimitType[0] == PRICE_LIMIT_NP_RATE) //最新价比率
+        {
+            S_MDB_QUOTATION* quo = m_pMemDb->m_pDbTrader.m_pQuotation.Select(pc->sContractCode);
+            if (NULL == quo)	//无行情
+            {
+                sprintf(msg, "证券代码[%s]无最新行情信息", pc->sContractCode);
+                return RET_ERR_SETTLE_PRICE;
+            }
+            if (order->dOrderPrice < (1.0 - pl->dDownLimit) * quo->dNewPrice)
+            {
+                sprintf(msg, "最新价比率限定 委托价[%.4f] < 限定价[%.4f]  最新价[%.4f]比率[%.4f]", order->dOrderPrice, (1.0 - pl->dDownLimit) * quo->dNewPrice, quo->dNewPrice, pl->dUpLimit);
+                return RET_ERR_ORDERPRICE;
+            }
+        }
+        else if (pl->sLimitType[0] == PRICE_LIMIT_VALUE_RATE) //中证估值比率
+        {
+            S_MDB_BOND_INFO* bond = m_pMemDb->m_pDbBaseinfo.m_pBond.Select(pc->sContractCode);
+            if (NULL == bond)	//无估值信息
+            {
+                sprintf(msg, "债券代码[%s]无估值等信息", pc->sContractCode);
+                return RET_ERR_SETTLE_PRICE;
+            }
+            if (order->dOrderPrice < (1.0 - pl->dUpLimit) * bond->dApprValue)
+            {
+                sprintf(msg, "估值比率限定 委托价[%.4f] > 限定价[%.4f]  估值[%.4f]比率[%.4f]", order->dOrderPrice, (1.0 - pl->dDownLimit) * bond->dApprValue, bond->dApprValue, pl->dUpLimit);
+                return RET_ERR_ORDERPRICE;
+            }
+        }
+    }
+	return 0;
+}
+int RiskDll::CheckRiskContract(S_MDB_ORDER_INFO* order, S_MDB_CONTRACT_INFO* pc, char* msg)
+{
+	if (order->sBsFlag[0] == BS_FLAG_BUY)
 	{
-#ifdef _ENGLISH_
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Database operator Exception!");
-#else
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"数据库操作异常");
-#endif
-		return false;
+        S_MDB_RISKCONTRACT_INFO* info = m_pMemDb->m_pDbTrader.m_pRiskContractInfo.Select(pc->nContractId);
+        if (info != NULL)
+        {
+            if (info->sRiskFlag[0] == '1')
+            {
+				sprintf(msg,"此合约是风险合约 %s",info->sRiskDesc);
+                return RET_ERR_RISK_CONTRACT;
+            }
+        }
 	}
-	return true;
+    return 0;
+}
+int RiskDll::ComputeRisk(S_TRADE_DATA& data)
+{
+    m_nBeginTime = CBF_Date_Time::GetTickUS();
+    //不需要应答，直接释放空间
+    m_pClientLink->PoolFree(data);
+
+    //找到计算过盈亏的客户，计算风险度及风险级别
+    std::vector<int> acclist;
+    GetAccList(acclist);
+    int i;
+    for (i = 0; i < acclist.size(); i++)
+    {
+        ComputeCustRisk(acclist[i]);
+    }
+    m_nEndTime = CBF_Date_Time::GetTickUS();
+    m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "计算客户风险完成  耗时[%ld]微秒", m_nEndTime - m_nBeginTime);
+    for (i = 0; i < acclist.size(); i++)
+    {
+        ComputeCustPosiRisk(acclist[i]);
+    }
+	//计算产品资金风险
+	//计算产品持仓风险
+	m_pDate.Update();
+	ComputeProd(m_pDate.ToStringD8().c_str());
+	m_nBeginTime = CBF_Date_Time::GetTickUS();
+	m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "计算产品风险完成  耗时[%ld]微秒", m_nBeginTime - m_nEndTime);
+    //计算机构资金风险
+    //计算机构持仓风险
+	ComputeOrg(m_pDate.ToStringD8().c_str());
+	m_nEndTime = CBF_Date_Time::GetTickUS();
+	m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "计算机构风险完成  耗时[%ld]微秒", m_nEndTime - m_nBeginTime);
+	return 0;
+}
+
+int RiskDll::Sync2Db(S_TRADE_DATA& data)
+{
+	//不需要应答，直接释放空间
+	m_pClientLink->PoolFree(data);
+
+	//将报单 成交同步至数据库
+	if (m_pSqlCmd == NULL)
+	{
+		m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Not connect risk database");
+		return -1;
+	}
+	int i = 0;
+	std::vector<S_MDB_ORDER_INFO*>orderlist;
+	m_pMemDb->m_pDbTrader.m_pOrder.GetUpdateList(orderlist);
+    //if (*g_nSvrHostStatus == ARBSTATUS_MASTER || *g_nSvrHostStatus == ARBSTATUS_MASTER_AYN || *g_nSvrHostStatus == MASTERHOST)
+
+	for (i = 0; i < orderlist.size(); i++)
+	{
+		SyncOrder(orderlist[i]);
+	}
+	std::vector<S_MDB_DONE_INFO*>donelist;
+	m_pMemDb->m_pDbTrader.m_pDone.GetUpdateList(donelist);
+	for (i = 0; i < donelist.size(); i++)
+	{
+		SyncDone(donelist[i]);
+	}
+	//持仓是根据日初、报单、成交计算的，不需要同步至db
+    std::vector<S_MDB_BOND_INFO*>bondlist;
+    m_pMemDb->m_pDbBaseinfo.m_pBond.GetUpdateList(bondlist);
+    for (i = 0; i < bondlist.size(); i++)
+    {
+        SyncBond(bondlist[i]);
+    }
+	return 0;
+}
+
+double RiskDll::GetPosiTotalValue(const char* stxacc)
+{
+	std::vector<S_MDB_CUST_POSITION*>posilist;
+	double dvalue = 0.0;
+	m_pMemDb->m_pDbTrader.m_pPosition.SelectByAcc((char*)stxacc, posilist);
+	for (int i = 0; i < posilist.size(); i++)
+	{
+		S_MDB_CONTRACT_INFO* pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(posilist[i]->sContractCode);
+		if (pc != NULL)
+		{
+			if (PROD_TYPE_BOND == pc->sProd_type[0] || PROD_TYPE_BOND_BANK == pc->sProd_type[0])
+			{
+				dvalue += (1.00 * posilist[i]->nCurPB * pc->dTxUnit);
+			}
+			else  //使用最新价计算
+			{
+				S_MDB_QUOTATION* pq = m_pMemDb->m_pDbTrader.m_pQuotation.Select(posilist[i]->sContractCode);
+				if (pq != NULL)
+				{
+					dvalue += (1.00 * posilist[i]->nCurPB * pc->dTxUnit * pq->dNewPrice + 1.00 * posilist[i]->nCurPS * pc->dTxUnit * pq->dNewPrice);
+				}
+			}
+		}
+	}
+	return dvalue;
+}
+double RiskDll::GetProdPosiTotalValue(const char* prod)
+{
+	std::vector<S_MDB_CUST_POSITION*>posilist;
+	double dvalue = 0.0;
+	std::vector<S_MDB_PROD_CUST*>acclist;
+	m_pMemDb->m_pDbBaseinfo.m_pProdCust.SelectByProd((char*)prod, acclist);
+	for (int j = 0; j < acclist.size(); j++)
+	{
+		posilist.clear();
+        m_pMemDb->m_pDbTrader.m_pPosition.SelectByAcc(acclist[j]->sTxAcc, posilist);
+        for (int i = 0; i < posilist.size(); i++)
+        {
+            S_MDB_CONTRACT_INFO* pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(posilist[i]->sContractCode);
+            if (pc != NULL)
+            {
+                if (PROD_TYPE_BOND == pc->sProd_type[0] || PROD_TYPE_BOND_BANK == pc->sProd_type[0])
+                {
+                    dvalue += (1.00 * posilist[i]->nCurPB * pc->dTxUnit);
+                }
+                else  //使用最新价计算
+                {
+                    S_MDB_QUOTATION* pq = m_pMemDb->m_pDbTrader.m_pQuotation.Select(posilist[i]->sContractCode);
+                    if (pq != NULL)
+                    {
+                        dvalue += (1.00 * posilist[i]->nCurPB * pc->dTxUnit * pq->dNewPrice + 1.00 * posilist[i]->nCurPS * pc->dTxUnit * pq->dNewPrice);
+                    }
+                }
+            }
+        }
+	}
+    
+    return dvalue;
+}
+double RiskDll::GetOrgPosiTotalValue(const char* Org)
+{
+    std::vector<S_MDB_CUST_POSITION*>posilist;
+    double dvalue = 0.0;
+	std::vector<S_MDB_TRADEACC_INFO *>acclist;
+	m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAccOrg((char *)Org, acclist);
+    for (int j = 0; j < acclist.size(); j++)
+    {
+        posilist.clear();
+		m_pMemDb->m_pDbTrader.m_pPosition.SelectByAcc(acclist[j]->sTxAcc, posilist);
+		for (int i = 0; i < posilist.size(); i++)
+		{
+			S_MDB_CONTRACT_INFO* pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(posilist[i]->sContractCode);
+			if (pc != NULL)
+			{
+				if (PROD_TYPE_BOND == pc->sProd_type[0] || PROD_TYPE_BOND_BANK == pc->sProd_type[0])
+				{
+					dvalue += (1.00 * posilist[i]->nCurPB * pc->dTxUnit);
+				}
+				else  //使用最新价计算
+				{
+					S_MDB_QUOTATION* pq = m_pMemDb->m_pDbTrader.m_pQuotation.Select(posilist[i]->sContractCode);
+					if (pq != NULL)
+					{
+						dvalue += (1.00 * posilist[i]->nCurPB * pc->dTxUnit * pq->dNewPrice + 1.00 * posilist[i]->nCurPS * pc->dTxUnit * pq->dNewPrice);
+					}
+				}
+			}
+		}
+	}
+    return dvalue;
+}
+
+int RiskDll::ProcessDoneNoOrder(S_TRADE_DATA& data)
+{
+    m_pClientLink->PoolFree(data);
+    //保证只有一个线程处理成交
+    CBF_PMutex pp(&m_pMemDb->m_pUnProcessDoneMatchMutex);
+    std::list<S_MDB_DONE_INFO>::iterator ptr;
+    std::list<S_MDB_DONE_INFO>::iterator rq;
+    S_MDB_CONTRACT_INFO* pc = NULL;
+    S_MDB_EXCH_INFO* pexch = NULL;
+    S_MDB_TRADEACC_INFO* pcustacc = NULL;
+    S_MDB_DONE_INFO* pdinfo = NULL;
+    S_MDB_ORDER_INFO* po = NULL;
+    S_MDB_DONE_INFO info;
+    std::vector<S_MDB_ORDER_INFO*> orderlist;
+    int nIntvalue;
+    for (ptr = m_pMemDb->m_pUnProcessDoneMatch.begin(); ptr != m_pMemDb->m_pUnProcessDoneMatch.end();)
+    {
+        info = *ptr;
+        rq = ptr;
+        ptr++;
+
+        orderlist.clear();
+        //根据交易所代码+系统报单号 去取报单信息
+
+        if (!m_pMemDb->m_pDbTrader.m_pOrder.SelectBySystemno(info.sExchCode, info.sSystemNo, orderlist))
+        {
+            m_pLog->LogMp(LOG_PROMPT, __FILE__, __LINE__, "成交回报 交易所[%s] 系统报单号[%s] 在委托表中不存在  放入待处理队列", info.sExchCode, info.sSystemNo);
+            continue;
+        }
+        if (orderlist.size() != 1)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 交易所[%s] 系统报单号[%s]不是唯一", info.sExchCode, info.sSystemNo);
+            continue;
+        }
+        po = orderlist[0];
+        //从报单信息中补齐
+        strcpy(info.sDoneDate, po->sTxDate);
+        strcpy(info.sTxAcc, po->sTxAcc);
+        strcpy(info.sContractCode, po->sContractCode);
+        info.nContractNo = po->nContractNo;
+        strcpy(info.sLocalNo, po->sLocalSerial);
+        strcpy(info.sShFlag, po->sShFlag);
+        strcpy(info.sEoFlag, po->sEoFlag);
+        strcpy(info.sBsFlag, po->sBsFlag);
+        strcpy(info.sTxOrg, po->sTxOrg);
+        strcpy(info.sAccOrg, po->sAccOrg);
+        strcpy(info.sTxType, po->sTxType);
+        strcpy(info.sCmdType, po->sCmdType);
+        strcpy(info.sCmdAttr, po->sCmdAttr);
+        strcpy(info.sOrderOper, po->sOrderOper);
+        strcpy(info.sTxCode, po->sTxCode);
+        strcpy(info.sSeatNo, po->sSeatNo);
+
+        pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(info.nContractNo);
+        if (pc == NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 的合约[%d %s]不存在", info.nContractNo, info.sContractCode);
+            //从队列删除
+            m_pMemDb->m_pUnProcessDoneMatch.erase(rq);
+            continue;
+        }
+        pexch = m_pMemDb->m_pDbBaseinfo.m_pExchange.Select(pc->sExcode);
+        if (pexch == NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 的合约代码[%s]所属交易所[%s]不存在", info.sContractCode, pc->sExcode);
+            //从队列删除
+            m_pMemDb->m_pUnProcessDoneMatch.erase(rq);
+            continue;
+        }
+        pcustacc = m_pMemDb->m_pDbCust.m_pTradeAcc.SelectByAcc(info.sTxAcc);
+        if (pcustacc == NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 交易账号[%s]不存在", info.sTxAcc);
+            //从队列删除
+            m_pMemDb->m_pUnProcessDoneMatch.erase(rq);
+            continue;
+        }
+        info.dAmt = info.dDonePrice * pc->dTxUnit * info.nDoneNum;//金额
+        //查询此成交是否存在
+        S_MDB_DONE_INFO* pdinfo = m_pMemDb->m_pDbTrader.m_pDone.Select(info.sExchCode, info.sBsFlag, info.sDoneNo);
+        if (pdinfo != NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "成交回报 交易账号[%s] 的成交[%s %s %s]已存在", info.sTxAcc, info.sExchCode, info.sBsFlag, info.sDoneNo);
+            //从队列删除
+            m_pMemDb->m_pUnProcessDoneMatch.erase(rq);
+            continue;
+        }
+
+        ProcessDone(pcustacc, po, pc, pexch, info);
+        //从队列删除
+        m_pMemDb->m_pUnProcessDoneMatch.erase(rq);
+    }
+
+    return 0;
+}
+
+int RiskDll::ImportSecu(S_TRADE_DATA &data)
+{
+    if (m_pSqlCmd == NULL)
+    {
+        data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_DATABASE;
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    if (!m_pXdp->FromBuffer(data.pData->sBuffer, data.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "FromBuffer error [%s]!", m_sErrMsg);
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+		data.pData->sDBHead.nLen = 0;
+		AnsData(data);
+        return -1;
+    }
+    //取数据
+// 119	varchar20	交易所代码	1	Y	
+// 100	varchar1	合约代码	20	Y	
+// 101	varchar2	合约名称	40	Y	
+// 1	ushort2	交易市场类型	2	Y	
+// 3	ushort4	品种类别	2	Y	ascii码
+// 104	varchar5	品种代码/标的合约代码	20	Y	
+// 60	double1	最小变动价位	18.4	Y	
+// 5	short1	是否T+0	1	Y	
+// 6	short2	是否保证金模式	1	Y	
+// 61	double2	保证金比例	18.10	Y	
+// 7	short3	是否涨跌停限制	1	Y	
+// 62	double3	涨停板率	18.10	Y	
+// 63	double4	跌停板率	18.10	Y	
+// 8	short4	活跃标志	1	Y	
+// 9	short5	合约交易状态	2	y	
+// 64	double5	参考价	18.4	y	
+// 65	double6	卖方收款比例	18.10	y	
+// 10	short6	交收模式	1	Y	
+// 22	uint3	最大申报数量(手)	10	Y	
+// 23	uint4	最小申报数量(手)	10	Y	
+// 66	double7	交易单位	10	Y	
+// 25	uint6	报价单位	10	Y	
+// 102	varchar3	支持报单指令	12	Y	
+// 103	varchar4	支持报单属性	100	Y	
+// 105	varchar6	到期日	8	Y	
+// 106	varchar7	最后交易日	8	Y	
+// 27	uint8	交割间隔天数	10	Y	
+// 11	short7	是否大边保证金	1	Y	
+// 12	short8	是否看涨(CALL_PUT)	1	y	
+// 91	char2	渠道	2	Y	
+// 92	char3	操作员代码	16	Y	
+
+    int contractid;
+    S_MDB_CONTRACT_INFO contract;
+    bzero(&contract, sizeof(S_MDB_CONTRACT_INFO));
+    Xdp2Struct::ConvertSecu(m_pXdp,contract);
+	unsigned len=0;
+   
+    //判断合约是否存在
+    contractid = m_pPubDb.GetContractId(contract.sContractCode);
+    if (contractid > 0)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "contract [%d %s] exists!", contractid, contract.sContractCode);
+		m_pXdp->ResetData();
+		m_pXdp->SetFieldValue((unsigned short)10, (unsigned int)contractid, m_sErrMsg);
+        unsigned len = BPUDATASIZE;
+        if (m_pXdp->ToBuffer(data.pData->sBuffer, len, m_sErrMsg))
+        {
+			data.pData->sDBHead.nLen = len;
+            AnsData(data);
+        }
+        else
+        {
+			data.pData->sDBHead.nLen = 0;
+			AnsData(data);
+        }
+        return -1;
+    }
+    //判断数据是否合法
+    if ((contract.sIsOptionCall[0] != '0' && contract.sIsOptionCall[0] != '1') || \
+        (contract.sIsBigMargin[0] != '0' && contract.sIsBigMargin[0] != '1') || \
+        (contract.sIsMargin[0] != '0' && contract.sIsMargin[0] != '1') || \
+        (contract.sIsT0[0] != '0' && contract.sIsT0[0] != '1') || \
+        (contract.sIsUpDownLimit[0] != '0' && contract.sIsUpDownLimit[0] != '1') || \
+        (contract.sActiveFlag[0] != '0' && contract.sActiveFlag[0] != '1'))
+    {
+        //是否字段值不符
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "BOOL illegal !");
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+		data.pData->sDBHead.nLen = 0;
+		AnsData(data);
+        return -1;
+    }
+    //交易所代码
+    sprintf(m_sSql, "select count(*) from sys_ex_info where EX_CODE=:1 ");
+    if (!m_pSqlCmd->setCommandText(m_sSql))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "setCommandText error [%s]!", m_sSql);
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_DATABASE;
+		data.pData->sDBHead.nLen = 0;
+		AnsData(data);
+        return -1;
+    }
+    m_pSqlCmd->Param(1).setAsString() = contract.sExcode;
+    CSqlData sqldata = m_pSqlCmd->LoadResultSql();
+    if (sqldata.GetSqlCount() < 1)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "LoadResultSql error [%s]!", m_sSql);
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_DATABASE;
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    if (sqldata.GetAtI(0, 0) < 1)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "sys_ex_info EX_CODE=%s not found ", contract.sExcode);
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_NOTFOUND;
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    //检查品种类型是否符合
+    if (!m_pPubMethod.CheckDataDict("PROD_TYPE", contract.sProd_type))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "PROD_TYPE  error [%s]!", contract.sProd_type);
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    //检查合约状态
+    if (!m_pPubMethod.CheckDataDict("VARIETY_STATUS", contract.sStatus))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "VARIETY_STATUS  error [%s]!", contract.sStatus);
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    int id;
+    if (contract.sProd_type[0] == PROD_TYPE_OPTION || contract.sProd_type[0] == PROD_TYPE_OPTION_SEC) //期权
+    {
+        //检查标的合约是否存在
+        id = m_pPubDb.GetContractId(contract.sProd_code);
+        if (id < 0)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "PROD_CODE  not found [%s]!", contract.sProd_code);
+			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+			data.pData->sDBHead.nLen = 0;
+            AnsData(data);
+            return -1;
+        }
+        contract.nProdId = id;
+    }
+    else if (contract.sProd_type[0] == PROD_TYPE_FUTURES) //期货
+    {
+        //检查品种代码是否存在
+        id = m_pPubDb.GetVarietyId(contract.sProd_code);
+        if (id < 0)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "VARIETY_CODE  not found [%s]!", contract.sProd_code);
+			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+			data.pData->sDBHead.nLen = 0;
+            AnsData(data);
+            return -1;
+        }
+        contract.nProdId = id;
+    }
+    else if (contract.sProd_type[0] == PROD_TYPE_SPOT) //现货
+    {
+        //检查交割品代码是否存在  前期这里不用判断，由界面来修改。
+        //这个字段存品种编号
+        char tmpchar[21];
+        if (m_pPubDb.GetVariety(contract.nProdId, tmpchar) < 0)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "varietyno [%d] not found!", contract.nProdId);
+			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_INPUT;
+			data.pData->sDBHead.nLen = 0;
+            AnsData(data);
+            return -1;
+        }
+    }
+
+    int ret;
+    if (contract.nContractId < 1) //前台未输入合约编号
+    {
+        //生成合约ID
+        ret = m_pPubDb.GenContractId(contract.sExcode);
+        if (ret < 1)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "add contract , gen contract no error [%s]", contract.sContractCode);
+			data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_GENCONTRACT_NO;
+			data.pData->sDBHead.nLen = 0;
+            AnsData(data);
+            return -1;
+        }
+        contract.nContractId = ret;
+    }
+    //写合约表
+    sprintf(m_sSql, "insert into sys_secu_info(SECU_NO,SECU_CODE,SECU_NAME,EX_CODE,PROD_TYPE,PROD_CODE,PROD_NO,MIN_CHG_PRICE,IST0,ISBAIL,BAIL_RATE,UL_LIMIT,UPPER_LIMIT_VALUE,LOWER_LIMIT_VALUE,ACTIVE_FLAG,TX_STATUS,REF_PRICE,RCV_RATE,BUSI_MODE,MAX_HAND,MIN_HAND,EX_UNIT,PRICE_UNIT,ORDER_CMD,ORDER_ATTR,DUE_DATE,LAST_DATE,DELI_DAYS,IS_BIGMARGIN,ISCALL,VARIETY_NO) values(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30)");
+    if (!m_pSqlCmd->setCommandText(m_sSql))
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "setCommandText error [%s]!", m_sSql);
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_DATABASE;
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    m_pSqlCmd->Param(1).setAsLong() = contract.nContractId;
+    m_pSqlCmd->Param(2).setAsString() = contract.sContractCode;
+    m_pSqlCmd->Param(3).setAsString() = contract.sContractName;
+    m_pSqlCmd->Param(4).setAsString() = contract.sExcode;
+    m_pSqlCmd->Param(5).setAsString() = contract.sProd_type;
+    m_pSqlCmd->Param(6).setAsString() = contract.sProd_code;
+    m_pSqlCmd->Param(7).setAsLong() = contract.nProdId;
+    m_pSqlCmd->Param(8).setAsDouble() = contract.dMinChgPrice;
+    m_pSqlCmd->Param(9).setAsString() = contract.sIsT0;
+    m_pSqlCmd->Param(10).setAsString() = contract.sIsMargin;
+    m_pSqlCmd->Param(11).setAsDouble() = contract.dMarginRate;
+    m_pSqlCmd->Param(12).setAsString() = contract.sIsUpDownLimit;
+    m_pSqlCmd->Param(13).setAsDouble() = contract.dUpRate;
+    m_pSqlCmd->Param(14).setAsDouble() = contract.dDownRate;
+    m_pSqlCmd->Param(15).setAsString() = contract.sActiveFlag;
+    m_pSqlCmd->Param(16).setAsString() = contract.sStatus;
+    m_pSqlCmd->Param(17).setAsDouble() = contract.dRefPrice;
+    m_pSqlCmd->Param(18).setAsDouble() = contract.dSellGetRate;
+    m_pSqlCmd->Param(19).setAsString() = contract.sDeliMode;
+    m_pSqlCmd->Param(20).setAsLong() = contract.nMaxHand;
+    m_pSqlCmd->Param(21).setAsLong() = contract.nMinHand;
+    m_pSqlCmd->Param(22).setAsDouble() = contract.dTxUnit;
+    m_pSqlCmd->Param(23).setAsString() = contract.sOrderUnit;
+    m_pSqlCmd->Param(24).setAsString() = contract.sOrderCmd;
+    m_pSqlCmd->Param(25).setAsString() = contract.sDoneAttr;
+    m_pSqlCmd->Param(26).setAsString() = contract.sDueDate;
+    m_pSqlCmd->Param(27).setAsString() = contract.sLastDate;
+    m_pSqlCmd->Param(28).setAsLong() = contract.nDeliDays;
+    m_pSqlCmd->Param(29).setAsString() = contract.sIsBigMargin;
+    m_pSqlCmd->Param(30).setAsString() = contract.sIsOptionCall;
+	m_pSqlCmd->Param(31).setAsLong() = contract.nVariety;
+    bool bret = m_pSqlCmd->Execute();
+    if (!bret)
+    {
+        m_pSqlCmd->Rollback();
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Execute error %s [%s]!", m_sSql, m_pSqlCmd->GetCmdErrInfo());
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_DATABASE;
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    if (m_pSqlCmd->RowsAffected() < 1)
+    {
+        m_pSqlCmd->Rollback();
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "RowsAffected <1 ");
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_DATABASE;
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+    if (!m_pSqlCmd->Commit())
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "Commit error [%s]!", m_pSqlCmd->GetCmdErrInfo());
+		data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_DATABASE;
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+        return -1;
+    }
+
+	data.pData->sDBHead.a_Ainfo.a_nRetCode = SUCCESS;
+    sprintf(m_sErrMsg, "合约登记 [%d %s]", contract.nContractId, contract.sContractCode);
+    m_pXdp->ResetData();
+    m_pXdp->SetFieldValue((unsigned short)10, contract.nContractId, m_sErrMsg);
+    len = BPUDATASIZE;
+    if (m_pXdp->ToBuffer(data.pData->sBuffer, len, m_sErrMsg))
+    {
+		data.pData->sDBHead.nLen = len;
+        AnsData(data);
+    }
+    else
+    {
+		data.pData->sDBHead.nLen = 0;
+        AnsData(data);
+    }
+	m_pMemDb->m_pDbBaseinfo.m_pContract.Insert(contract);
+    return 0;
+}
+
+int RiskDll::OrderCheck(S_MDB_ORDER_INFO& order, S_ORDER_PUB& order_pub)
+{
+    //取合约信息
+	bool iscust = false;
+	order_pub.pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(order.sContractCode);
+    if (order_pub.pc == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约代码 [%s] 不存在", order.sContractCode);
+        return RET_ERR_CONTRACTINPUT;
+    }
+    order.nContractNo = order_pub.pc->nContractId;
+    strcpy(order.sExchCode, order_pub.pc->sExcode);
+	strcpy(order.sContractName,order_pub.pc->sContractName);
+    //取交易所信息
+	order_pub.pe = m_pMemDb->m_pDbBaseinfo.m_pExchange.Select(order_pub.pc->sExcode);
+    if (order_pub.pe == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "合约编号[%d %s] 的交易所[%s]不存在", order.nContractNo, order.sContractCode, order_pub.pc->sExcode);
+        return RET_ERR_EXCHANGE;
+    }
+	//比较一下，看看校验这些数据耗时
+	if (m_pMemDb->m_pDbBaseinfo.m_pCodeTable.Select((char *)"SH_FLAG",(char *) "0",order.sShFlag) == NULL)
+	{
+		m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托投保标志不符");
+		return RET_ERR_SHFLAG;
+	}
+    if (m_pMemDb->m_pDbBaseinfo.m_pCodeTable.Select((char*)"EO_FLAG", (char*)"0", order.sEoFlag) == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托开平标志不符");
+        return RET_ERR_EOFLAG;
+    }
+    if (m_pMemDb->m_pDbBaseinfo.m_pCodeTable.Select((char*)"BS_FLAG", (char*)"0", order.sBsFlag) == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托买卖标志不符");
+        return RET_ERR_BSFLAG;
+    }
+    if (m_pMemDb->m_pDbBaseinfo.m_pCodeTable.Select((char*)"TX_TYPE", (char*)"0", order.sTxType) == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托交易类型不符");
+        return RET_ERR_TXTYPE;
+    }
+    if (m_pMemDb->m_pDbBaseinfo.m_pCodeTable.Select((char*)"ORDER_TYPE", (char*)"0", order.sCmdType) == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托报单价格类型不符");
+        return RET_ERR_ORDERTYPE;
+    }
+    if (m_pMemDb->m_pDbBaseinfo.m_pCodeTable.Select((char*)"ORDER_ATTR", (char*)"0", order.sCmdAttr) == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托报单有效属性不符");
+        return RET_ERR_ORDERTYPE;
+    }
+    if (order.nOrderNum < 1)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托委托数量不符 %d", order.nOrderNum);
+        return RET_ERR_INPUT;
+    }
+    ////委托价格
+    //如果是市价委托，取合约的最新价，以便计算手续费、保证金
+    if (order.sCmdType[0] == ORDER_TYPE_MARKET || order.sCmdType[0] == ORDER_TYPE_MS_LOSS || order.sCmdType[0] == ORDER_TYPE_MS_PROFIT || order.sCmdType[0] == ORDER_TYPE_LEVEL1_M || order.sCmdType[0] == ORDER_TYPE_LEVEL5_M)
+    {
+		order_pub.pq = m_pMemDb->m_pDbTrader.m_pQuotation.Select(order.sContractCode);
+        if (order_pub.pq == NULL)
+        {
+            //行情没有，取结算价
+			order_pub.psp = m_pMemDb->m_pDbBaseinfo.m_pSettlePrice.Select(order.sContractCode);
+            if (order_pub.psp == NULL)
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托  市价无行情且取不到此合约[%d %s]的结算价 %s", order.nContractNo, order.sContractCode);
+                return RET_ERR_ORDERPRICE;
+            }
+            order.dOrderPrice = order_pub.psp->dSettlePrice;
+        }
+        else
+        {
+            order.dOrderPrice = order_pub.pq->dNewPrice;
+        }
+    }
+    else
+    {
+        if (order.dOrderPrice>MINDOUBLECOMPARE && order.dOrderPrice< MAXDOUBLECOMPARE)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托价格不符");
+            return RET_ERR_ORDERPRICE;
+        }
+    }
+ 
+    //取品种
+    if (order_pub.pc->sProd_type[0] == PROD_TYPE_OPTION || order_pub.pc->sProd_type[0] == PROD_TYPE_OPTION_SEC)
+    {
+        S_MDB_CONTRACT_INFO* pco = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(order_pub.pc->nProdId);
+        if (pco != NULL)
+        {
+			order_pub.pv = m_pMemDb->m_pDbBaseinfo.m_pVariety.Select(pco->nProdId);
+        }
+        else
+        {
+			order_pub.pv = NULL;
+        }
+    }
+    else  if  (order_pub.pc->sProd_type[0] == PROD_TYPE_FUTURES || order_pub.pc->sProd_type[0] == PROD_TYPE_SPOT)  //  现货期货有品种
+    {
+		order_pub.pv = m_pMemDb->m_pDbBaseinfo.m_pVariety.Select(order_pub.pc->nProdId);
+        order.nVarietyId = order_pub.pc->nProdId;
+        if (order_pub.pv == NULL)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 合约[%d %s] 取品种信息出错", order_pub.pc->nContractId, order_pub.pc->sContractCode);
+            return RET_ERR_SYSTEMPARA;
+        }
+    }
+    
+    //是否有此交易账号
+	order_pub.pAcclock = m_pMemDb->SelectLock(order.sTxAcc);
+    if (order_pub.pAcclock == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s]非法不存在", order.sTxAcc);
+        return RET_ERR_CUSTFUNDACC;
+    }
+	order_pub.pCustFuncAcc = m_pMemDb->m_pDbCust.m_pTradeAcc.At(order_pub.pAcclock->nTradeAccRowid);
+    if (order_pub.pCustFuncAcc == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s] 非法，不存在", order.sTxAcc);
+        return RET_ERR_CUSTFUNDACC;
+    }
+	order_pub.pCust = m_pMemDb->m_pDbCust.m_pCustom.At(order_pub.pAcclock->nCustRowid);
+    if (order_pub.pCust == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s]的客户号[%s]不存在", order.sTxAcc, order_pub.pCustFuncAcc->sCustNo);
+        return RET_ERR_CUSTNO;
+    }
+    //比较交易账号对应的客户号是否和输入的相同
+    if (strcmp(order_pub.pCustFuncAcc->sCustNo, order.sOrderOper) == 0)
+    {
+        iscust = true;
+        //判断开通渠道
+        int nChannel = atoi(order.sOrderChannel);
+        if (nChannel <= 0 || nChannel > 59)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托渠道[%s]非法", order.sOrderChannel);
+            return RET_ERR_CHANNEL;
+        }
+        if (order_pub.pCust->sChannleOpen[nChannel] != '1')
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 客户号[%s]交易账号[%s]未开通此渠道[%s]", order_pub.pCustFuncAcc->sCustNo, order.sTxAcc, order.sOrderChannel);
+            return RET_ERR_CHANNELOPEN;
+        }
+    }
+    else
+    {
+        iscust = false;//不是客户发起
+        //判断操作员是否有此账号权限
+        if (!m_pKernelPub.CheckOperAccRight(order.sOrderOper, order.sTxAcc))
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 操作员[%s] 无交易账号[%s] 的操作权限", order.sOrderOper, order.sTxAcc);
+            return RET_ERR_NO_RIGHT;
+        }
+    }
+    //取资金表，按账号+币种
+	order_pub.pCustFund = m_pMemDb->GetFund(order_pub.pAcclock);
+    if (order_pub.pCustFund == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s]+合约[%d %s]对应的币种[%s]在资金表不存在", order.sTxAcc, order.nContractNo, order.sContractCode, order_pub.pc->sCurrency);
+        return RET_ERR_CUSTFUND;
+    }
+    
+    
+    strcpy(order.sTxDate, order_pub.pe->sTradeDate);
+    m_pDate.Update();
+    strcpy(order.sAnsTime, m_pDate.ToStringDT17().c_str());
+    strcpy(order.sAccOrg, order_pub.pCustFuncAcc->sSignOrg);
+    //取交易网点
+    if (strlen(order.sTxOrg) < 1)
+    {
+        strcpy(order.sTxOrg, order_pub.pCustFuncAcc->sSignOrg);
+    }
+    //判断委托类型、成交属性
+    int nTxCmd = atoi(order.sCmdType);
+    if (nTxCmd < 0 || nTxCmd>11)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 报单类型[%s]非法", order.sCmdType);
+        return RET_ERR_ORDERTYPE;
+    }
+    //int nTxAttr = atoi(order.sCmdAttr);
+    //if (nTxAttr < 0 || nTxAttr>99)
+    //{
+    //    m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 成交属性[%s]非法", order.sCmdAttr);
+    //    data.pData->sDBHead.nLen = 0;
+    //    data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR;
+    //    AnsData(data);
+    //    return -1;
+    //}
+    //if (pc->sOrderCmd[nTxCmd] != '1')
+    //{
+    //    m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 报单类型[%s]此合约[%d %s]不支持", order.sCmdType, order.nContractNo, order.sContractCode);
+    //    data.pData->sDBHead.nLen = 0;
+    //    data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERTYPE_SUPPORT;
+    //    AnsData(data);
+    //    return -1;
+    //}
+    //if (pc->sDoneAttr[nTxAttr * 10 + nTxAttr] != '1')
+    //{
+    //    m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 成交属性+报单位类型[%s %s]此合约[%d %s]不支持", order.sCmdAttr, order.sCmdType, order.nContractNo, order.sContractCode);
+    //    data.pData->sDBHead.nLen = 0;
+    //    data.pData->sDBHead.a_Ainfo.a_nRetCode = RET_ERR_ORDERATTR_SUPPORT;
+    //    AnsData(data);
+    //    return -1;
+    //}
+
+    //取交易编码
+	order_pub.pCustTrader = m_pMemDb->m_pDbTrader.m_pTradecode.Select(order.sTxAcc, order.sExchCode);
+    if (order_pub.pCustTrader == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s]交易所代码[%s]席位号[%s]无对应的交易编码", order.sTxAcc, order.sExchCode, order.sSeatNo);
+        return RET_ERR_TRADECODE;
+    }
+    strcpy(order.sTxCode, order_pub.pCustTrader->sTradeCode);
+	strcpy(order.sSeatNo, order_pub.pCustTrader->sSeatNo);
+
+    //取交易所席位信息
+    order_pub.pExTrader = m_pMemDb->m_pDbTrader.m_pExchTrader.Select(order_pub.pCustTrader->sExCode, order_pub.pCustTrader->sSeatNo);
+    if (order_pub.pExTrader == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易所代码[%s]席位号[%s]无对应的接口配置信息",order.sExchCode, order.sSeatNo);
+        return RET_ERR_TRADECODE;
+    }
+
+
+    //这里可以根据网点，判断是否可以交易，后续根据需要增加
+
+    //客户交易权限，是否有交易权限
+    if (order_pub.pCustFund->sTradeRight[0] == TR_NONE)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s] 币种[%s]交易所代码[%s]席位号[%s]无交易权限[%c] 风险度[%.2f] ", \
+		order.sTxAcc, order.sExchCode, order.sSeatNo, order_pub.pCustFund->sCurrency, order_pub.pCustFund->sTradeRight[0], order_pub.pCustFund->dRisk);
+        return RET_ERR_TRADERIGHT;
+    }
+	else  if (order_pub.pCustFund->sTradeRight[0] == TR_CLOSE) //只能卖出或平仓
+	{
+		if (order_pub.pc->sProd_type[0] == PROD_TYPE_FUTURES || order_pub.pc->sProd_type[0] == PROD_TYPE_OPTION || order_pub.pc->sProd_type[0] == PROD_TYPE_OPTION_SEC)
+		{	//期货期权
+            if (order.sEoFlag[0] != EO_FLAG_CLOSE && order.sEoFlag[0] != EO_FLAG_CLOSETODAY)
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s] 币种[%s]交易所代码[%s]席位号[%s]无交易权限[%c] 风险度[%.2f] ", \
+				order.sTxAcc, order.sExchCode, order.sSeatNo, order_pub.pCustFund->sCurrency, order_pub.pCustFund->sTradeRight[0], order_pub.pCustFund->dRisk);
+                return RET_ERR_TRADERIGHT;
+            }
+		}
+		else  if (order_pub.pc->sProd_type[0] == PROD_TYPE_SPOT || order_pub.pc->sProd_type[0] == PROD_TYPE_SEC || order_pub.pc->sProd_type[0] == PROD_TYPE_BOND || order_pub.pc->sProd_type[0] == PROD_TYPE_BOND_BANK)
+		{	 //股票 现货 债券
+            if (order.sBsFlag[0] != BS_FLAG_SELL )	   //不是卖
+            {
+                m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "委托 交易账号[%s] 币种[%s]交易所代码[%s]席位号[%s]无交易权限[%c] 风险度[%.2f] ", \
+				order.sTxAcc, order.sExchCode, order.sSeatNo, order_pub.pCustFund->sCurrency, order_pub.pCustFund->sTradeRight[0], order_pub.pCustFund->dRisk);
+                return RET_ERR_TRADERIGHT;
+            }
+		}
+	}
+	//检查点击成交白名单
+	int ret= CheckBwgMenu(&order, m_sErrMsg);
+	if (0 != ret)
+	{
+	     return	 ret;
+	}
+	//检查价格限定
+    ret = CheckPriceLimit(&order, order_pub.pc, m_sErrMsg);
+    if (0 != ret)
+    {
+        return	 ret;
+    }
+	//检查风险合约
+	ret = CheckRiskContract(&order, order_pub.pc, m_sErrMsg);
+	if (0 != ret)
+	{
+		return ret;
+	}
+	return 0;
+}
+int RiskDll::OrderRsp(S_TRADE_DATA& rpcdata, S_TRADE_DATA& ansdata)
+{
+    S_MDB_ORDER_INFO order;
+	//bzero(&order,sizeof(S_MDB_ORDER_INFO));
+    if (!m_pXdp->FromBuffer(rpcdata.pData->sBuffer, rpcdata.pData->sDBHead.nLen, m_sErrMsg))
+    {
+        m_pLog->LogMp(LOG_ERROR, __FILE__, __LINE__, "报单响应 FromBuffer出错");
+        m_pClientLink->PoolFree(ansdata);
+        return -1;
+    }
+    //Xdp2Struct::ConvertXdp2OrderBroadcast(m_pXdp, order);
+    unsigned int len = sizeof(order.sLocalSerial);
+    int fieldtype;
+	m_pXdp->GetFieldValue((unsigned short)87, order.sLocalSerial, len, fieldtype, m_sErrMsg);
+    S_MDB_ORDER_INFO* porder = m_pMemDb->m_pDbTrader.m_pOrder.Select(order.sLocalSerial);
+    if (porder == NULL)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "报单响应 报单号[%s] 找不到原报单", order.sLocalSerial);
+        m_pClientLink->PoolFree(ansdata);
+        return -1;
+    }
+	int nRet = ansdata.pData->sDBHead.a_Ainfo.a_nRetCode;
+	//返回码不是成功
+    if (nRet != SUCCESS)
+    {
+        m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "报单响应 报单[%s] 返回[%d]", order.sLocalSerial, nRet);
+        if (!m_pXdp->FromBuffer(ansdata.pData->sBuffer, ansdata.pData->sDBHead.nLen, m_sErrMsg))
+        {
+            m_pLog->LogMp(LOG_DEBUG, __FILE__, __LINE__, "报单响应 FromBuffer出错");
+            porder->sOrderStatus[0] = ORDER_STATUS_INVALID;	//无效单
+			sprintf(order.sOrderRsp, "报单接口返回 返回码[%d]", ansdata.pData->sDBHead.a_Ainfo.a_nRetCode);
+            m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(*porder);
+			//释放内存
+			m_pClientLink->PoolFree(ansdata);
+            return -1;
+        }
+        len = sizeof(order.sOrderRsp);
+		//取响应信息
+        if (!m_pXdp->GetFieldValue((unsigned short)122, porder->sOrderRsp, len, fieldtype, m_sErrMsg))
+        {
+            sprintf(order.sOrderRsp, "报单接口返回[%d]", ansdata.pData->sDBHead.a_Ainfo.a_nRetCode);
+        }
+        porder->sOrderStatus[0] = ORDER_STATUS_INVALID;	//无效单
+		m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(*porder);
+		//释放内存
+		m_pClientLink->PoolFree(ansdata);
+		return -1;
+    }
+	//释放内存
+	m_pClientLink->PoolFree(ansdata);
+    len = sizeof(order.sSystemNo);
+    //取系统报单号 某些同步柜台可能会有
+    if (m_pXdp->GetFieldValue((unsigned short)96, porder->sSystemNo, len, fieldtype, m_sErrMsg))
+    {
+		m_pMemDb->m_pDbTrader.m_pOrder.SetUpdate(*porder);
+    }
+    return 0;
 }

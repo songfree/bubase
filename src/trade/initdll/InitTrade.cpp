@@ -36,8 +36,6 @@ bool CInitTrade::Init(CIErrlog *log,CBF_Xml *xml,CMemDb *mdb)
 	m_pKernelPub.m_pLog = log;
 	m_pKernelPub.m_pMemDb = mdb;
 
-	return true;
-
 	//写内存表
 	//连接本地数据库，从本地读交易所、合约信息、机构信息、参数、操作员信息
 	if (!ConnectLocalDb())
@@ -219,7 +217,7 @@ bool CInitTrade::ReadOrgan()
 	bool bret;
 	//机构表
 	S_MDB_ORG_INFO info;
-	sprintf(m_sSql,"select ORG_CODE,ORG_NAME,ORG_TYPE,ORG_LEVEL,UP1_ORG,UP_ORG,CITY,SETTLE_ACCOUNT_NO from ORG_INFO order by ORG_CODE");
+	sprintf(m_sSql,"select ORG_CODE,ORG_NAME,ORG_TYPE,ORG_LEVEL,UP1_ORG,UP_ORG,CITY,SETTLE_ACCOUNT_NO from sys_org_info order by ORG_CODE");
 	
 	try
 	{
@@ -238,7 +236,7 @@ bool CInitTrade::ReadOrgan()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table ORG_INFO no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table sys_org_info no data");
 #else
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"机构表无数据");
 #endif
@@ -246,14 +244,14 @@ bool CInitTrade::ReadOrgan()
 		}
 		while (bret)
 		{
-			strcpy(info.sOrgCode,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sOrgName,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sOrgType,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sOrgLevel,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sUp1Org,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sUpOrg,m_pSqlCmd->Field(5).asString());
-			strcpy(info.sOrgCity,m_pSqlCmd->Field(6).asString());
-			strcpy(info.sAccNo,m_pSqlCmd->Field(7).asString());
+			CBF_Tools::StringCopy(info.sOrgCode,sizeof(info.sOrgCode)-1,m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sOrgName,sizeof(info.sOrgName) - 1,m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sOrgType, sizeof(info.sOrgType) - 1,m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sOrgLevel, sizeof(info.sOrgLevel) - 1,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sUp1Org, sizeof(info.sUp1Org) - 1,m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sUpOrg, sizeof(info.sUpOrg) - 1,m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sOrgCity, sizeof(info.sOrgCity) - 1,m_pSqlCmd->Field(6).asString());
+			CBF_Tools::StringCopy(info.sAccNo, sizeof(info.sAccNo) - 1,m_pSqlCmd->Field(7).asString());
 			if (m_pMemDb->m_pDbPublic.m_pOrg.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
@@ -283,7 +281,7 @@ bool CInitTrade::ReadOper()
 	bool bret;
 	//操作员信息
 	S_MDB_OPER_INFO info;
-	sprintf(m_sSql,"select OPER_CODE,OPER_NAME,OPER_PHONE,OPER_ORG,OPER_TYPE from OPER_INFO order by OPER_CODE");
+	sprintf(m_sSql,"select OPER_CODE,OPER_NAME,OPER_PHONE,OPER_ORG,OPER_TYPE from sys_oper_info order by OPER_CODE");
 	
 	try
 	{
@@ -302,7 +300,7 @@ bool CInitTrade::ReadOper()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table OPER_INFO no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table sys_oper_info no data");
 #else
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"操作员表无数据");
 #endif
@@ -310,11 +308,11 @@ bool CInitTrade::ReadOper()
 		}
 		while (bret)
 		{
-			strcpy(info.sOperCode,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sOperName,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sOperPhone,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sOrgCode,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sOperType,m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sOperCode, sizeof(info.sOperCode) - 1,m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sOperName, sizeof(info.sOperName) - 1,m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sOperPhone, sizeof(info.sOperPhone) - 1,m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sOrgCode, sizeof(info.sOrgCode) - 1,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sOperType, sizeof(info.sOperType) - 1,m_pSqlCmd->Field(4).asString());
 			
 			if (m_pMemDb->m_pDbPublic.m_pOper.Insert(info) <0 )
 			{
@@ -349,7 +347,7 @@ bool CInitTrade::ReadPara()
 {
 	bool bret;
 	S_MDB_SYSTEM_PARA info;
-	sprintf(m_sSql,"select PARA_CODE,PARA_NAME,PARA_VALUE,VALUE_TYPE from SYSTEM_PARA order by PARA_CODE");
+	sprintf(m_sSql,"select PARA_CODE,PARA_NAME,PARA_VALUE,VALUE_TYPE from sys_system_prara order by PARA_CODE");
 	
 	try
 	{
@@ -368,7 +366,7 @@ bool CInitTrade::ReadPara()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table SYSTEM_PARA no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table sys_system_prara no data");
 #else
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"系统参数表无数据");
 #endif
@@ -376,10 +374,10 @@ bool CInitTrade::ReadPara()
 		}
 		while (bret)
 		{
-			strcpy(info.sParaCode, m_pSqlCmd->Field(0).asString());
-			strcpy(info.sParaName, m_pSqlCmd->Field(1).asString());
-			strcpy(info.sParaValue, m_pSqlCmd->Field(2).asString());
-			strcpy(info.sValueType, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sParaCode, sizeof(info.sParaCode) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sParaName, sizeof(info.sParaName) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sParaValue, sizeof(info.sParaValue) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sValueType, sizeof(info.sValueType) - 1, m_pSqlCmd->Field(3).asString());
 			if (m_pMemDb->m_pDbPublic.m_pSysPara.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
@@ -407,7 +405,7 @@ bool CInitTrade::ReadPara()
 bool CInitTrade::ReadOperOnline()
 {
 	S_MDB_OPER_ONLINE info;
-	sprintf(m_sSql,"select a.OPER_CODE,a.CHANNEL,a.LOGIN_IP,a.ONLINE_STATUS,a.ONLINE_TIME,a.NODEID,a.NODEPID,a.SVRID,a.SVRPID,a.GATEINDEX,a.TIMESTAMP from OPER_ONLINE a order by OPER_CODE");
+	sprintf(m_sSql,"select a.OPER_CODE,a.CHANNEL,a.LOGIN_IP,a.ONLINE_STATUS,a.ONLINE_TIME,a.NODEID,a.NODEPID,a.SVRID,a.SVRPID,a.GATEINDEX,a.TIMESTAMP from sys_oper_online a order by OPER_CODE");
 	try
 	{
 		m_pSqlCmd->setCommandText(m_sSql);
@@ -419,10 +417,10 @@ bool CInitTrade::ReadOperOnline()
 		bool bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sOperCode,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sTermType,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sLoginIp,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sOnlineStatus,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sOperCode, sizeof(info.sOperCode) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sTermType, sizeof(info.sTermType) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sLoginIp, sizeof(info.sLoginIp) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sOnlineStatus, sizeof(info.sOnlineStatus) - 1, m_pSqlCmd->Field(3).asString());
 
 			info.nDrebId = m_pSqlCmd->Field(5).asLong();
 			info.nDrebPid = m_pSqlCmd->Field(6).asLong();
@@ -452,43 +450,6 @@ bool CInitTrade::ReadOperOnline()
 #endif
 		return false;
 	}
-
-	//读取操作员订阅表
-	S_MDB_SUBSCRIBE subinfo;
-	sprintf(m_sSql,"select OPER_CODE,INFO_TYPE from SUBSCRIBE");
-	try
-	{
-		m_pSqlCmd->setCommandText(m_sSql);
-		if (!m_pSqlCmd->Execute())
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Execute <%s> error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
-			return false;
-		}
-		bool bret = m_pSqlCmd->FetchNext();
-		while (bret)
-		{
-			strcpy(subinfo.sOper,m_pSqlCmd->Field(0).asString());
-			strcpy(subinfo.sSubcribeType,m_pSqlCmd->Field(1).asString());
-			
-			if (m_pMemDb->m_pDbTrader.m_pSubcribe.Insert(subinfo)<0)
-			{
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"操作员订阅 [%s] Insert 出错",subinfo.sOper);
-				return false;
-			}
-			bret = m_pSqlCmd->FetchNext();
-		}
-	}
-	catch (...)
-	{
-#ifdef _ENGLISH_
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Database operator Exception!");
-#else
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"数据库操作异常");
-#endif
-		return false;
-	}
-
-	
 	return true;
 }
 
@@ -509,7 +470,8 @@ bool CInitTrade::InitBaseInfo()
 // 	
 // 	CTbl_SettlePrice  m_pSettlePrice;//合约结算价表，只保存最新的
 // 	CTbl_SpecDate     m_pSpecDate;//节假日配置
-// 	CTbl_Option_Model m_pOptionModel;//期权合约价格模型表
+// 	CTbl_Option_Model m_pOptionModel;//期权合约价格模型表 
+//码表
 
 	m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"ReadVariety");
 	if (!ReadVariety())
@@ -521,13 +483,13 @@ bool CInitTrade::InitBaseInfo()
 	{
 		return false;
 	}
+    m_pLog->LogMp(LOG_INFO, __FILE__, __LINE__, "ReadMarket");
+    if (!ReadMarket())
+    {
+        return false;
+    }
 	m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"ReadExchange");
 	if (!ReadExchange())
-	{
-		return false;
-	}
-	m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"ReadMarket");
-	if (!ReadMarket())
 	{
 		return false;
 	}
@@ -571,6 +533,11 @@ bool CInitTrade::InitBaseInfo()
 	{
 		return false;
 	}
+    m_pLog->LogMp(LOG_INFO, __FILE__, __LINE__, "ReadCodeTable");
+    if (!ReadCodeTable())
+    {
+        return false;
+    }
 	return true;
 }
 bool CInitTrade::ReadVariety()
@@ -578,7 +545,7 @@ bool CInitTrade::ReadVariety()
 	bool bret;
 	//品种表
 	S_MDB_VARIETY_INFO info;
-	sprintf(m_sSql,"select VARIETY_NO,VARIETY_CODE,VARIETY_NAME,EXCH_CODE,PROD_TYPE,MIN_CHG_PRICE,MAX_HAND,MIN_HAND,EXCH_UNIT,PRICE_UINT,DELI_DAYS,CURRENCY,BAIL_MODE from VARIETY_INFO order by VARIETY_NO");
+	sprintf(m_sSql,"select VARIETY_NO,VARIETY_CODE,VARIETY_NAME,EXCH_CODE,PROD_TYPE,MIN_CHG_PRICE,MAX_HAND,MIN_HAND,EXCH_UNIT,PRICE_UINT,DELI_DAYS,CURRENCY,BAIL_MODE from sys_variety_info order by VARIETY_NO");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -596,7 +563,7 @@ bool CInitTrade::ReadVariety()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table VARIETY_INFO no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table sys_variety_info no data");
 #else
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"品种表无数据");
 #endif
@@ -605,18 +572,18 @@ bool CInitTrade::ReadVariety()
 		while (bret)
 		{
 			info.nVarietyId = m_pSqlCmd->Field(0).asLong();
-			strcpy(info.sVarietyCode,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sVarietyName,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sExcode,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sProd_type,m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sVarietyCode, sizeof(info.sVarietyCode) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sVarietyName, sizeof(info.sVarietyName) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sExcode, sizeof(info.sExcode) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sProd_type, sizeof(info.sProd_type) - 1, m_pSqlCmd->Field(4).asString());
 			info.dMinChgPrice = m_pSqlCmd->Field(5).asDouble();
 			info.nMaxHand = m_pSqlCmd->Field(6).asLong();
 			info.nMinHand = m_pSqlCmd->Field(7).asLong();
 			info.dTxUnit = m_pSqlCmd->Field(8).asDouble();
-			strcpy(info.sOrderUnit,m_pSqlCmd->Field(9).asString());
+			CBF_Tools::StringCopy(info.sOrderUnit, sizeof(info.sOrderUnit) - 1, m_pSqlCmd->Field(9).asString());
 			info.nDeliDays = m_pSqlCmd->Field(11).asLong();
-			strcpy(info.sCurrency,m_pSqlCmd->Field(11).asString());
-			strcpy(info.sBailMode,m_pSqlCmd->Field(12).asString());
+			CBF_Tools::StringCopy(info.sCurrency, sizeof(info.sCurrency) - 1, m_pSqlCmd->Field(11).asString());
+			CBF_Tools::StringCopy(info.sBailMode, sizeof(info.sBailMode) - 1, m_pSqlCmd->Field(12).asString());
 			
 			if (m_pMemDb->m_pDbBaseinfo.m_pVariety.Insert(info) <0 )
 			{
@@ -650,7 +617,74 @@ bool CInitTrade::ReadContract()
 	S_MDB_CONTRACT_INFO info;
 	S_MDB_VARIETY_INFO *pv=NULL;
 	S_MDB_CONTRACT_INFO *pc=NULL;
-	sprintf(m_sSql,"select a.CONTRACT_NO,a.CONTRACT_CODE,a.CONTRACT_NAME,a.EX_CODE,a.PROD_TYPE,a.PROD_CODE,a.PROD_NO,a.MIN_CHG_PRICE,a.IST0,a.ISBAIL,a.BAIL_RATE,a.UL_LIMIT,a.UPPER_LIMIT_VALUE,a.LOWER_LIMIT_VALUE,a.ACTIVE_FLAG,a.TX_STATUS,a.REF_PRICE,a.RCV_RATE,a.BUSI_MODE,a.MAX_HAND,a.MIN_HAND,a.EX_UNIT,a.PRICE_UNIT,a.ORDER_CMD,a.ORDER_ATTR,a.DUE_DATE,a.LAST_DATE,a.DELI_DAYS,a.IS_BIGMARGIN,a.ISCALL,a.VARIETY_NO from CONTRACT_INFO a,VARIETY_INFO b where a.VARIETY_NO=b.VARIETY_NO order by a.CONTRACT_NO");
+	S_MDB_BOND_INFO bond;
+	S_MDB_BOND_INFO *pb=NULL;
+	//读债券扩展信息
+    sprintf(m_sSql, "select BOND_CODE,BOND_TYPE,ISSUE_DATE,LIST_DATE,ISSUE_PRICE,START_DATE,MTR_DATE,COUPON,REMAIN_MATURITY,PAY_FREQ,MARKET_SCOPE,TERM_MATURITY,ISSUE_ORG,EXEC_DATE,EXEC_PRICE,INIT_VALUE,INIT_SPREAD,COUPON_TYPE,INIT_COUPON,FIRST_PAY_DATE,DV01,ACCR_INTE,NEW_VALUE,APPR_VALUE,DAY_COUNT from sys_bond_ext_info order by BOND_CODE");
+    try
+    {
+        if (!m_pSqlCmd->setCommandText(m_sSql))
+        {
+            m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "setCommandText error <%s>", m_sSql);
+            return false;
+        }
+        if (!m_pSqlCmd->Execute())
+        {
+            m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "Execute <%s> error %s", m_sSql, m_pSqlCmd->GetCmdErrInfo());
+            return false;
+        }
+
+        bret = m_pSqlCmd->FetchNext();
+        while (bret)
+        {
+			CBF_Tools::StringCopy(bond.sBondCode, sizeof(bond.sBondCode) - 1, m_pSqlCmd->Field(0).asString());
+			bond.nBondType = m_pSqlCmd->Field(1).asLong();
+			CBF_Tools::StringCopy(bond.sIssueDate, sizeof(bond.sIssueDate) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(bond.sListDate, sizeof(bond.sListDate) - 1, m_pSqlCmd->Field(3).asString());
+			bond.dIssuePrice = m_pSqlCmd->Field(4).asDouble();
+			CBF_Tools::StringCopy(bond.sStartDate, sizeof(bond.sStartDate) - 1, m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(bond.sMtrDate, sizeof(bond.sMtrDate) - 1, m_pSqlCmd->Field(6).asString());
+			bond.dCoupon = m_pSqlCmd->Field(7).asDouble();
+			bond.dRemainMaturity = m_pSqlCmd->Field(8).asDouble();
+			bond.nPayFreq = m_pSqlCmd->Field(9).asLong();
+			bond.dMarketScope = m_pSqlCmd->Field(10).asDouble();
+			CBF_Tools::StringCopy(bond.sTermMaturity, sizeof(bond.sTermMaturity) - 1, m_pSqlCmd->Field(11).asString());
+			CBF_Tools::StringCopy(bond.sIssueOrg, sizeof(bond.sIssueOrg) - 1, m_pSqlCmd->Field(12).asString());
+			CBF_Tools::StringCopy(bond.sExecDate, sizeof(bond.sExecDate) - 1, m_pSqlCmd->Field(13).asString());
+			bond.dExecPrice = m_pSqlCmd->Field(14).asDouble();
+			bond.dInitValue = m_pSqlCmd->Field(15).asDouble();
+			bond.dInitSpread = m_pSqlCmd->Field(16).asDouble();
+			bond.nCouponType = m_pSqlCmd->Field(17).asLong();
+			bond.dInitCoupon = m_pSqlCmd->Field(18).asDouble();
+			CBF_Tools::StringCopy(bond.sFirstPayDate, sizeof(bond.sFirstPayDate) - 1, m_pSqlCmd->Field(19).asString());
+			bond.dDv01 = m_pSqlCmd->Field(20).asDouble();
+			bond.dAccrInte = m_pSqlCmd->Field(21).asDouble();
+			bond.dNewValue = m_pSqlCmd->Field(22).asDouble();
+			bond.dApprValue = m_pSqlCmd->Field(23).asDouble();
+			bond.nDayCount = m_pSqlCmd->Field(24).asLong();
+            if (m_pMemDb->m_pDbBaseinfo.m_pBond.Insert(bond) < 0)
+            {
+#ifdef _ENGLISH_
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "bond [%s] repeat", bond.sBondCode);
+#else
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "债券[%s]重复", bond.sBondCode);
+#endif
+                return false;
+            }
+            bret = m_pSqlCmd->FetchNext();
+		}
+        
+	}
+    catch (...)
+    {
+#ifdef _ENGLISH_
+        m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "Database operator Exception!");
+#else
+        m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "数据库操作异常");
+#endif
+        return false;
+    }
+	sprintf(m_sSql,"select a.SECU_NO,a.SECU_CODE,a.SECU_NAME,a.EX_CODE,a.PROD_TYPE,a.PROD_CODE,a.PROD_NO,a.MIN_CHG_PRICE,a.IST0,a.ISBAIL,a.BAIL_RATE,a.UL_LIMIT,a.UPPER_LIMIT_VALUE,a.LOWER_LIMIT_VALUE,a.ACTIVE_FLAG,a.TX_STATUS,a.REF_PRICE,a.RCV_RATE,a.BUSI_MODE,a.MAX_HAND,a.MIN_HAND,a.EX_UNIT,a.PRICE_UNIT,a.ORDER_CMD,a.ORDER_ATTR,a.DUE_DATE,a.LAST_DATE,a.DELI_DAYS,a.IS_BIGMARGIN,a.ISCALL,a.VARIETY_NO from sys_secu_info a order by a.SECU_NO");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -668,7 +702,7 @@ bool CInitTrade::ReadContract()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table CONTRACT_INFO no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table sys_secu_info no data");
 #else
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"合约表无数据");
 #endif
@@ -677,37 +711,38 @@ bool CInitTrade::ReadContract()
 		while (bret)
 		{
 			info.nContractId = m_pSqlCmd->Field(0).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sContractName,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sExcode,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sProd_type,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sProd_code,m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1,m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sContractName, sizeof(info.sContractName) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sExcode, sizeof(info.sExcode) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sProd_type, sizeof(info.sProd_type) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sProd_code, sizeof(info.sProd_code) - 1, m_pSqlCmd->Field(5).asString());
 			info.nProdId = m_pSqlCmd->Field(6).asLong();
 			info.dMinChgPrice = m_pSqlCmd->Field(7).asDouble();
-			strcpy(info.sIsT0,m_pSqlCmd->Field(8).asString());
-			strcpy(info.sIsMargin,m_pSqlCmd->Field(9).asString());
+			CBF_Tools::StringCopy(info.sIsT0, sizeof(info.sIsT0) - 1, m_pSqlCmd->Field(8).asString());
+			CBF_Tools::StringCopy(info.sIsMargin, sizeof(info.sIsMargin) - 1, m_pSqlCmd->Field(9).asString());
 			info.dMarginRate = m_pSqlCmd->Field(10).asDouble();
-			strcpy(info.sIsUpDownLimit,m_pSqlCmd->Field(11).asString());
+			CBF_Tools::StringCopy(info.sIsUpDownLimit, sizeof(info.sIsUpDownLimit) - 1, m_pSqlCmd->Field(11).asString());
 			info.dUpRate = m_pSqlCmd->Field(12).asDouble();
 			info.dDownRate = m_pSqlCmd->Field(13).asDouble();
-			strcpy(info.sActiveFlag,m_pSqlCmd->Field(14).asString());
-			strcpy(info.sStatus,m_pSqlCmd->Field(15).asString());
+			CBF_Tools::StringCopy(info.sActiveFlag, sizeof(info.sActiveFlag) - 1, m_pSqlCmd->Field(14).asString());
+			CBF_Tools::StringCopy(info.sStatus, sizeof(info.sStatus) - 1, m_pSqlCmd->Field(15).asString());
 			info.dRefPrice = m_pSqlCmd->Field(16).asDouble();
 			info.dSellGetRate = m_pSqlCmd->Field(17).asDouble();
-			strcpy(info.sDeliMode,m_pSqlCmd->Field(18).asString());
+			CBF_Tools::StringCopy(info.sDeliMode, sizeof(info.sDeliMode) - 1, m_pSqlCmd->Field(18).asString());
 			info.nMaxHand = m_pSqlCmd->Field(19).asLong();
 			info.nMinHand = m_pSqlCmd->Field(20).asLong();
 			info.dTxUnit = m_pSqlCmd->Field(21).asDouble();
-			strcpy(info.sOrderUnit,m_pSqlCmd->Field(22).asString());
-			strcpy(info.sOrderCmd,m_pSqlCmd->Field(23).asString());
-			strcpy(info.sDoneAttr,m_pSqlCmd->Field(24).asString());
-			strcpy(info.sDueDate,m_pSqlCmd->Field(25).asString());
-			strcpy(info.sLastDate,m_pSqlCmd->Field(26).asString());
+			CBF_Tools::StringCopy(info.sOrderUnit, sizeof(info.sOrderUnit) - 1, m_pSqlCmd->Field(22).asString());
+			CBF_Tools::StringCopy(info.sOrderCmd, sizeof(info.sOrderCmd) - 1, m_pSqlCmd->Field(23).asString());
+			CBF_Tools::StringCopy(info.sDoneAttr, sizeof(info.sDoneAttr) - 1, m_pSqlCmd->Field(24).asString());
+			CBF_Tools::StringCopy(info.sDueDate, sizeof(info.sDueDate) - 1, m_pSqlCmd->Field(25).asString());
+			CBF_Tools::StringCopy(info.sLastDate, sizeof(info.sLastDate) - 1, m_pSqlCmd->Field(26).asString());
 			info.nDeliDays = m_pSqlCmd->Field(27).asLong();
-			strcpy(info.sIsBigMargin,m_pSqlCmd->Field(28).asString());
-			strcpy(info.sIsOptionCall,m_pSqlCmd->Field(29).asString());
+			CBF_Tools::StringCopy(info.sIsBigMargin, sizeof(info.sIsBigMargin) - 1, m_pSqlCmd->Field(28).asString());
+			CBF_Tools::StringCopy(info.sIsOptionCall, sizeof(info.sIsOptionCall) - 1, m_pSqlCmd->Field(29).asString());
 			info.nVariety = m_pSqlCmd->Field(30).asLong();
-			
+			//取债券扩展信息的rowid
+			info.nBondRowid = m_pMemDb->m_pDbBaseinfo.m_pBond.GetRowId(info.sContractCode);
 
 			//去品种表取币种
 			switch (info.sProd_type[0])
@@ -723,8 +758,10 @@ bool CInitTrade::ReadContract()
 						continue;
 					}
 					strcpy(info.sCurrency,pv->sCurrency);
+					info.nVariety = pv->nVarietyId;
 					break;
 				case PROD_TYPE_OPTION:
+				case PROD_TYPE_OPTION_SEC:
 					pc = m_pMemDb->m_pDbBaseinfo.m_pContract.Select(info.nProdId);
 					if (pc == NULL)
 					{
@@ -740,6 +777,7 @@ bool CInitTrade::ReadContract()
 						continue;
 					}
 					strcpy(info.sCurrency,pv->sCurrency);
+					info.nVariety = pv->nVarietyId;
 					break;
 				default:
 					info.sCurrency[0]= CURRENCY_CNY;
@@ -768,8 +806,6 @@ bool CInitTrade::ReadContract()
 #endif
 		return false;
 	}
-	
-
 	return true;
 }
 
@@ -778,7 +814,7 @@ bool CInitTrade::ReadExchange()
 	bool bret;
 	//交易所信息
 	S_MDB_EXCH_INFO info;
-	sprintf(m_sSql,"select EX_CODE,EX_NAME,EX_TYPE,EX_TRADEDATE,IS_SEAT_TRADE,COMM_PARA,CLEAR_DATE,CLEAR_STATUS,ONLY_CHGDATE from EX_INFO order by EX_CODE");
+	sprintf(m_sSql,"select EX_CODE,EX_NAME,EX_TYPE,EX_TRADEDATE,IS_SEAT_TRADE,COMM_PARA,CLEAR_DATE,CLEAR_STATUS,ONLY_CHGDATE from sys_ex_info order by EX_CODE");
 	
 	try
 	{
@@ -797,7 +833,7 @@ bool CInitTrade::ReadExchange()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table EX_INFO no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table sys_ex_info no data");
 #else
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易所表无数据");
 #endif
@@ -805,15 +841,17 @@ bool CInitTrade::ReadExchange()
 		}
 		while (bret)
 		{
-			strcpy(info.sExCode,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sExName,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sMarket,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sTradeDate,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sIsSeatTrade,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sCommPara,m_pSqlCmd->Field(5).asString());
-			strcpy(info.sClearDate,m_pSqlCmd->Field(6).asString());
-			strcpy(info.sClearStatus,m_pSqlCmd->Field(7).asString());
-			strcpy(info.sOnlyChgDate,m_pSqlCmd->Field(8).asString());
+			CBF_Tools::StringCopy(info.sExCode, sizeof(info.sExCode) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sExName, sizeof(info.sExName) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sMarket, sizeof(info.sMarket) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sTradeDate, sizeof(info.sTradeDate) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sIsSeatTrade, sizeof(info.sIsSeatTrade) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sCommPara, sizeof(info.sCommPara) - 1, m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sClearDate, sizeof(info.sClearDate) - 1, m_pSqlCmd->Field(6).asString());
+			CBF_Tools::StringCopy(info.sClearStatus, sizeof(info.sClearStatus) - 1, m_pSqlCmd->Field(7).asString());
+			CBF_Tools::StringCopy(info.sOnlyChgDate, sizeof(info.sOnlyChgDate) - 1, m_pSqlCmd->Field(8).asString());
+			//取对应的市场表rowid
+			info.nMarketRowid = m_pMemDb->m_pDbBaseinfo.m_pMarket.GetRowId(info.sMarket);
 			if (m_pMemDb->m_pDbBaseinfo.m_pExchange.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
@@ -844,7 +882,7 @@ bool CInitTrade::ReadMarket()
 	bool bret;
 	//市场信息
 	S_MDB_MARKET_INFO info;
-	sprintf(m_sSql,"select MARKET_CODE,MARKET_NAME,TX_DATE,CLEAR_DATE,CLEAR_STATUS,ONLY_CHGDATE from EX_MARKET_INFO  order by MARKET_CODE");
+	sprintf(m_sSql,"select MARKET_CODE,MARKET_NAME,TX_DATE,CLEAR_DATE,CLEAR_STATUS,ONLY_CHGDATE from sys_ex_market_info  order by MARKET_CODE");
 	
 	try
 	{
@@ -863,7 +901,7 @@ bool CInitTrade::ReadMarket()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table EX_MARKET_INFO no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table sys_ex_market_info no data");
 #else
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"市场表表无数据");
 #endif
@@ -871,17 +909,17 @@ bool CInitTrade::ReadMarket()
 		}
 		while (bret)
 		{
-			strcpy(info.sMarket,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sMarketName,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sTradeDate,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sClearDate,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sClearStatus,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sOnlyChgDate,m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sMarket, sizeof(info.sMarket) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sMarketName, sizeof(info.sMarketName) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sTradeDate, sizeof(info.sTradeDate) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sClearDate, sizeof(info.sClearDate) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sClearStatus, sizeof(info.sClearStatus) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sOnlyChgDate, sizeof(info.sOnlyChgDate) - 1, m_pSqlCmd->Field(5).asString());
 		
 			if (m_pMemDb->m_pDbBaseinfo.m_pMarket.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"EX_MARKET_INFO [%s] repeat",info.sMarket);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sys_ex_market_info [%s] repeat",info.sMarket);
 #else
 				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"市场表 [%s]重复",info.sMarket);
 #endif
@@ -907,7 +945,7 @@ bool CInitTrade::ReadProd()
 	bool bret;
 	//产品信息
 	S_MDB_FINA_PROD_INFO info;
-	sprintf(m_sSql,"select a.FINA_PROD_NO,a.FINA_PROD_NAME,a.LINKMAN,a.PHONE,a.ADDR,a.ORG_CODE,a.PUBLISH_UNIT from FINA_PROD_INFO a ");
+	sprintf(m_sSql,"select a.FINA_PROD_NO,a.FINA_PROD_NAME,a.LINKMAN,a.PHONE,a.ADDR,a.ORG_CODE,a.PUBLISH_UNIT from sys_prod_info a ");
 	
 	try
 	{
@@ -923,28 +961,19 @@ bool CInitTrade::ReadProd()
 		}
 		
 		bret = m_pSqlCmd->FetchNext();
-// 		if ( !bret )
-// 		{
-// #ifdef _ENGLISH_
-// 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table FINA_PROD_INFO no data");
-// #else
-// 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品表无数据");
-// #endif
-// 			return false;
-// 		}
 		while (bret)
 		{
-			strcpy(info.sFinaProdCode,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sFinaProdName,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sLinkMan,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sPhone,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sAddr,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sOrgCode,m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sFinaProdCode, sizeof(info.sFinaProdCode) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sFinaProdName, sizeof(info.sFinaProdName) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sLinkMan, sizeof(info.sLinkMan) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sPhone, sizeof(info.sPhone) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sAddr, sizeof(info.sAddr) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sOrgCode, sizeof(info.sOrgCode) - 1, m_pSqlCmd->Field(5).asString());
 			info.nPublishUit = m_pSqlCmd->Field(6).asLong();
 			if (m_pMemDb->m_pDbBaseinfo.m_pProd.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"FINA_PROD_INFO [%s] repeat",info.sFinaProdCode);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sys_prod_info [%s] repeat",info.sFinaProdCode);
 #else
 				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品表 [%s]重复",info.sFinaProdCode);
 #endif
@@ -969,7 +998,7 @@ bool CInitTrade::ReadOperTxacc()
 {
 	bool bret;
 	S_MDB_OPER_CUST_INFO info;
-	sprintf(m_sSql,"select a.OPER_CODE,a.TX_ACC from OPER_CUST_LINK a ");
+	sprintf(m_sSql,"select a.OPER_CODE,a.TX_ACC from sys_oper_tradeacc a ");
 	
 	try
 	{
@@ -987,8 +1016,8 @@ bool CInitTrade::ReadOperTxacc()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sOperCode,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sTxAcc,m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sOperCode, sizeof(info.sOperCode) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sTxAcc, sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(1).asString());
 			if (m_pMemDb->m_pDbBaseinfo.m_pOperTxAcc.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
@@ -1017,7 +1046,7 @@ bool CInitTrade::ReadProdTxacc()
 {
 	bool bret;
 	S_MDB_PROD_CUST info;
-	sprintf(m_sSql,"select a.FINA_PROD_NO,a.CUST_NO,a.TX_ACC from FINA_PROD_CUST a ");
+	sprintf(m_sSql,"select a.PROD_NO,a.TX_ACC from sys_prod_tradeacc a ");
 	
 	try
 	{
@@ -1035,15 +1064,14 @@ bool CInitTrade::ReadProdTxacc()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sProdNo,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sCustNo,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sTxAcc,m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sProdNo, sizeof(info.sProdNo) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sTxAcc, sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(1).asString());
 			if (m_pMemDb->m_pDbBaseinfo.m_pProdCust.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"FINA_PROD_CUST [%s %s] repeat",info.sProdNo,info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sys_prod_tradeacc [%s %s] repeat",info.sProdNo,info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品资金账号对应表 [%s %s]重复",info.sProdNo,info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品交易账号对应表 [%s %s]重复",info.sProdNo,info.sTxAcc);
 #endif
 				return false;
 			}
@@ -1066,7 +1094,7 @@ bool CInitTrade::ReadOperProd()
 {
 	bool bret;
 	S_MDB_OPER_PROD info;
-	sprintf(m_sSql,"select a.OPER_CODE,a.FINA_PROD_ID from FINA_PROD_OPER a ");
+	sprintf(m_sSql,"select a.OPER_CODE,a.FINA_PROD_ID from sys_oper_prod a ");
 	
 	try
 	{
@@ -1084,12 +1112,12 @@ bool CInitTrade::ReadOperProd()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sOper,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sProdNo,m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sOper, sizeof(info.sOper) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sProdNo, sizeof(info.sProdNo) - 1, m_pSqlCmd->Field(1).asString());
 			if (m_pMemDb->m_pDbBaseinfo.m_pOperProd.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"FINA_PROD_OPER [%s %s] repeat",info.sOper,info.sProdNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sys_oper_prod [%s %s] repeat",info.sOper,info.sProdNo);
 #else
 				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"操作员产品对应表 [%s %s]重复",info.sOper,info.sProdNo);
 #endif
@@ -1114,7 +1142,7 @@ bool CInitTrade::ReadContractLimit()
 {
 	bool bret;
 	S_MDB_CONTRACT_LIMIT info;
-	sprintf(m_sSql,"select a.TX_ACC,a.CONTRACT_NO,a.FORCERATE from NONACTIVE_CONTRACT_SET a ");
+	sprintf(m_sSql,"select a.TX_ACC,a.SECU_CODE,a.FORCERATE from risk_nonactive_secu_set a ");
 	
 	try
 	{
@@ -1132,15 +1160,15 @@ bool CInitTrade::ReadContractLimit()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTxAcc,m_pSqlCmd->Field(0).asString());
-			info.nContractNo = m_pSqlCmd->Field(1).asLong();
+			CBF_Tools::StringCopy(info.sTxAcc, sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sContractCode,sizeof(info.sContractCode)-1,m_pSqlCmd->Field(0).asString());
 			info.dForceRate = m_pSqlCmd->Field(2).asDouble();
 			if (m_pMemDb->m_pDbBaseinfo.m_pCustContractLimit.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"NONACTIVE_CONTRACT_SET [%s %d] repeat",info.sTxAcc,info.nContractNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_nonactive_secu_set [%s %s] repeat",info.sTxAcc,info.sContractCode);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"冷门合约开仓限制表 [%s %d]重复",info.sTxAcc,info.nContractNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"冷门合约开仓限制表 [%s %s]重复",info.sTxAcc,info.sContractCode);
 #endif
 				return false;
 			}
@@ -1165,8 +1193,7 @@ bool CInitTrade::ReadSettlePrice()
 	//根据交易所表或市场表，取结算日期这天的结算价
 	S_MDB_CONTRACT_SETTLE_PRICE info;
 	//select a.EXCH_DATE,a.CONTRACT_NO,a.CONTRACT_CODE,a.SETTLE_PRICE,a.HOLD_POSI,a.CLOSE_PRICE,a.PRICE_CHANGE,a.SIMPLE_RETURN,a.LOG_RETURN,a.HIGH,a.LOW,a.OPEN from CONTRACT_SETTLE_PRICE a,CONTRACT_INFO b ,EX_INFO c where a.CONTRACT_NO = b.CONTRACT_NO and b.EX_CODE=c.EX_CODE and c.CLEAR_DATE=a.EXCH_DATE
-	sprintf(m_sSql,"select a.EXCH_DATE,a.CONTRACT_NO,a.CONTRACT_CODE,a.SETTLE_PRICE,a.HOLD_POSI,a.CLOSE_PRICE,a.PRICE_CHANGE,a.SIMPLE_RETURN,a.LOG_RETURN,a.HIGH,a.LOW,a.OPEN from CONTRACT_SETTLE_PRICE a,CONTRACT_INFO b ,EX_INFO c where a.CONTRACT_NO = b.CONTRACT_NO and b.EX_CODE=c.EX_CODE and c.CLEAR_DATE=a.EXCH_DATE");
-	
+	sprintf(m_sSql,"select a.EXCH_DATE,a.CONTRACT_NO,a.CONTRACT_CODE,a.SETTLE_PRICE,a.HOLD_POSI,a.CLOSE_PRICE,a.PRICE_CHANGE,a.SIMPLE_RETURN,a.LOG_RETURN,a.HIGH,a.LOW,a.OPEN from sys_secu_settle_price a,sys_secu_info b ,sys_ex_info c where a.CONTRACT_NO = b.SECU_NO and b.EX_CODE=c.EX_CODE and c.CLEAR_DATE=a.EXCH_DATE");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -1183,17 +1210,17 @@ bool CInitTrade::ReadSettlePrice()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sql[%s] Table CONTRACT_SETTLE_PRICE no data",m_sSql);
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sql[%s] Table sys_secu_settle_price no data",m_sSql);
 #else
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"合约结算价表无数据 sql[%s] ",m_sSql);
 #endif
-			return false;
+			//return false;
 		}
 		while (bret)
 		{
-			strcpy(info.sClearDate,m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sClearDate, sizeof(info.sClearDate) - 1, m_pSqlCmd->Field(0).asString());
 			info.nContractNo = m_pSqlCmd->Field(1).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1, m_pSqlCmd->Field(2).asString());
 			info.dSettlePrice = m_pSqlCmd->Field(3).asDouble();
 			info.nHoldPosi = m_pSqlCmd->Field(4).asLong();
 			info.dClosePrice = m_pSqlCmd->Field(5).asDouble();
@@ -1233,7 +1260,7 @@ bool CInitTrade::ReadSpecDate()
 	bool bret;
 	CBF_Date_Time pdate;
 	S_MDB_SPECDATE info;
-	sprintf(m_sSql,"select SPEC_DATE,MARKET_CODE,EX_CODE,DATE_TYPE from SPEC_DATE where SPEC_DATE >=:1  ");
+	sprintf(m_sSql,"select SPEC_DATE,MARKET_CODE,EX_CODE,DATE_TYPE from sys_spec_date where SPEC_DATE >=:1  ");
 	
 	try
 	{
@@ -1253,7 +1280,7 @@ bool CInitTrade::ReadSpecDate()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"Table SPEC_DATE no data");
+			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"Table sys_spec_date no data");
 #else
 			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"节假日表无数据 ");
 #endif
@@ -1261,15 +1288,15 @@ bool CInitTrade::ReadSpecDate()
 		}
 		while (bret)
 		{
-			strcpy(info.sSpecDate,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sMarket,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sExchCode,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sDateType,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sSpecDate, sizeof(info.sSpecDate) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sMarket, sizeof(info.sMarket) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sExchCode, sizeof(info.sExchCode) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sDateType, sizeof(info.sDateType) - 1, m_pSqlCmd->Field(3).asString());
 
 			if (m_pMemDb->m_pDbBaseinfo.m_pSpecDate.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"SPEC_DATE [%s] repeat",info.sSpecDate);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sys_spec_date [%s] repeat",info.sSpecDate);
 #else
 				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"节假日配置表 [%s]重复",info.sSpecDate);
 #endif
@@ -1293,14 +1320,14 @@ bool CInitTrade::ReadSpecDate()
 bool CInitTrade::InitCust()
 {
 // 	CTbl_Cust         m_pCustom;//客户信息表
-// 	CTbl_Cust_TX_Acc  m_pCustFundAcc;//资金账号信息表
+// 	CTbl_Cust_TX_Acc  m_pCustFundAcc;//交易账号信息表
 	//客户信息表
 	if (!ReadCustom())
 	{
 		return false;
 	}
-	//资金账号信息表
-	if (!ReadFundAcc())
+	//交易账号信息表
+	if (!ReadTradeAcc())
 	{
 		return false;
 	}
@@ -1312,7 +1339,7 @@ bool CInitTrade::ReadCustom()
 	bool bret;
 	
 	S_MDB_CUSTINFO info;
-	sprintf(m_sSql,"select CUST_NO,CUST_NAME,CUST_TYPE,CUST_CERT,CUST_CERT_NO,CUST_PHONE,TXCHANNLE,PKI_CERT_SERIAL,PKI_CERT_DATE,CUST_STATUS,LAST_RISK_LEVEL from CUST_BASIC_INFO order by CUST_NO");
+	sprintf(m_sSql,"select CUST_NO,CUST_NAME,CUST_TYPE,CUST_CERT,CUST_CERT_NO,CUST_PHONE,TRADE_PWD,FUND_PWD,LAST_MODIPWDTIME,PWD_FAILDNUM,TXCHANNLE,PKI_CERT_SERIAL,PKI_CERT_DATE,CUST_STATUS,LAST_PWDFAILDATE,LAST_PWDFAILTIME from sys_custom_info order by CUST_NO");
 	
 	try
 	{
@@ -1332,7 +1359,7 @@ bool CInitTrade::ReadCustom()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table CUST_BASIC_INFO no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table sys_custom_info no data");
 #else
 			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户表CUST_BASIC_INFO无数据 ");
 #endif
@@ -1340,35 +1367,40 @@ bool CInitTrade::ReadCustom()
 		}
 		while (bret)
 		{
-			strcpy(info.sCustNo,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sCustName,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sCustType,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sCertType,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sCustNo, sizeof(info.sCustNo) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sCustName, sizeof(info.sCustName) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sCustType, sizeof(info.sCustType) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sCertType, sizeof(info.sCertType) - 1, m_pSqlCmd->Field(3).asString());
 			if (strlen(info.sCertType)<1) //若没有证件类型，默认身份证
 			{
 				info.sCertType[0] = CERT_TYPE_IDCARD;
 				info.sCertType[1] =0; 
 			}
-			strcpy(info.sCertNo,m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sCertNo, sizeof(info.sCertNo) - 1, m_pSqlCmd->Field(4).asString());
 			if (strlen(info.sCertNo)<1)//若没有证件号，用客户号
 			{
 				strcpy(info.sCertNo,info.sCustNo);
 			}
-			strcpy(info.sMobile,m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sMobile, sizeof(info.sMobile) - 1, m_pSqlCmd->Field(5).asString());
 			if (strlen(info.sMobile)<1)//若没有手机号，用客户号
 			{
 				strcpy(info.sMobile,info.sCustNo);
 			}
-			strcpy(info.sChannleOpen,m_pSqlCmd->Field(6).asString());
-			strcpy(info.sPkiCertNo,m_pSqlCmd->Field(7).asString());
-			strcpy(info.sPkiCertDate,m_pSqlCmd->Field(8).asString());
-			strcpy(info.sStatus,m_pSqlCmd->Field(9).asString());
-			info.dLastRisk = m_pSqlCmd->Field(10).asDouble();
+			CBF_Tools::StringCopy(info.sTradePwd, sizeof(info.sTradePwd) - 1, m_pSqlCmd->Field(6).asString());
+			CBF_Tools::StringCopy(info.sFundPwd, sizeof(info.sFundPwd) - 1, m_pSqlCmd->Field(7).asString());
+			CBF_Tools::StringCopy(info.sLastModiPwdTime, sizeof(info.sLastModiPwdTime) - 1, m_pSqlCmd->Field(8).asString());
+			info.nPwdFaildNum = m_pSqlCmd->Field(9).asLong();
+			CBF_Tools::StringCopy(info.sChannleOpen, sizeof(info.sChannleOpen) - 1, m_pSqlCmd->Field(10).asString());
+			CBF_Tools::StringCopy(info.sPkiCertNo, sizeof(info.sPkiCertNo) - 1, m_pSqlCmd->Field(11).asString());
+			CBF_Tools::StringCopy(info.sPkiCertDate, sizeof(info.sPkiCertDate) - 1, m_pSqlCmd->Field(12).asString());
+			CBF_Tools::StringCopy(info.sStatus, sizeof(info.sStatus) - 1, m_pSqlCmd->Field(13).asString());
+			CBF_Tools::StringCopy(info.sLastPwdFaildDate, sizeof(info.sLastPwdFaildDate) - 1, m_pSqlCmd->Field(14).asString());
+			info.nLastPwdFaildTime = m_pSqlCmd->Field(15).asLong();
 
 			if (m_pMemDb->m_pDbCust.m_pCustom.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"custom [%s] repeat",info.sCustNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sys_custom_info [%s] repeat",info.sCustNo);
 #else
 				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户表 [%s]重复",info.sCustNo);
 #endif
@@ -1389,13 +1421,13 @@ bool CInitTrade::ReadCustom()
 	return true;
 }
 
-bool CInitTrade::ReadFundAcc()
+bool CInitTrade::ReadTradeAcc()
 {
 	bool bret;
 	int rid;
-	S_MDB_CUST_FUNDACC_INFO info;
-	bzero(&info,sizeof(S_MDB_CUST_FUNDACC_INFO));
-	sprintf(m_sSql,"select TX_ACC,CUST_NO,ACC_TYPE,ACC_SIMPLENAME,SIGN_ORG,MANAGER_ORG,FUTURES_FLAG,ACC_LEVEL,EX_FEE,MEMBER_FEE,BROKERAGE_CODE,CURRENCY,FS_FEE_MODEL,ACC_NAME from CUST_FUNDACC_INFO where ACC_STATUS='0' ");
+	S_MDB_TRADEACC_INFO info;
+	bzero(&info,sizeof(S_MDB_TRADEACC_INFO));
+	sprintf(m_sSql,"select TX_ACC,CUST_NO,ACC_TYPE,ACC_NAME,ACC_SIMPLENAME,SIGN_ORG,MANAGER_ORG,FUTURES_FLAG,ACC_LEVEL,EX_FEE,MEMBER_FEE,AFFIRM_FLAG,AFFIRM_DATE,ADD_DATETIME,ADD_TERM,ADD_OPER,MODI_DATETIME,MODI_TERM,MODI_OPER,BROKERAGE_CODE,CURRENCY,PARENT_TXACC,ACC_STATUS from sys_tradeacc_info where ACC_STATUS='0' ");
 	
 	try
 	{
@@ -1414,36 +1446,45 @@ bool CInitTrade::ReadFundAcc()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table CUST_FUNDACC_INFO no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table sys_tradeacc_info no data");
 #else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号CUST_FUNDACC_INFO表无数据 ");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号sys_tradeacc_info表无数据 ");
 #endif
 			return false;
 		}
 		while (bret)
 		{
-			strcpy(info.sTxAcc,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sCustNo,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sAcctype,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sCustSimpleName,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sSignOrg,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sMgrOrg,m_pSqlCmd->Field(5).asString());
-			strcpy(info.sFutureFlag,m_pSqlCmd->Field(6).asString());
-			strcpy(info.sAccLevel,m_pSqlCmd->Field(7).asString());
-			strcpy(info.sExchFareModel,m_pSqlCmd->Field(8).asString());
-			strcpy(info.sMemberFareModel,m_pSqlCmd->Field(9).asString());
-			info.nSysId = m_pSqlCmd->Field(10).asLong();
-			strcpy(info.sCurrency,m_pSqlCmd->Field(11).asString());
-			strcpy(info.sFsFeeModel,m_pSqlCmd->Field(12).asString());
-			strcpy(info.sCustName,m_pSqlCmd->Field(13).asString());
-			
-			rid = m_pMemDb->m_pDbCust.m_pCustFundAcc.Insert(info);
+			CBF_Tools::StringCopy(info.sTxAcc, sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sCustNo, sizeof(info.sCustNo) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sAcctype, sizeof(info.sAcctype) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sAccName, sizeof(info.sAccName) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sCustSimpleName, sizeof(info.sCustSimpleName) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sSignOrg, sizeof(info.sSignOrg) - 1, m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sMgrOrg, sizeof(info.sMgrOrg) - 1, m_pSqlCmd->Field(6).asString());
+			CBF_Tools::StringCopy(info.sFutureFlag, sizeof(info.sFutureFlag) - 1, m_pSqlCmd->Field(7).asString());
+			CBF_Tools::StringCopy(info.sAccLevel, sizeof(info.sAccLevel) - 1, m_pSqlCmd->Field(8).asString());
+			CBF_Tools::StringCopy(info.sExchFareModel, sizeof(info.sExchFareModel) - 1, m_pSqlCmd->Field(9).asString());
+			CBF_Tools::StringCopy(info.sMemberFareModel, sizeof(info.sMemberFareModel) - 1, m_pSqlCmd->Field(10).asString());
+			CBF_Tools::StringCopy(info.sAffirmFlag, sizeof(info.sAffirmFlag) - 1, m_pSqlCmd->Field(11).asString());
+			CBF_Tools::StringCopy(info.sAffirmDate, sizeof(info.sAffirmDate) - 1, m_pSqlCmd->Field(12).asString());
+			CBF_Tools::StringCopy(info.sAddDateTime, sizeof(info.sAddDateTime) - 1, m_pSqlCmd->Field(13).asString());
+			CBF_Tools::StringCopy(info.sAddTerm, sizeof(info.sAddTerm) - 1, m_pSqlCmd->Field(14).asString());
+			CBF_Tools::StringCopy(info.sAddOper, sizeof(info.sAddOper) - 1, m_pSqlCmd->Field(15).asString());
+            CBF_Tools::StringCopy(info.sModiDateTime, sizeof(info.sModiDateTime) - 1, m_pSqlCmd->Field(16).asString());
+            CBF_Tools::StringCopy(info.sModiTerm, sizeof(info.sModiTerm) - 1, m_pSqlCmd->Field(17).asString());
+            CBF_Tools::StringCopy(info.sModiOper, sizeof(info.sModiOper) - 1, m_pSqlCmd->Field(18).asString());
+			info.nSysId = m_pSqlCmd->Field(19).asLong();
+			CBF_Tools::StringCopy(info.sCurrency, sizeof(info.sCurrency) - 1, m_pSqlCmd->Field(20).asString());
+			CBF_Tools::StringCopy(info.sParentTxAcc, sizeof(info.sParentTxAcc) - 1, m_pSqlCmd->Field(21).asString());
+			CBF_Tools::StringCopy(info.sAccStatus, sizeof(info.sAccStatus) - 1, m_pSqlCmd->Field(22).asString());
+
+			rid = m_pMemDb->m_pDbCust.m_pTradeAcc.Insert(info);
 			if (rid <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_FUNDACC_INFO [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sys_tradeacc_info [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号CUST_FUNDACC_INFO表 [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易账号sys_tradeacc_info表 [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -1557,17 +1598,22 @@ bool CInitTrade::InitSet()
 	{
 		return false;
 	}
-	//经纪及交易所设置表
-	m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"ReadBrokerageInfo");
-	if (!ReadBrokerageInfo())
-	{
-		return false;
-	}
+
 	m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"ReadProdOrgTemplet");
 	if (!ReadProdOrgTemplet())
 	{
 		return false;
 	}
+    m_pLog->LogMp(LOG_INFO, __FILE__, __LINE__, "ReadBondBwg");
+    if (!ReadBondBwg())
+    {
+        return false;
+    }
+    m_pLog->LogMp(LOG_INFO, __FILE__, __LINE__, "ReadPriceLimit");
+    if (!ReadPriceLimit())
+    {
+        return false;
+    }
 	return true;
 }
 bool CInitTrade::ReadProdOrgTemplet()
@@ -1575,7 +1621,7 @@ bool CInitTrade::ReadProdOrgTemplet()
 	bool bret;
 
 	S_MDB_PRODORG_TEMPLET_RELA info;
-	sprintf(m_sSql,"select ORG_CODE,FUND_TEMPLET_ID,POSI_TEMPLET_ID from  ORGAN_TEMPLET");
+	sprintf(m_sSql,"select ORG_CODE,FUND_TEMPLET_ID,POSI_TEMPLET_ID from  risk_organ_templet_rela");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -1593,18 +1639,18 @@ bool CInitTrade::ReadProdOrgTemplet()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"Table ORGAN_TEMPLET no data");
+			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"Table risk_organ_templet_rela no data");
 #else
-			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"机构模板表ORGAN_TEMPLET 表无数据 ");
+			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"机构模板表risk_organ_templet_rela 表无数据 ");
 #endif
 			//return false;
 		}
 		while (bret)
 		{
 			
-			strcpy(info.sProdOrg,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sFundTempletId,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sPosiTempletId,m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sProdOrg, sizeof(info.sProdOrg) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sFundTempletId, sizeof(info.sFundTempletId) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sPosiTempletId, sizeof(info.sPosiTempletId) - 1, m_pSqlCmd->Field(2).asString());
 			if (m_pMemDb->m_pDbSet.m_pOrgTemplet.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
@@ -1626,7 +1672,7 @@ bool CInitTrade::ReadProdOrgTemplet()
 #endif
 		return false;
 	}
-	sprintf(m_sSql,"select FINA_PROD_NO,FUND_TEMPLET_ID,POSI_TEMPLET_ID from  PROD_TEMPLET");
+	sprintf(m_sSql,"select FINA_PROD_NO,FUND_TEMPLET_ID,POSI_TEMPLET_ID from  risk_prod_templet_rela");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -1644,18 +1690,18 @@ bool CInitTrade::ReadProdOrgTemplet()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table PROD_TEMPLET no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table risk_prod_templet_rela no data");
 #else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品模板表 PROD_TEMPLET 表无数据 ");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品模板表 risk_prod_templet_rela 表无数据 ");
 #endif
 			//return false;
 		}
 		while (bret)
 		{
 
-			strcpy(info.sProdOrg,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sFundTempletId,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sPosiTempletId,m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sProdOrg, sizeof(info.sProdOrg) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sFundTempletId, sizeof(info.sProdOrg) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sPosiTempletId, sizeof(info.sProdOrg) - 1, m_pSqlCmd->Field(2).asString());
 			if (m_pMemDb->m_pDbSet.m_pProdTemplet.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
@@ -1677,9 +1723,9 @@ bool CInitTrade::ReadProdOrgTemplet()
 #endif
 		return false;
 	}
-	//读汇率配置表
+	//读汇率配置表  	 计算外币资产用
 	S_MDB_CURRENCY_RATE rate;
-	sprintf(m_sSql,"select CURRENCY,RATE from  CURRENCY_RATE");
+	sprintf(m_sSql,"select CURRENCY,RATE from  risk_currency_rate");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -1697,24 +1743,24 @@ bool CInitTrade::ReadProdOrgTemplet()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table CURRENCY_RATE no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table risk_currency_rate no data");
 #else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"汇率配置表 CURRENCY_RATE 表无数据 ");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"汇率配置表 risk_currency_rate 表无数据 ");
 #endif
 			//return false;
 		}
 		while (bret)
 		{
 
-			strcpy(rate.sCurrency,m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(rate.sCurrency, sizeof(rate.sCurrency) - 1, m_pSqlCmd->Field(0).asString());
 			rate.dRate =m_pSqlCmd->Field(1).asDouble();
 			
 			if (m_pMemDb->m_pDbSet.m_pCurrencyRate.Insert(rate) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CURRENCY_RATE [%s] repeat",rate.sCurrency);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_currency_rate [%s] repeat",rate.sCurrency);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"汇率配置表 CURRENCY_RATE [%s]重复",rate.sCurrency);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"汇率配置表 risk_currency_rate [%s]重复",rate.sCurrency);
 #endif
 				return false;
 			}
@@ -1738,7 +1784,7 @@ bool CInitTrade::ReadWarnLevel()
 	bool bret;
 	
 	S_MDB_WARN_LEVEL_INFO info;
-	sprintf(m_sSql,"select WARN_NO,WARN_NAME,WARN_COLOR,WARN_SOUND,WARN_SEP from RISK_EARLY_WARNING_LEVEL order by WARN_NO");
+	sprintf(m_sSql,"select WARN_NO,WARN_NAME,WARN_COLOR,WARN_SOUND,WARN_SEP from risk_early_warning_level order by WARN_NO");
 	
 	try
 	{
@@ -1757,26 +1803,26 @@ bool CInitTrade::ReadWarnLevel()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table RISK_EARLY_WARNING_LEVEL no data");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Table risk_early_warning_level no data");
 #else
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"预警级别RISK_EARLY_WARNING_LEVEL 表无数据 ");
+			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"预警级别risk_early_warning_level 表无数据 ");
 #endif
 			return false;
 		}
 		while (bret)
 		{
 			info.nWarnLevel = m_pSqlCmd->Field(0).asLong();
-			strcpy(info.sWarnName,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sWarnColor,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sWarnSound,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sWarnName, sizeof(info.sWarnName) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sWarnColor, sizeof(info.sWarnColor) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sWarnSound, sizeof(info.sWarnSound) - 1, m_pSqlCmd->Field(3).asString());
 			info.nWarnSep= m_pSqlCmd->Field(4).asLong();
 		
 			if (m_pMemDb->m_pDbSet.m_pWarnLevel.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"RISK_EARLY_WARNING_LEVEL [%d] repeat",info.nWarnLevel);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_early_warning_level [%d] repeat",info.nWarnLevel);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"预警级别RISK_EARLY_WARNING_LEVEL表 [%d]重复",info.nWarnLevel);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"预警级别risk_early_warning_level表 [%d]重复",info.nWarnLevel);
 #endif
 				return false;
 			}
@@ -1800,8 +1846,7 @@ bool CInitTrade::ReadRiskContractSet()
 	bool bret;
 	
 	S_MDB_RISKCONTRACT_SET info;
-	sprintf(m_sSql,"select VARIETY_NO,CONTRACT_NO,CONTRACT_CODE,WARN_ITEM,RISK_CONDITION,WARN_VALUE from RISK_CONTRACT_SET ");
-	
+	sprintf(m_sSql,"select VARIETY_NO,SECU_NO,SECU_CODE,WARN_ITEM,RISK_CONDITION,WARN_VALUE from risk_risk_secu_set ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -1820,18 +1865,18 @@ bool CInitTrade::ReadRiskContractSet()
 		{
 			info.nVarietyNo = m_pSqlCmd->Field(0).asLong();
 			info.nContractNo = m_pSqlCmd->Field(1).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sWarnItem,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sCondition,m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sWarnItem, sizeof(info.sWarnItem) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sCondition, sizeof(info.sCondition) - 1, m_pSqlCmd->Field(4).asString());
 			info.dValue = m_pSqlCmd->Field(5).asDouble();
 			
 			
 			if (m_pMemDb->m_pDbSet.m_pRiskContractSet.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"RISK_CONTRACT_SET [%d] repeat",info.nVarietyNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_risk_secu_set [%d] repeat",info.nVarietyNo);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"风险合约设置RISK_CONTRACT_SET表 [%d]重复",info.nVarietyNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"风险合约设置risk_risk_secu_set表 [%d]重复",info.nVarietyNo);
 #endif
 				return false;
 			}
@@ -1855,7 +1900,7 @@ bool CInitTrade::ReadProdFundMonitor()
 	bool bret;
 	
 	S_MDB_PROD_MONITOR info;
-	sprintf(m_sSql,"select WARN_NO,FUND_MODEL,FUND_CONDITION,FUND_VALUE,TRADE_RIGHT,TEMPLET_ID from PROD_FUND_MONITOR ");
+	sprintf(m_sSql,"select TEMPLET_ID,WARN_NO,FUND_MODEL,FUND_CONDITION,FUND_VALUE,TRADE_RIGHT from risk_prod_fund_model_set ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -1872,18 +1917,19 @@ bool CInitTrade::ReadProdFundMonitor()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			info.nWarnNo = m_pSqlCmd->Field(0).asLong();
-			strcpy(info.sModel,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sCondition,m_pSqlCmd->Field(2).asString());
-			info.dValue = m_pSqlCmd->Field(3).asDouble();
-			strcpy(info.sRight,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sTempletId,m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sTempletId, sizeof(info.sTempletId) - 1, m_pSqlCmd->Field(0).asString());
+			info.nWarnNo = m_pSqlCmd->Field(1).asLong();
+			CBF_Tools::StringCopy(info.sModel, sizeof(info.sModel) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sCondition, sizeof(info.sCondition) - 1, m_pSqlCmd->Field(3).asString());
+			info.dValue = m_pSqlCmd->Field(4).asDouble();
+			CBF_Tools::StringCopy(info.sRight, sizeof(info.sRight) - 1, m_pSqlCmd->Field(5).asString());
+			
 			if (m_pMemDb->m_pDbSet.m_pProdFundMonitor.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"PROD_FUND_MONITOR [%d] repeat",info.nWarnNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_prod_fund_model_set [%d] repeat",info.nWarnNo);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品资金监控PROD_FUND_MONITOR [%d]重复",info.nWarnNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品资金监控risk_prod_fund_model_set [%d]重复",info.nWarnNo);
 #endif
 				return false;
 			}
@@ -1907,7 +1953,7 @@ bool CInitTrade::ReadProdPosiMonitor()
 	bool bret;
 	
 	S_MDB_PROD_MONITOR info;
-	sprintf(m_sSql,"select WARN_NO,POSI_MODEL,POSI_CONDITION,POSI_VALUE,TRADE_RIGHT,TEMPLET_ID from PROD_POSI_MONITOR ");
+	sprintf(m_sSql,"select TEMPLET_ID,WARN_NO,POSI_MODEL,POSI_CONDITION,POSI_VALUE,TRADE_RIGHT from risk_prod_posi_model_set ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -1924,18 +1970,19 @@ bool CInitTrade::ReadProdPosiMonitor()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			info.nWarnNo = m_pSqlCmd->Field(0).asLong();
-			strcpy(info.sModel,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sCondition,m_pSqlCmd->Field(2).asString());
-			info.dValue = m_pSqlCmd->Field(3).asDouble();
-			strcpy(info.sRight,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sTempletId,m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sTempletId, sizeof(info.sTempletId) - 1, m_pSqlCmd->Field(0).asString());
+			info.nWarnNo = m_pSqlCmd->Field(1).asLong();
+			CBF_Tools::StringCopy(info.sModel, sizeof(info.sModel) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sCondition, sizeof(info.sCondition) - 1, m_pSqlCmd->Field(3).asString());
+			info.dValue = m_pSqlCmd->Field(4).asDouble();
+			CBF_Tools::StringCopy(info.sRight, sizeof(info.sRight) - 1, m_pSqlCmd->Field(5).asString());
+			
 			if (m_pMemDb->m_pDbSet.m_pProdPosiMonitor.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"PROD_POSI_MONITOR [%d] repeat",info.nWarnNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_prod_posi_model_set [%d] repeat",info.nWarnNo);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品持仓监控PROD_POSI_MONITOR [%d]重复",info.nWarnNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"产品持仓监控risk_prod_posi_model_set [%d]重复",info.nWarnNo);
 #endif
 				return false;
 			}
@@ -1959,7 +2006,7 @@ bool CInitTrade::ReadFundTemplet()
 	bool bret;
 	
 	S_MDB_TEMPLET_INFO info;
-	sprintf(m_sSql,"select TEMPLET_ID,TEMPLET_NAME from CUST_FUND_MONITOR_MODEL ");
+	sprintf(m_sSql,"select TEMPLET_ID,TEMPLET_NAME,ORG_CODE,SUB_CAN_USE from risk_fund_templet ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -1976,15 +2023,16 @@ bool CInitTrade::ReadFundTemplet()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTempletId ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sTempletName,m_pSqlCmd->Field(1).asString());
-			
+			CBF_Tools::StringCopy(info.sTempletId , sizeof(info.sTempletId) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sTempletName, sizeof(info.sTempletName) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sOrgCode, sizeof(info.sOrgCode) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sSubCanUse, sizeof(info.sSubCanUse) - 1, m_pSqlCmd->Field(3).asString());
 			if (m_pMemDb->m_pDbSet.m_pFundTemplet.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_FUND_MONITOR_MODEL [%s] repeat",info.sTempletId);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_fund_templet [%s] repeat",info.sTempletId);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金模板表CUST_FUND_MONITOR_MODEL [%s]重复",info.sTempletId);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金模板表risk_fund_templet [%s]重复",info.sTempletId);
 #endif
 				return false;
 			}
@@ -2008,7 +2056,7 @@ bool CInitTrade::ReadPosiTemplet()
 	bool bret;
 	
 	S_MDB_TEMPLET_INFO info;
-	sprintf(m_sSql,"select TEMPLET_ID,TEMPLET_NAME from CUST_POSI_MONITOR_MODEL ");
+	sprintf(m_sSql,"select TEMPLET_ID,TEMPLET_NAME,ORG_CODE,SUB_CAN_USE from risk_posi_templet ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2025,15 +2073,16 @@ bool CInitTrade::ReadPosiTemplet()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTempletId ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sTempletName,m_pSqlCmd->Field(1).asString());
-			
+			CBF_Tools::StringCopy(info.sTempletId , sizeof(info.sTempletId) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sTempletName, sizeof(info.sTempletName) - 1, m_pSqlCmd->Field(1).asString());
+            CBF_Tools::StringCopy(info.sOrgCode, sizeof(info.sOrgCode) - 1, m_pSqlCmd->Field(2).asString());
+            CBF_Tools::StringCopy(info.sSubCanUse, sizeof(info.sSubCanUse) - 1, m_pSqlCmd->Field(3).asString());
 			if (m_pMemDb->m_pDbSet.m_pPosiTemplet.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_POSI_MONITOR_MODEL [%s] repeat",info.sTempletId);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_posi_templet [%s] repeat",info.sTempletId);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"持仓模板表 CUST_POSI_MONITOR_MODEL [%s]重复",info.sTempletId);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"持仓模板表 risk_posi_templet [%s]重复",info.sTempletId);
 #endif
 				return false;
 			}
@@ -2057,7 +2106,7 @@ bool CInitTrade::ReadFundTempletDetail()
 	bool bret;
 	
 	S_MDB_FUND_TEMPLET info;
-	sprintf(m_sSql,"select a.TEMPLET_ID,b.TEMPLET_NAME,a.WARN_NO,a.FUND_MODEL,a.FUND_CONDITION,a.FUND_VALUE,a.TRADE_RIGHT from CUST_FUND_MODEL_SET a,CUST_FUND_MONITOR_MODEL b  where a.TEMPLET_ID=b.TEMPLET_ID ");
+	sprintf(m_sSql,"select a.TEMPLET_ID,b.TEMPLET_NAME,a.WARN_NO,a.FUND_MODEL,a.FUND_CONDITION,a.FUND_VALUE,a.TRADE_RIGHT from risk_tradeacc_fund_model_set a,risk_fund_templet b  where a.TEMPLET_ID=b.TEMPLET_ID ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2074,19 +2123,19 @@ bool CInitTrade::ReadFundTempletDetail()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sFundTempletId ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sFundTempletName,m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sFundTempletId , sizeof(info.sFundTempletId) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sFundTempletName, sizeof(info.sFundTempletName) - 1, m_pSqlCmd->Field(1).asString());
 			info.nWarnNo = m_pSqlCmd->Field(2).asLong();
-			strcpy(info.sFundModel,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sCondition,m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sFundModel, sizeof(info.sFundModel) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sCondition, sizeof(info.sCondition) - 1, m_pSqlCmd->Field(4).asString());
 			info.dValue = m_pSqlCmd->Field(5).asDouble();
-			strcpy(info.sRight,m_pSqlCmd->Field(6).asString());
+			CBF_Tools::StringCopy(info.sRight, sizeof(info.sRight) - 1, m_pSqlCmd->Field(6).asString());
 			if (m_pMemDb->m_pDbSet.m_pFundTempletDetail.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_FUND_MODEL_SET [%s] repeat",info.sFundTempletId);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_tradeacc_fund_model_set [%s] repeat",info.sFundTempletId);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户资金模板设置 CUST_FUND_MODEL_SET [%s]重复",info.sFundTempletId);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户资金模板设置 risk_tradeacc_fund_model_set [%s]重复",info.sFundTempletId);
 #endif
 				return false;
 			}
@@ -2110,7 +2159,7 @@ bool CInitTrade::ReadPosiTempletDetail()
 	bool bret;
 	
 	S_MDB_POSITION_TEMPLET info;
-	sprintf(m_sSql,"select a.TEMPLET_ID,a.WARN_NO,a.EX_CODE,a.PROD_TYPE,a.VARIETY_NO,a.VARIETY_CODE,a.OPTION_DESTNO,a.OPTION_DESTCODE,a.CONTRACT_NO,a.CONTRACT_CODE,a.POSI_MODEL,a.POSI_CONDITION,a.POSI_VALUE,a.TRADE_RIGHT from CUST_POSI_MODEL_SET a   ");
+	sprintf(m_sSql,"select a.TEMPLET_ID,b.TEMPLET_NAME,a.WARN_NO,a.EX_CODE,a.PROD_TYPE,a.VARIETY_NO,a.VARIETY_CODE,a.OPTION_DESTNO,a.OPTION_DESTCODE,a.SECU_NO,a.SECU_CODE,a.POSI_MODEL,a.POSI_CONDITION,a.POSI_VALUE,a.TRADE_RIGHT from risk_tradeacc_posi_model_set a,risk_posi_templet b where a.TEMPLET_ID=b.TEMPLET_ID    ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2127,26 +2176,27 @@ bool CInitTrade::ReadPosiTempletDetail()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sPosiTempletId ,m_pSqlCmd->Field(0).asString());
-			info.nWarnNo = m_pSqlCmd->Field(1).asLong();
-			strcpy(info.sExchCode,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sProdType,m_pSqlCmd->Field(3).asString());
-			info.nVarietyNo = m_pSqlCmd->Field(4).asLong();
-			strcpy(info.sVarietyCode,m_pSqlCmd->Field(5).asString());
-			info.nOption_desno = m_pSqlCmd->Field(6).asLong();
-			strcpy(info.sOption_destcode,m_pSqlCmd->Field(7).asString());
-			info.nContractNo = m_pSqlCmd->Field(8).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(9).asString());
-			strcpy(info.sPosiModel,m_pSqlCmd->Field(10).asString());
-			strcpy(info.sCondition,m_pSqlCmd->Field(11).asString());
-			info.dValue = m_pSqlCmd->Field(12).asDouble();
-			strcpy(info.sRight,m_pSqlCmd->Field(13).asString());
+			CBF_Tools::StringCopy(info.sPosiTempletId , sizeof(info.sPosiTempletId) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sPosiTempletName, sizeof(info.sPosiTempletName) - 1, m_pSqlCmd->Field(1).asString());
+			info.nWarnNo = m_pSqlCmd->Field(2).asLong();
+			CBF_Tools::StringCopy(info.sExchCode, sizeof(info.sExchCode) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sProdType, sizeof(info.sProdType) - 1, m_pSqlCmd->Field(4).asString());
+			info.nVarietyNo = m_pSqlCmd->Field(5).asLong();
+			CBF_Tools::StringCopy(info.sVarietyCode, sizeof(info.sVarietyCode) - 1, m_pSqlCmd->Field(6).asString());
+			info.nOption_desno = m_pSqlCmd->Field(7).asLong();
+			CBF_Tools::StringCopy(info.sOption_destcode, sizeof(info.sOption_destcode) - 1, m_pSqlCmd->Field(8).asString());
+			info.nContractNo = m_pSqlCmd->Field(9).asLong();
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1, m_pSqlCmd->Field(10).asString());
+			CBF_Tools::StringCopy(info.sPosiModel, sizeof(info.sPosiModel) - 1, m_pSqlCmd->Field(11).asString());
+			CBF_Tools::StringCopy(info.sCondition, sizeof(info.sCondition) - 1, m_pSqlCmd->Field(12).asString());
+			info.dValue = m_pSqlCmd->Field(13).asDouble();
+			CBF_Tools::StringCopy(info.sRight, sizeof(info.sRight) - 1, m_pSqlCmd->Field(14).asString());
 			if (m_pMemDb->m_pDbSet.m_pPosiTempletDetail.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_POSI_MODEL_SET [%s] repeat",info.sPosiTempletId);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_tradeacc_posi_model_set [%s] repeat",info.sPosiTempletId);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户持仓模板设置 CUST_POSI_MODEL_SET [%s]重复",info.sPosiTempletId);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户持仓模板设置 risk_tradeacc_posi_model_set [%s]重复",info.sPosiTempletId);
 #endif
 				return false;
 			}
@@ -2170,7 +2220,7 @@ bool CInitTrade::ReadTxaccTemplet()
 	bool bret;
 	
 	S_MDB_CUST_TEMPLET_RELA info;
-	sprintf(m_sSql,"select a.TX_ACC,a.FUND_TEMPLET_ID,a.POSI_TEMPLET_ID from CUST_TEMPLET a ");
+	sprintf(m_sSql,"select a.TX_ACC,a.FUND_TEMPLET_ID,a.POSI_TEMPLET_ID from risk_tradeacc_templet_rela a ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2187,16 +2237,16 @@ bool CInitTrade::ReadTxaccTemplet()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTxAcc ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sFundTempletId,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sPosiTempletId,m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sTxAcc , sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sFundTempletId, sizeof(info.sFundTempletId) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sPosiTempletId, sizeof(info.sPosiTempletId) - 1, m_pSqlCmd->Field(2).asString());
 			
 			if (m_pMemDb->m_pDbSet.m_pCustTemplet.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_TEMPLET [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"risk_tradeacc_templet_rela [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号模板对应 CUST_TEMPLET [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易账号模板对应 risk_tradeacc_templet_rela [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -2220,7 +2270,7 @@ bool CInitTrade::ReadFeeTemplet()
 	bool bret;
 	
 	S_MDB_FEE_TEMPLET info;
-	sprintf(m_sSql,"select FEE_MODEL_CODE,MODEL_NAME,MODEL_TYPE,ORG from FEE_MODEL_DEF ");
+	sprintf(m_sSql,"select FEE_MODEL_CODE,MODEL_NAME,MODEL_TYPE,ORG,CR_CHANNEL,CR_DT,CR_OPER,MODI_CHANNEL,MODI_DT,MODI_OPER,SUB_CAN_USE from t_fee_templet_def ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2237,16 +2287,23 @@ bool CInitTrade::ReadFeeTemplet()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sFareModeCode ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sFareModeName,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sFareType,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sOrgCode,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sFareModeCode , sizeof(info.sFareModeCode) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sFareModeName, sizeof(info.sFareModeName) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sFareType, sizeof(info.sFareType) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sOrgCode, sizeof(info.sOrgCode) - 1, m_pSqlCmd->Field(3).asString());
+            CBF_Tools::StringCopy(info.sCR_Channel, sizeof(info.sCR_Channel) - 1, m_pSqlCmd->Field(4).asString());
+            CBF_Tools::StringCopy(info.sCR_Date, sizeof(info.sCR_Date) - 1, m_pSqlCmd->Field(5).asString());
+            CBF_Tools::StringCopy(info.sCR_Oper, sizeof(info.sCR_Oper) - 1, m_pSqlCmd->Field(6).asString());
+            CBF_Tools::StringCopy(info.sModi_Channel, sizeof(info.sModi_Channel) - 1, m_pSqlCmd->Field(7).asString());
+            CBF_Tools::StringCopy(info.sModi_Date, sizeof(info.sModi_Date) - 1, m_pSqlCmd->Field(8).asString());
+            CBF_Tools::StringCopy(info.sModi_Oper, sizeof(info.sModi_Oper) - 1, m_pSqlCmd->Field(9).asString());
+			CBF_Tools::StringCopy(info.sSubCanUse, sizeof(info.sSubCanUse) - 1, m_pSqlCmd->Field(10).asString());
 			if (m_pMemDb->m_pDbSet.m_pFeeTemplet.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"FEE_MODEL_DEF [%s] repeat",info.sFareModeCode);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_fee_templet_def [%s] repeat",info.sFareModeCode);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"费率模板表 FEE_MODEL_DEF [%s]重复",info.sFareModeCode);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"费率模板表 t_fee_templet_def [%s]重复",info.sFareModeCode);
 #endif
 				return false;
 			}
@@ -2270,7 +2327,7 @@ bool CInitTrade::ReadFeeTempletDetail()
 	bool bret;
 	
 	S_MDB_FEE_TEMPLET_DETAIL info;
-	sprintf(m_sSql,"select a.FEE_MODEL_CODE,a.PROD_TYPE,a.VARIETY_NO,a.VARIETY_CODE,a.CONTRACT_NO,a.CONTRACT_CODE,a.FEE_NO,a.FEE_MODE,a.FEE_VALUE from FEE_MODEL_DETAIL a ");
+	sprintf(m_sSql,"select a.FEE_MODEL_CODE,a.PROD_TYPE,a.VARIETY_NO,a.VARIETY_CODE,a.SECU_NO,a.SECU_CODE,a.FEE_NO,a.FEE_MODE,a.FEE_VALUE from t_feerate_detail a ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2287,22 +2344,22 @@ bool CInitTrade::ReadFeeTempletDetail()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sFareModeCode ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sProdType,m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sFareModeCode , sizeof(info.sFareModeCode) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sProdType, sizeof(info.sProdType) - 1, m_pSqlCmd->Field(1).asString());
 			info.nVarietyNo  = m_pSqlCmd->Field(2).asLong();
-			strcpy(info.sVarietyCode,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sVarietyCode, sizeof(info.sVarietyCode) - 1, m_pSqlCmd->Field(3).asString());
 			info.nContractNo  = m_pSqlCmd->Field(4).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(5).asString());
-			strcpy(info.sFareNo,m_pSqlCmd->Field(6).asString());
-			strcpy(info.sFareMode,m_pSqlCmd->Field(7).asString());
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1, m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sFareNo, sizeof(info.sFareNo) - 1, m_pSqlCmd->Field(6).asString());
+			CBF_Tools::StringCopy(info.sFareMode, sizeof(info.sFareMode) - 1, m_pSqlCmd->Field(7).asString());
 			info.dValue = m_pSqlCmd->Field(8).asDouble();
 
 			if (m_pMemDb->m_pDbSet.m_pFeeTempletDetail.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"FEE_MODEL_DETAIL [%s] repeat",info.sFareModeCode);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_feerate_detail [%s] repeat",info.sFareModeCode);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"费率模板设置表 FEE_MODEL_DETAIL [%s]重复",info.sFareModeCode);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"费率模板设置表 t_feerate_detail [%s]重复",info.sFareModeCode);
 #endif
 				return false;
 			}
@@ -2326,7 +2383,7 @@ bool CInitTrade::ReadCustFeeDetail()
 	bool bret;
 	
 	S_MDB_CUST_FEE info;
-	sprintf(m_sSql,"select a.TX_ACC,a.PROD_TYPE,a.VARIETY_NO,a.VARIETY_CODE,a.CONTRACT_NO,a.CONTRACT_CODE,a.FEE_NO,a.FEE_MODE,a.FEE_VALUE,a.EX_INCLUDE from CUST_FEE_RATE a ");
+	sprintf(m_sSql,"select a.TX_ACC,a.PROD_TYPE,a.VARIETY_NO,a.VARIETY_CODE,a.SECU_NO,a.SECU_CODE,a.FEE_NO,a.FEE_MODE,a.FEE_VALUE,a.EX_INCLUDE from t_special_feerate a ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2343,23 +2400,23 @@ bool CInitTrade::ReadCustFeeDetail()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTxAcc ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sProdType,m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sTxAcc , sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sProdType, sizeof(info.sProdType) - 1, m_pSqlCmd->Field(1).asString());
 			info.nVarietyNo  = m_pSqlCmd->Field(2).asLong();
-			strcpy(info.sVarietyCode,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sVarietyCode, sizeof(info.sVarietyCode) - 1, m_pSqlCmd->Field(3).asString());
 			info.nContractNo  = m_pSqlCmd->Field(4).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(5).asString());
-			strcpy(info.sFareNo,m_pSqlCmd->Field(6).asString());
-			strcpy(info.sFareMode,m_pSqlCmd->Field(7).asString());
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1, m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sFareNo, sizeof(info.sFareNo) - 1, m_pSqlCmd->Field(6).asString());
+			CBF_Tools::StringCopy(info.sFareMode, sizeof(info.sFareMode) - 1, m_pSqlCmd->Field(7).asString());
 			info.dValue = m_pSqlCmd->Field(8).asDouble();
-			strcpy(info.sInclude,m_pSqlCmd->Field(9).asString());
+			CBF_Tools::StringCopy(info.sInclude, sizeof(info.sInclude) - 1, m_pSqlCmd->Field(9).asString());
 
 			if (m_pMemDb->m_pDbSet.m_pCustFeeDetail.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_FEE_RATE [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_special_feerate [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户特殊费率设置表 CUST_FEE_RATE [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户特殊费率设置表 t_special_feerate [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -2377,7 +2434,111 @@ bool CInitTrade::ReadCustFeeDetail()
 	}
 	return true;
 }
+bool CInitTrade::ReadBondBwg()
+{
+    bool bret;
 
+    S_MDB_BOND_BWG_INFO info;
+    sprintf(m_sSql, "select a.COUNTERPARTY_ACC,a.BWG_FLAG,a.COUNTERPARTY_ORG,a.COUNTERPARTY_NAME,a.ADD_DATETIME,a.ADD_OPER from risk_bond_bwg_info a ");
+    try
+    {
+        if (!m_pSqlCmd->setCommandText(m_sSql))
+        {
+            m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "setCommandText error <%s>", m_sSql);
+            return false;
+        }
+        if (!m_pSqlCmd->Execute())
+        {
+            m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "Execute <%s> error %s", m_sSql, m_pSqlCmd->GetCmdErrInfo());
+            return false;
+        }
+
+        bret = m_pSqlCmd->FetchNext();
+        while (bret)
+        {
+            CBF_Tools::StringCopy(info.sMatchAcc, sizeof(info.sMatchAcc) - 1, m_pSqlCmd->Field(0).asString());
+            CBF_Tools::StringCopy(info.sBwgFlag, sizeof(info.sBwgFlag) - 1, m_pSqlCmd->Field(1).asString());
+            CBF_Tools::StringCopy(info.sMatchOrg, sizeof(info.sMatchOrg) - 1, m_pSqlCmd->Field(2).asString());
+            CBF_Tools::StringCopy(info.sMatchName, sizeof(info.sMatchName) - 1, m_pSqlCmd->Field(3).asString());
+            CBF_Tools::StringCopy(info.sAddDateTime, sizeof(info.sAddDateTime) - 1, m_pSqlCmd->Field(4).asString());
+            CBF_Tools::StringCopy(info.sAddOper, sizeof(info.sAddOper) - 1, m_pSqlCmd->Field(5).asString());
+
+            if (m_pMemDb->m_pDbSet.m_pBondBwgInfo.Insert(info) < 0)
+            {
+#ifdef _ENGLISH_
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "risk_bond_bwg_info [%s] repeat", info.sMatchAcc);
+#else
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "黑白灰名单表 risk_bond_bwg_info [%s]重复", info.sMatchAcc);
+#endif
+                return false;
+            }
+            bret = m_pSqlCmd->FetchNext();
+        }
+    }
+    catch (...)
+    {
+#ifdef _ENGLISH_
+        m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "Database operator Exception!");
+#else
+        m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "数据库操作异常");
+#endif
+        return false;
+    }
+    return true;
+}
+
+bool CInitTrade::ReadPriceLimit()
+{
+    bool bret;
+
+    S_MDB_PRICE_LIMIT info;
+    sprintf(m_sSql, "select a.PROD_TYPE,a.SECU_NO,a.SECU_CODE,a.LIMIT_TYPE,a.UP_LIMIT,a.DOWN_LIMIT from risk_price_limit a ");
+    try
+    {
+        if (!m_pSqlCmd->setCommandText(m_sSql))
+        {
+            m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "setCommandText error <%s>", m_sSql);
+            return false;
+        }
+        if (!m_pSqlCmd->Execute())
+        {
+            m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "Execute <%s> error %s", m_sSql, m_pSqlCmd->GetCmdErrInfo());
+            return false;
+        }
+
+        bret = m_pSqlCmd->FetchNext();
+        while (bret)
+        {
+            CBF_Tools::StringCopy(info.sProdType, sizeof(info.sProdType) - 1, m_pSqlCmd->Field(0).asString());
+            info.nSecuNo =  m_pSqlCmd->Field(1).asLong();
+            CBF_Tools::StringCopy(info.sSecuCode, sizeof(info.sSecuCode) - 1, m_pSqlCmd->Field(2).asString());
+            CBF_Tools::StringCopy(info.sLimitType, sizeof(info.sLimitType) - 1, m_pSqlCmd->Field(3).asString());
+            info.dUpLimit = m_pSqlCmd->Field(4).asDouble();
+            info.dDownLimit=m_pSqlCmd->Field(5).asDouble();
+            
+            if (m_pMemDb->m_pDbSet.m_pPriceLimit.Insert(info) < 0)
+            {
+#ifdef _ENGLISH_
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "risk_price_limit [%s %s] repeat", info.sProdType, info.sSecuCode);
+#else
+                m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "价格限定表 risk_price_limit [%s %s]重复", info.sProdType, info.sSecuCode);
+#endif
+                return false;
+            }
+            bret = m_pSqlCmd->FetchNext();
+        }
+    }
+    catch (...)
+    {
+#ifdef _ENGLISH_
+        m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "Database operator Exception!");
+#else
+        m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "数据库操作异常");
+#endif
+        return false;
+    }
+    return true;
+}
 bool CInitTrade::InitTrader()
 {
 // 	CTbl_Cust_Online     m_pCustOnline;//客户在线表
@@ -2387,8 +2548,7 @@ bool CInitTrade::InitTrader()
 // 	CTbl_Fund            m_pFund; //资金表
 // 	CTbl_FundDetail      m_pFundDetail;//资金明细表
 // 	CTbl_Position        m_pPosition;//持仓表
-// 	CTbl_Storage         m_pStore;//库存表
-// 	
+
 // 	CTbl_Order           m_pOrder;//报单表
 // 	CTbl_Done            m_pDone;//成交表
 // 	CTbl_Fund_Flow       m_pFundFlow;//出入金
@@ -2456,12 +2616,7 @@ bool CInitTrade::InitTrader()
 	{
 		return false;
 	}
-	//持仓轧差
-	m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"ReadCustPosiDiff");
-	if (!ReadCustPosiDiff())
-	{
-		return false;
-	}
+
 	//实时行情表
 	m_pLog->LogMp(LOG_INFO,__FILE__,__LINE__,"ReadQuotation");
 	if (!ReadQuotation())
@@ -2476,7 +2631,7 @@ bool CInitTrade::ReadCustOnline()
 	bool bret;
 	
 	S_MDB_CUST_ONLINE info;
-	sprintf(m_sSql,"select a.CUST_NO,a.CHANNLE,a.LOGIN_IP,a.LOGIN_STATUS,a.LOGIN_TIME,a.LOGIN_DREBID,a.LOGIN_DREBPID,a.LOGIN_SVRID,a.LOGIN_SVRPID,a.LOGIN_GATEINDEX,LOGIN_TIMESTAMP from CUST_ONLINE_INFO a ");
+	sprintf(m_sSql,"select a.CUST_NO,a.CHANNLE,a.LOGIN_IP,a.LOGIN_STATUS,a.LOGIN_TIME,a.LOGIN_DREBID,a.LOGIN_DREBPID,a.LOGIN_SVRID,a.LOGIN_SVRPID,a.LOGIN_GATEINDEX,LOGIN_TIMESTAMP from sys_cust_online_info a ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2493,11 +2648,11 @@ bool CInitTrade::ReadCustOnline()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sCustNo ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sTermType,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sLoginIp,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sOnlineStatus,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sOnlineTime,m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sCustNo , sizeof(info.sCustNo) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sTermType, sizeof(info.sTermType) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sLoginIp, sizeof(info.sLoginIp) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sOnlineStatus, sizeof(info.sOnlineStatus) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sOnlineTime, sizeof(info.sOnlineTime) - 1, m_pSqlCmd->Field(4).asString());
 			info.nDrebId  = m_pSqlCmd->Field(5).asLong();
 			info.nDrebPid  = m_pSqlCmd->Field(6).asLong();
 			info.nSvrId  = m_pSqlCmd->Field(7).asLong();
@@ -2508,9 +2663,9 @@ bool CInitTrade::ReadCustOnline()
 			if (m_pMemDb->m_pDbTrader.m_pCustOnline.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_ONLINE_INFO [%s] repeat",info.sCustNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"sys_cust_online_info [%s] repeat",info.sCustNo);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户在线表 CUST_ONLINE_INFO [%s]重复",info.sCustNo);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"客户在线表 sys_cust_online_info [%s]重复",info.sCustNo);
 #endif
 				return false;
 			}
@@ -2534,7 +2689,7 @@ bool CInitTrade::ReadTradeCode()
 	bool bret;
 	
 	S_MDB_CUST_TRADECODE info;
-	sprintf(m_sSql,"select a.TX_ACC,a.EX_CODE,a.SEAT_NO,a.TX_CODE  from CUST_TRADE_INFO a ");
+	sprintf(m_sSql,"select a.TX_ACC,a.EX_CODE,a.SEAT_NO,a.TX_CODE,a.EXT_INFO,a.COMM_INFO  from t_tradeacc_excode_info a ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2551,17 +2706,19 @@ bool CInitTrade::ReadTradeCode()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTxAcc ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sExCode,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sSeatNo,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sTradeCode,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sTxAcc , sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sExCode, sizeof(info.sExCode) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sSeatNo, sizeof(info.sSeatNo) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sTradeCode, sizeof(info.sTradeCode) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sExtInfo, sizeof(info.sExtInfo) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sCommInfo, sizeof(info.sCommInfo) - 1, m_pSqlCmd->Field(5).asString());
 			
 			if (m_pMemDb->m_pDbTrader.m_pTradecode.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_TRADE_INFO [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_tradeacc_excode_info [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号交易编码对应 CUST_TRADE_INFO [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金账号交易编码对应 t_tradeacc_excode_info [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -2585,7 +2742,7 @@ bool CInitTrade::ReadExchTradeOnline()
 	bool bret;
 	
 	S_MDB_EXCH_TRADER_INFO info;
-	sprintf(m_sSql,"select a.EX_CODE,a.SEAT_ID,a.TRADER,a.LOGIN_STATUS,a.LOGIN_TIME,a.LOGOUT_TIME,a.COMM_PARA  from EX_SEAT_TRADE_INFO a ");
+	sprintf(m_sSql,"select a.EX_CODE,a.SEAT_NO,a.TRADER,a.LOGIN_STATUS,a.LOGIN_TIME,a.LOGOUT_TIME,a.COMM_PARA,a.REMARK  from t_ex_trader_info a ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2602,20 +2759,20 @@ bool CInitTrade::ReadExchTradeOnline()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sExchCode ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sSeatNo,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sTraderId,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sLoginStatus,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sLoginTime,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sLogoutTime,m_pSqlCmd->Field(5).asString());
-			strcpy(info.sPara,m_pSqlCmd->Field(6).asString());
-			
+			CBF_Tools::StringCopy(info.sExchCode , sizeof(info.sExchCode) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sSeatNo, sizeof(info.sSeatNo) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sTraderId, sizeof(info.sTraderId) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sLoginStatus, sizeof(info.sLoginStatus) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sLoginTime, sizeof(info.sLoginTime) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sLogoutTime, sizeof(info.sLogoutTime) - 1, m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sPara, sizeof(info.sPara) - 1, m_pSqlCmd->Field(6).asString());
+			CBF_Tools::StringCopy(info.sRemark, sizeof(info.sRemark) - 1, m_pSqlCmd->Field(7).asString());
 			if (m_pMemDb->m_pDbTrader.m_pExchTrader.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"EX_SEAT_TRADE_INFO [%s] repeat",info.sExchCode);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_ex_trader_info [%s] repeat",info.sExchCode);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易所席位交易员在线 EX_SEAT_TRADE_INFO [%s]重复",info.sExchCode);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"交易所席位交易员在线 t_ex_trader_info [%s]重复",info.sExchCode);
 #endif
 				return false;
 			}
@@ -2642,15 +2799,12 @@ bool CInitTrade::ReadCustFund()
 	S_MDB_CUST_FUND info;
 	S_MDB_TXACC_LOCK  acclock;
 	acclock.nCustRowid=-1;
-	acclock.nFundAccRowid =-1;
+	acclock.nTradeAccRowid =-1;
+	acclock.nFundRowid=-1;
 	int i;
-	for (i=0; i<10 ; i++)
-	{
-		acclock.nFundRowid[i] = -1;
-	}
+
 	
-	
-	sprintf(m_sSql,"select TX_ACC,CURRENCY,LAST_BAL,BALANCE,AVAIL_FUND,GET_FUND,BASE_MARGIN,INCOME_EXPENSE,FROZE_FUND,MARGIN,FEE,RESERVE,SURPLUS,FLOAT_SURPLUS,INCR_INTE,ARAP,RISK_LEVEL,RISK,TRADE_RIGHT from CUST_FUND");
+	sprintf(m_sSql,"select TX_ACC,CURRENCY,LAST_BAL,BALANCE,AVAIL_FUND,GET_FUND,BASE_MARGIN,INCOME_EXPENSE,FROZE_FUND,MARGIN,FEE,RESERVE,SURPLUS,FLOAT_SURPLUS,INCR_INTE,ARAP,RISK_LEVEL,RISK,TRADE_RIGHT from t_tradeacc_fund");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2667,9 +2821,9 @@ bool CInitTrade::ReadCustFund()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			bzero(&info,sizeof(S_MDB_CUST_FUND));
-			strcpy(info.sTxAcc ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sCurrency,m_pSqlCmd->Field(1).asString());
+			//bzero(&info,sizeof(S_MDB_CUST_FUND));
+			CBF_Tools::StringCopy(info.sTxAcc , sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sCurrency, sizeof(info.sCurrency) - 1, m_pSqlCmd->Field(1).asString());
 			
 			info.dLast_bal =m_pSqlCmd->Field(2).asDouble();
 			info.dBalance =m_pSqlCmd->Field(3).asDouble();
@@ -2689,14 +2843,14 @@ bool CInitTrade::ReadCustFund()
 			info.nRisk_level =11;
 			//info.nRisk_level =m_pSqlCmd->Field(16).asLong();
 			info.dRisk =m_pSqlCmd->Field(17).asDouble();
-			strcpy(info.sTradeRight,m_pSqlCmd->Field(18).asString());
+			CBF_Tools::StringCopy(info.sTradeRight, sizeof(info.sTradeRight) - 1, m_pSqlCmd->Field(18).asString());
 			rid = m_pMemDb->m_pDbTrader.m_pFund.Insert(info);
 			if (rid <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_FUND [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_tradeacc_fund [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金表 CUST_FUND [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金表 t_tradeacc_fund [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -2728,7 +2882,7 @@ bool CInitTrade::ReadCustFundDetail()
 	bool bret;
 	
 	S_MDB_CUST_FUND_DETAIL info;
-	sprintf(m_sSql,"select TX_ACC,FUND_TYPE,FUND_CODE,FUND_VALUE,CURRENCY from CUST_FUND_DETAIL ");
+	sprintf(m_sSql,"select TX_ACC,FUND_TYPE,FUND_CODE,FUND_VALUE,CURRENCY from t_tradeacc_fund_detail ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2745,17 +2899,17 @@ bool CInitTrade::ReadCustFundDetail()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTxAcc ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sFundType,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sFundCode,m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sTxAcc , sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sFundType, sizeof(info.sFundType) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sFundCode, sizeof(info.sFundCode) - 1, m_pSqlCmd->Field(2).asString());
 			info.dFundValue =m_pSqlCmd->Field(3).asDouble();
-			strcpy(info.sCurrency,m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sCurrency, sizeof(info.sCurrency) - 1, m_pSqlCmd->Field(4).asString());
 			if (m_pMemDb->m_pDbTrader.m_pFundDetail.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_FUND_DETAIL [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_tradeacc_fund_detail [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金详细表 CUST_FUND_DETAIL [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"资金详细表 t_tradeacc_fund_detail [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -2780,7 +2934,7 @@ bool CInitTrade::ReadCustPosition()
 	int rid;
 	S_MDB_CUST_POSITION info;
 	int num=0;
-	sprintf(m_sSql,"select TX_ACC,CONTRACT_NO,CONTRACT_CODE,SEAT_ID,TX_CODE,TB_FLAG,LAST_PB,LAST_PS,CUR_PB,CUR_PS,CUR_CANUSE_PB,CUR_CANUSE_PS,DAY_PB,DAY_PS,DAY_COV_PB_FROZ,DAY_COV_PB,DAY_COV_PS_FROZ,DAY_COV_PS,DAY_DELI_PB_FROZ,DAY_DELI_PB,DAY_DELI_PS_FROZ,DAY_DELI_PS,DAY_MIDD_PB,DAY_MIDD_PS,PB_OPEN_AVG_PRICE,PS_OPEN_AVG_PRICE,PB_AVG_PRICE,PS_AVG_PRICE,PB_MARGIN,PS_MARGIN,DAY_PB_SURPLUS,DAY_PS_SURPLUS,LAST_SETTLE_PRICE,DAY_SETTLE_PRICE,VARIETY from CUST_POSI");
+	sprintf(m_sSql,"select TX_ACC,SECU_NO,SECU_CODE,SECU_NAME,SEAT_ID,TX_CODE,SH_FLAG,LAST_PB,LAST_PS,CUR_PB,CUR_PS,CUR_CANUSE_PB,CUR_CANUSE_PS,DAY_PB,DAY_PS,DAY_COV_PB_FROZ,DAY_COV_PB,DAY_COV_PS_FROZ,DAY_COV_PS,PB_OPEN_AVG_PRICE,PS_OPEN_AVG_PRICE,PB_AVG_PRICE,PS_AVG_PRICE,PB_MARGIN,PS_MARGIN,DAY_PB_SURPLUS,DAY_PS_SURPLUS,LAST_SETTLE_PRICE,DAY_SETTLE_PRICE,VARIETY from t_position");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2797,47 +2951,43 @@ bool CInitTrade::ReadCustPosition()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTxAcc ,m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sTxAcc , sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(0).asString());
 			info.nContractNo = m_pSqlCmd->Field(1).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sSeatNo,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sTradeCode,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sShFlag,m_pSqlCmd->Field(5).asString());
-			info.nLastPB =m_pSqlCmd->Field(6).asLong();
-			info.nLastPS =m_pSqlCmd->Field(7).asLong();
-			info.nCurPB =m_pSqlCmd->Field(8).asLong();
-			info.nCurPS =m_pSqlCmd->Field(9).asLong();
-			info.nCurCanUsePB =m_pSqlCmd->Field(10).asLong();
-			info.nCurCanUsePS =m_pSqlCmd->Field(11).asLong();
-			info.nDayPB =m_pSqlCmd->Field(12).asLong();
-			info.nDayPS =m_pSqlCmd->Field(13).asLong();
-			info.nDAY_COV_PB_Froze =m_pSqlCmd->Field(14).asLong();
-			info.nDAY_COV_PB =m_pSqlCmd->Field(15).asLong();
-			info.nDAY_COV_PS_Froze =m_pSqlCmd->Field(16).asLong();
-			info.nDAY_COV_PS =m_pSqlCmd->Field(17).asLong();
-			info.nDAY_DELI_PB_Froze =m_pSqlCmd->Field(18).asLong();
-			info.nDAY_DELI_PB =m_pSqlCmd->Field(19).asLong();
-			info.nDAY_DELI_PS_Froze =m_pSqlCmd->Field(20).asLong();
-			info.nDAY_DELI_PS =m_pSqlCmd->Field(21).asLong();
-			info.nDAY_MIDD_PB =m_pSqlCmd->Field(22).asLong();
-			info.nDAY_MIDD_PS =m_pSqlCmd->Field(23).asLong();
-			info.dPB_OAvp =m_pSqlCmd->Field(24).asDouble();
-			info.dPS_OAvp =m_pSqlCmd->Field(25).asDouble();
-			info.dPB_Avp =m_pSqlCmd->Field(26).asDouble();
-			info.dPS_Avp =m_pSqlCmd->Field(27).asDouble();
-			info.dPB_Margin =m_pSqlCmd->Field(28).asDouble();
-			info.dPS_Margin =m_pSqlCmd->Field(29).asDouble();
-			info.dDAY_PB_SURPLUS =m_pSqlCmd->Field(30).asDouble();
-			info.dDAY_PS_SURPLUS =m_pSqlCmd->Field(31).asDouble();
-			info.dLAST_SETTLE_PRICE = m_pSqlCmd->Field(32).asDouble();
-			info.dSETTLE_PRICE = m_pSqlCmd->Field(33).asDouble();
-			info.nVarietyId = m_pSqlCmd->Field(34).asLong();
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sContractName, sizeof(info.sContractName) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sSeatNo, sizeof(info.sSeatNo) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sTradeCode, sizeof(info.sTradeCode) - 1, m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sShFlag, sizeof(info.sShFlag) - 1, m_pSqlCmd->Field(6).asString());
+			info.nLastPB =m_pSqlCmd->Field(7).asNumeric();
+			info.nLastPS =m_pSqlCmd->Field(8).asNumeric();
+			info.nCurPB =m_pSqlCmd->Field(9).asNumeric();
+			info.nCurPS =m_pSqlCmd->Field(10).asNumeric();
+			info.nCurCanUsePB =m_pSqlCmd->Field(11).asNumeric();
+			info.nCurCanUsePS =m_pSqlCmd->Field(12).asNumeric();
+			info.nDayPB =m_pSqlCmd->Field(13).asNumeric();
+			info.nDayPS =m_pSqlCmd->Field(14).asNumeric();
+			info.nDAY_COV_PB_Froze =m_pSqlCmd->Field(15).asNumeric();
+			info.nDAY_COV_PB =m_pSqlCmd->Field(16).asNumeric();
+			info.nDAY_COV_PS_Froze =m_pSqlCmd->Field(17).asNumeric();
+			info.nDAY_COV_PS = m_pSqlCmd->Field(18).asNumeric();
+			
+			info.dPB_OAvp =m_pSqlCmd->Field(19).asDouble();
+			info.dPS_OAvp =m_pSqlCmd->Field(20).asDouble();
+			info.dPB_Avp =m_pSqlCmd->Field(21).asDouble();
+			info.dPS_Avp =m_pSqlCmd->Field(22).asDouble();
+			info.dPB_Margin =m_pSqlCmd->Field(23).asDouble();
+			info.dPS_Margin =m_pSqlCmd->Field(24).asDouble();
+			info.dDAY_PB_SURPLUS =m_pSqlCmd->Field(25).asDouble();
+			info.dDAY_PS_SURPLUS =m_pSqlCmd->Field(26).asDouble();
+			info.dLAST_SETTLE_PRICE = m_pSqlCmd->Field(27).asDouble();
+			info.dSETTLE_PRICE = m_pSqlCmd->Field(28).asDouble();
+			info.nVarietyId = m_pSqlCmd->Field(29).asLong();
 			if (m_pMemDb->m_pDbTrader.m_pPosition.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_POSI [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_position [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"持仓表 CUST_POSI [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"持仓表 t_position [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -2881,7 +3031,7 @@ bool CInitTrade::ReadOrder()
 	//委托另外同步至数据库，防止重启时得不到报单，成交回来时取不到对应的信息。
 	S_MDB_ORDER_INFO info;
 	S_MDB_CONTRACT_INFO *pc=NULL;
-	sprintf(m_sSql,"select TX_ACC,EX_CODE,SEAT_NO,TX_CODE,CONTRACT_NO,CONTRACT_CODE,CLIENT_SERIAL,LOCAL_NO,SYSTEM_NO,ORDER_NUM,ORDER_PRICE,REMAIN_NUM,EO_FLAG,BS_FLAG,SH_FLAG,TXDATE,AMT,FROZ_AMT,EX_FARE,TX_TYPE,CMD_TYPE,CMD_ATTR,FORCE_FLAG,ORDER_STATUS,CANCEL_FLAG,ANS_TIME,ORDER_CHANNEL,ACC_ORG,TX_ORG,ORDER_OPER,CANCEL_CHANNEL,CANCEL_OPER,CANCEL_TIME,ORDER_RSP,FROZ_USEAMT,FROZ_OUTAMT,CANCEL_NUM,DONE_AVP,VARIETY from ORDER_INFO order by SYSTEM_NO");
+	sprintf(m_sSql,"select TX_ACC,EX_CODE,SEAT_NO,TX_CODE,SECU_NO,SECU_CODE,SECU_NAME,CLIENT_SERIAL,LOCAL_NO,SYSTEM_NO,ORDER_VOL,ORDER_PRICE,REMAIN_VOL,EO_FLAG,BS_FLAG,SH_FLAG,TXDATE,AMT,FROZ_AMT,EX_FEE,TX_TYPE,CMD_TYPE,CMD_ATTR,FORCE_FLAG,ORDER_STATUS,CANCEL_FLAG,ANS_TIME,ORDER_CHANNEL,ACC_ORG,TX_ORG,ORDER_OPER,CANCEL_CHANNEL,CANCEL_OPER,CANCEL_TIME,ORDER_RSP,FROZ_USEAMT,FROZ_OUTAMT,CANCEL_VOL,DONE_AVP,VARIETY,RULE_ALGO_CODE,CLEAR_SPEED,DELIVERY_TYPE,CLEAR_METHOD,MATCH_ACC from t_order_info order by SYSTEM_NO");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2898,51 +3048,58 @@ bool CInitTrade::ReadOrder()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTxAcc ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sExchCode,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sSeatNo,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sTxCode,m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sTxAcc , sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sExchCode, sizeof(info.sExchCode) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sSeatNo, sizeof(info.sSeatNo) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sTxCode, sizeof(info.sTxCode) - 1, m_pSqlCmd->Field(3).asString());
 			info.nContractNo = m_pSqlCmd->Field(4).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(5).asString());
-			strcpy(info.sClientSerial,m_pSqlCmd->Field(6).asString());
-			strcpy(info.sLocalSerial,m_pSqlCmd->Field(7).asString());
-			strcpy(info.sSystemNo,m_pSqlCmd->Field(8).asString());
-			info.nOrderNum =m_pSqlCmd->Field(9).asLong();
-			info.dOrderPrice =m_pSqlCmd->Field(10).asDouble();
-			info.nRemainNum =m_pSqlCmd->Field(11).asLong();
-			strcpy(info.sEoFlag ,m_pSqlCmd->Field(12).asString());
-			strcpy(info.sBsFlag ,m_pSqlCmd->Field(13).asString());
-			strcpy(info.sShFlag ,m_pSqlCmd->Field(14).asString());
-			strcpy(info.sTxDate ,m_pSqlCmd->Field(15).asString());
-			info.dAmt =m_pSqlCmd->Field(16).asDouble();
-			info.dFrozAmt =m_pSqlCmd->Field(17).asDouble();
-			info.dExFee =m_pSqlCmd->Field(18).asDouble();
-			strcpy(info.sTxType ,m_pSqlCmd->Field(19).asString());
-			strcpy(info.sCmdType ,m_pSqlCmd->Field(20).asString());
-			strcpy(info.sCmdAttr,m_pSqlCmd->Field(21).asString());
-			strcpy(info.sForceFlag ,m_pSqlCmd->Field(22).asString());
-			strcpy(info.sOrderStatus ,m_pSqlCmd->Field(23).asString());
-			strcpy(info.sCancelFlag ,m_pSqlCmd->Field(24).asString());
-			strcpy(info.sAnsTime ,m_pSqlCmd->Field(25).asString());
-			strcpy(info.sOrderChannel ,m_pSqlCmd->Field(26).asString());
-			strcpy(info.sAccOrg ,m_pSqlCmd->Field(27).asString());
-			strcpy(info.sTxOrg ,m_pSqlCmd->Field(28).asString());
-			strcpy(info.sOrderOper ,m_pSqlCmd->Field(29).asString());
-			strcpy(info.sCancelChannel ,m_pSqlCmd->Field(30).asString());
-			strcpy(info.sCancelOper ,m_pSqlCmd->Field(31).asString());
-			strcpy(info.sCancelTime ,m_pSqlCmd->Field(32).asString());
-			strcpy(info.sOrderRsp ,m_pSqlCmd->Field(33).asString());
-			info.dFrozUseamt = m_pSqlCmd->Field(34).asDouble();
-			info.dFrozOutamt = m_pSqlCmd->Field(35).asDouble();
-			info.nCancelNum = m_pSqlCmd->Field(36).asLong();
-			info.dDoneAvp = m_pSqlCmd->Field(37).asDouble();
-			info.nVarietyId = m_pSqlCmd->Field(38).asLong();
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1, m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sContractName, sizeof(info.sContractName) - 1, m_pSqlCmd->Field(6).asString());
+
+			CBF_Tools::StringCopy(info.sClientSerial, sizeof(info.sClientSerial) - 1, m_pSqlCmd->Field(7).asString());
+			CBF_Tools::StringCopy(info.sLocalSerial, sizeof(info.sLocalSerial) - 1, m_pSqlCmd->Field(8).asString());
+			CBF_Tools::StringCopy(info.sSystemNo, sizeof(info.sSystemNo) - 1, m_pSqlCmd->Field(9).asString());
+			info.nOrderNum =m_pSqlCmd->Field(10).asLong();
+			info.dOrderPrice =m_pSqlCmd->Field(11).asDouble();
+			info.nRemainNum =m_pSqlCmd->Field(12).asLong();
+			CBF_Tools::StringCopy(info.sEoFlag , sizeof(info.sEoFlag) - 1, m_pSqlCmd->Field(13).asString());
+			CBF_Tools::StringCopy(info.sBsFlag , sizeof(info.sBsFlag) - 1, m_pSqlCmd->Field(14).asString());
+			CBF_Tools::StringCopy(info.sShFlag , sizeof(info.sShFlag) - 1, m_pSqlCmd->Field(15).asString());
+			CBF_Tools::StringCopy(info.sTxDate , sizeof(info.sTxDate) - 1, m_pSqlCmd->Field(16).asString());
+			info.dAmt =m_pSqlCmd->Field(17).asDouble();
+			info.dFrozAmt =m_pSqlCmd->Field(18).asDouble();
+			info.dExFee =m_pSqlCmd->Field(19).asDouble();
+			CBF_Tools::StringCopy(info.sTxType , sizeof(info.sTxType) - 1, m_pSqlCmd->Field(20).asString());
+			CBF_Tools::StringCopy(info.sCmdType , sizeof(info.sCmdType) - 1, m_pSqlCmd->Field(21).asString());
+			CBF_Tools::StringCopy(info.sCmdAttr, sizeof(info.sCmdAttr) - 1, m_pSqlCmd->Field(22).asString());
+			CBF_Tools::StringCopy(info.sForceFlag , sizeof(info.sForceFlag) - 1, m_pSqlCmd->Field(23).asString());
+			CBF_Tools::StringCopy(info.sOrderStatus , sizeof(info.sOrderStatus) - 1, m_pSqlCmd->Field(24).asString());
+			CBF_Tools::StringCopy(info.sCancelFlag , sizeof(info.sCancelFlag) - 1, m_pSqlCmd->Field(25).asString());
+			CBF_Tools::StringCopy(info.sAnsTime , sizeof(info.sAnsTime) - 1, m_pSqlCmd->Field(26).asString());
+			CBF_Tools::StringCopy(info.sOrderChannel , sizeof(info.sOrderChannel) - 1, m_pSqlCmd->Field(27).asString());
+			CBF_Tools::StringCopy(info.sAccOrg , sizeof(info.sAccOrg) - 1, m_pSqlCmd->Field(28).asString());
+			CBF_Tools::StringCopy(info.sTxOrg , sizeof(info.sTxOrg) - 1, m_pSqlCmd->Field(29).asString());
+			CBF_Tools::StringCopy(info.sOrderOper , sizeof(info.sOrderOper) - 1, m_pSqlCmd->Field(30).asString());
+			CBF_Tools::StringCopy(info.sCancelChannel , sizeof(info.sCancelChannel) - 1, m_pSqlCmd->Field(31).asString());
+			CBF_Tools::StringCopy(info.sCancelOper , sizeof(info.sCancelOper) - 1, m_pSqlCmd->Field(32).asString());
+			CBF_Tools::StringCopy(info.sCancelTime , sizeof(info.sCancelTime) - 1, m_pSqlCmd->Field(33).asString());
+			CBF_Tools::StringCopy(info.sOrderRsp , sizeof(info.sOrderRsp) - 1, m_pSqlCmd->Field(34).asString());
+			info.dFrozUseamt = m_pSqlCmd->Field(35).asDouble();
+			info.dFrozOutamt = m_pSqlCmd->Field(36).asDouble();
+			info.nCancelNum = m_pSqlCmd->Field(37).asLong();
+			info.dDoneAvp = m_pSqlCmd->Field(38).asDouble();
+			info.nVarietyId = m_pSqlCmd->Field(39).asLong();
+			CBF_Tools::StringCopy(info.sRuleAlgoCode, sizeof(info.sRuleAlgoCode) - 1, m_pSqlCmd->Field(40).asString());
+            info.nCancelNum = m_pSqlCmd->Field(41).asLong();
+            info.dDoneAvp = m_pSqlCmd->Field(42).asDouble();
+            info.nClearSpeed = m_pSqlCmd->Field(43).asLong();
+			CBF_Tools::StringCopy(info.sMatchAcc, sizeof(info.sMatchAcc) - 1, m_pSqlCmd->Field(44).asString());
 			if (m_pMemDb->m_pDbTrader.m_pOrder.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"ORDER_INFO [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_order_info [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"报单表 ORDER_INFO [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"报单表 t_order_info [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -2977,7 +3134,7 @@ bool CInitTrade::ReadDoneMatch()
 	bool bret;
 	//内存里面要根据资金持仓+成交出入金重新计算资金等。
 	S_MDB_DONE_INFO info;
-	sprintf(m_sSql,"select DONE_NO,SYSTEM_NO,EX_CODE,TX_CODE,LOCAL_NO,TX_ACC,DONE_DATE,DONE_TIME,CONTRACT_NO,CONTRACT_CODE,DONE_PRICE,DONE_QTY,BS_FLAG,SH_FLAG,EO_FLAG,TX_TYPE,ORDER_TYPE,DONE_ATTR,AMT,EX_FEE,MEMBER_FEE,EX_MARGIN,MEMBER_MARGIN,FLOAT_SURPLUS,COV_SURPLUS,TX_ORG,ACC_ORG,FORCE_FLAG,ORDER_CHANNEL,ORDER_OPER,SYSTEM_DATE,SEAT_NO,VARIETY from DONE_INFO order by DONE_NO");
+	sprintf(m_sSql,"select DONE_NO,SYSTEM_NO,EX_CODE,SEAT_NO,TX_CODE,LOCAL_NO,TX_ACC,DONE_DATE,DONE_TIME,SECU_NO,SECU_CODE,SECU_NAME,DONE_PRICE,DONE_QTY,BS_FLAG,SH_FLAG,EO_FLAG,ORDER_PRICE,TX_TYPE,CMD_TYPE,CMD_ATTR,AMT,EX_FEE,MEMBER_FEE,EX_MARGIN,MEMBER_MARGIN,FLOAT_SURPLUS,COV_SURPLUS,TX_ORG,ACC_ORG,FORCE_FLAG,ORDER_CHANNEL,ORDER_OPER,SYSTEM_DATE,VARIETY,RULE_ALGO_CODE,CLEAR_SPEED from t_match_info order by DONE_NO");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -2995,45 +3152,49 @@ bool CInitTrade::ReadDoneMatch()
 		while (bret)
 		{
 			bzero(&info,sizeof(S_MDB_DONE_INFO));
-			strcpy(info.sDoneNo ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sSystemNo,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sExchCode,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sTxCode,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sLocalNo,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sTxAcc,m_pSqlCmd->Field(5).asString());
-			strcpy(info.sDoneDate,m_pSqlCmd->Field(6).asString());
-			strcpy(info.sDoneTime,m_pSqlCmd->Field(7).asString());
-			info.nContractNo =m_pSqlCmd->Field(8).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(9).asString());
-			info.dDonePrice =m_pSqlCmd->Field(10).asDouble();
-			info.nDoneNum = m_pSqlCmd->Field(11).asLong();
-			strcpy(info.sBsFlag ,m_pSqlCmd->Field(12).asString());
-			strcpy(info.sShFlag ,m_pSqlCmd->Field(13).asString());
-			strcpy(info.sEoFlag ,m_pSqlCmd->Field(14).asString());
-			strcpy(info.sTxType ,m_pSqlCmd->Field(15).asString());
-			strcpy(info.sCmdType ,m_pSqlCmd->Field(16).asString());
-			strcpy(info.sCmdAttr ,m_pSqlCmd->Field(17).asString());
-			info.dAmt =m_pSqlCmd->Field(18).asDouble();
-			info.dExFee =m_pSqlCmd->Field(19).asDouble();
-			info.dMemberFee =m_pSqlCmd->Field(20).asDouble();
-			info.dExMargin =m_pSqlCmd->Field(21).asDouble();
-			info.dMemberMargin =m_pSqlCmd->Field(22).asDouble();
-			info.dFloatSurplus =m_pSqlCmd->Field(23).asDouble();
-			info.dCovSurplus =m_pSqlCmd->Field(24).asDouble();
-			strcpy(info.sTxOrg ,m_pSqlCmd->Field(25).asString());
-			strcpy(info.sAccOrg ,m_pSqlCmd->Field(26).asString());
-			strcpy(info.sForceFlag ,m_pSqlCmd->Field(27).asString());
-			strcpy(info.sOrderChannel ,m_pSqlCmd->Field(28).asString());
-			strcpy(info.sOrderOper ,m_pSqlCmd->Field(29).asString());
-			strcpy(info.sSystemDate ,m_pSqlCmd->Field(30).asString());
-			strcpy(info.sSeatNo ,m_pSqlCmd->Field(31).asString());
-			info.nVarietyId = m_pSqlCmd->Field(32).asLong();
+			CBF_Tools::StringCopy(info.sDoneNo , sizeof(info.sDoneNo) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sSystemNo, sizeof(info.sSystemNo) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sExchCode, sizeof(info.sExchCode) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sSeatNo, sizeof(info.sSeatNo) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sTxCode, sizeof(info.sTxCode) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sLocalNo, sizeof(info.sLocalNo) - 1, m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sTxAcc, sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(6).asString());
+			CBF_Tools::StringCopy(info.sDoneDate, sizeof(info.sDoneDate) - 1, m_pSqlCmd->Field(7).asString());
+			CBF_Tools::StringCopy(info.sDoneTime, sizeof(info.sDoneTime) - 1, m_pSqlCmd->Field(8).asString());
+			info.nContractNo =m_pSqlCmd->Field(9).asLong();
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1, m_pSqlCmd->Field(10).asString());
+			CBF_Tools::StringCopy(info.sContractName, sizeof(info.sContractName) - 1, m_pSqlCmd->Field(11).asString());
+			info.dDonePrice =m_pSqlCmd->Field(12).asDouble();
+			info.nDoneNum = m_pSqlCmd->Field(13).asLong();
+			CBF_Tools::StringCopy(info.sBsFlag , sizeof(info.sBsFlag) - 1, m_pSqlCmd->Field(14).asString());
+			CBF_Tools::StringCopy(info.sShFlag , sizeof(info.sShFlag) - 1, m_pSqlCmd->Field(15).asString());
+			CBF_Tools::StringCopy(info.sEoFlag , sizeof(info.sEoFlag) - 1, m_pSqlCmd->Field(16).asString());
+			info.dOrderPrice = m_pSqlCmd->Field(17).asDouble();
+			CBF_Tools::StringCopy(info.sTxType , sizeof(info.sTxType) - 1, m_pSqlCmd->Field(18).asString());
+			CBF_Tools::StringCopy(info.sCmdType , sizeof(info.sCmdType) - 1, m_pSqlCmd->Field(19).asString());
+			CBF_Tools::StringCopy(info.sCmdAttr , sizeof(info.sCmdAttr) - 1, m_pSqlCmd->Field(20).asString());
+			info.dAmt =m_pSqlCmd->Field(21).asDouble();
+			info.dExFee =m_pSqlCmd->Field(22).asDouble();
+			info.dMemberFee =m_pSqlCmd->Field(23).asDouble();
+			info.dExMargin =m_pSqlCmd->Field(24).asDouble();
+			info.dMemberMargin =m_pSqlCmd->Field(25).asDouble();
+			info.dFloatSurplus =m_pSqlCmd->Field(26).asDouble();
+			info.dCovSurplus =m_pSqlCmd->Field(27).asDouble();
+			CBF_Tools::StringCopy(info.sTxOrg , sizeof(info.sCmdAttr) - 1, m_pSqlCmd->Field(28).asString());
+			CBF_Tools::StringCopy(info.sAccOrg , sizeof(info.sCmdAttr) - 1, m_pSqlCmd->Field(29).asString());
+			CBF_Tools::StringCopy(info.sForceFlag , sizeof(info.sCmdAttr) - 1, m_pSqlCmd->Field(30).asString());
+			CBF_Tools::StringCopy(info.sOrderChannel , sizeof(info.sCmdAttr) - 1, m_pSqlCmd->Field(31).asString());
+			CBF_Tools::StringCopy(info.sOrderOper , sizeof(info.sCmdAttr) - 1, m_pSqlCmd->Field(32).asString());
+			CBF_Tools::StringCopy(info.sSystemDate , sizeof(info.sCmdAttr) - 1, m_pSqlCmd->Field(33).asString());
+			info.nVarietyId = m_pSqlCmd->Field(34).asLong();
+			CBF_Tools::StringCopy(info.sRuleAlgoCode, sizeof(info.sCmdAttr) - 1, m_pSqlCmd->Field(35).asString());
+			info.nClearSpeed = m_pSqlCmd->Field(36).asLong();
 			if (m_pMemDb->m_pDbTrader.m_pDone.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"DONE_INFO [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_match_info [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"成交表 DONE_INFO [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"成交表 t_match_info [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -3067,7 +3228,7 @@ bool CInitTrade::ReadFundFlow()
 	bool bret;
 	int rid;
 	S_MDB_FUND_FLOW info;
-	sprintf(m_sSql,"select TX_DATE,TX_ACC,TX_SERIAL,BANK_ACC,BANK_NAME,CURRENCY,AMT,FUND_FLAG,LAST_AMT,CUR_AMT from FUND_FLOW where IS_REC='1' ");
+	sprintf(m_sSql,"select TX_DATE,TX_ACC,TX_SERIAL,BANK_ACC,BANK_NAME,CURRENCY,AMT,FUND_FLAG,LAST_AMT,CUR_AMT from t_tradeacc_fund_flow where IS_REC='1' ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -3084,22 +3245,22 @@ bool CInitTrade::ReadFundFlow()
 		bret = m_pSqlCmd->FetchNext();
 		while (bret)
 		{
-			strcpy(info.sTxDate ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sTxAcc,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sTxSerial,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sBankAcc,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sBankName,m_pSqlCmd->Field(4).asString());
-			strcpy(info.sCurrency,m_pSqlCmd->Field(5).asString());
+			CBF_Tools::StringCopy(info.sTxDate , sizeof(info.sTxDate) - 1, m_pSqlCmd->Field(0).asString());
+			CBF_Tools::StringCopy(info.sTxAcc, sizeof(info.sTxAcc) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sTxSerial, sizeof(info.sTxSerial) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sBankAcc, sizeof(info.sBankAcc) - 1, m_pSqlCmd->Field(3).asString());
+			CBF_Tools::StringCopy(info.sBankName, sizeof(info.sBankName) - 1, m_pSqlCmd->Field(4).asString());
+			CBF_Tools::StringCopy(info.sCurrency, sizeof(info.sCurrency) - 1, m_pSqlCmd->Field(5).asString());
 			info.dAmt = m_pSqlCmd->Field(6).asDouble();
-			strcpy(info.sFundFlag,m_pSqlCmd->Field(7).asString());
+			CBF_Tools::StringCopy(info.sFundFlag, sizeof(info.sFundFlag) - 1, m_pSqlCmd->Field(7).asString());
 			info.dLastAmt =m_pSqlCmd->Field(8).asDouble();
 			info.dCurAmt =m_pSqlCmd->Field(9).asDouble();
 			if (m_pMemDb->m_pDbTrader.m_pFundFlow.Insert(info) <0 )
 			{
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"FUND_FLOW [%s] repeat",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"t_tradeacc_fund_flow [%s] repeat",info.sTxAcc);
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"出入金表 FUND_FLOW [%s]重复",info.sTxAcc);
+				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"出入金表 t_tradeacc_fund_flow [%s]重复",info.sTxAcc);
 #endif
 				return false;
 			}
@@ -3214,7 +3375,7 @@ bool CInitTrade::ReadOptionModel()
 	int rid;
 	S_MDB_OPTION_CONTRACT_PRICE_MODEL info;
 	
-	sprintf(m_sSql,"select CONTRACT_NO,CONTRACT_CODE,EXCH_DATE,SETTLE_PRICE,VOLATILITY,THEORETICAL_PRICE,DELTA,GAMMA,VEGA,THETA,RHO,IMPLIED_VOLATILITY_BS,IMPLIED_VOLATILITY_GARCH from OPTION_CONTRACT_PRICE_MODEL  order by EXCH_DATE desc ");
+	sprintf(m_sSql,"select SECU_NO,SECU_CODE,EXCH_DATE,SETTLE_PRICE,VOLATILITY,THEORETICAL_PRICE,DELTA,GAMMA,VEGA,THETA,RHO,IMPLIED_VOLATILITY_BS,IMPLIED_VOLATILITY_GARCH from risk_option_price_model  order by EXCH_DATE desc ");
 	try
 	{
 		if (!m_pSqlCmd->setCommandText(m_sSql))
@@ -3232,17 +3393,17 @@ bool CInitTrade::ReadOptionModel()
 		if ( !bret )
 		{
 #ifdef _ENGLISH_
-			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"Table OPTION_CONTRACT_PRICE_MODEL no data");
+			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"Table risk_option_price_model no data");
 #else
-			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"期权价格模型表OPTION_CONTRACT_PRICE_MODEL表无数据 ");
+			m_pLog->LogMp(LOG_WARNNING,__FILE__,__LINE__,"期权价格模型表risk_option_price_model表无数据 ");
 #endif
 			return true;
 		}
 		while (bret)
 		{
 			info.nContractNo = m_pSqlCmd->Field(0).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sSettleDate,m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sContractCode, sizeof(info.sContractCode) - 1, m_pSqlCmd->Field(1).asString());
+			CBF_Tools::StringCopy(info.sSettleDate, sizeof(info.sSettleDate) - 1, m_pSqlCmd->Field(2).asString());
 			info.dSettlePrice = m_pSqlCmd->Field(3).asDouble();
 			info.dHvDes = m_pSqlCmd->Field(4).asDouble();
 			info.dPrice = m_pSqlCmd->Field(5).asDouble();
@@ -3269,198 +3430,56 @@ bool CInitTrade::ReadOptionModel()
 	}
 	return true;
 }
-bool CInitTrade::ReadCustPosiDiff()
+
+bool CInitTrade::ReadCodeTable()
 {
-	bool bret;
+    bool bret;
+    int rid;
+    S_MDB_CODE_TABLE info;
 
-	S_MDB_DIFF_POSI info;
-	sprintf(m_sSql,"select TX_DATE,TX_ACC,SEAT_ID,SH_FLAG,BS_FLAG,CONTRACT_NO,CONTRACT_CODE,DIFF_QTY,TX_SERIAL from CUST_POSI_DIFF ");
-	try
-	{
-		if (!m_pSqlCmd->setCommandText(m_sSql))
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"setCommandText error <%s>",m_sSql);
-			return false;
-		}
-		if (!m_pSqlCmd->Execute())
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Execute <%s> error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
-			return false;
-		}
+    sprintf(m_sSql, "select CODE_TYPE,FLAG,CODE_ID,CODE_DESC,VALUE_TYPE from sys_code_table  order by CODE_TYPE desc ");
+    try
+    {
+        if (!m_pSqlCmd->setCommandText(m_sSql))
+        {
+            m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "setCommandText error <%s>", m_sSql);
+            return false;
+        }
+        if (!m_pSqlCmd->Execute())
+        {
+            m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "Execute <%s> error %s", m_sSql, m_pSqlCmd->GetCmdErrInfo());
+            return false;
+        }
 
-		bret = m_pSqlCmd->FetchNext();
-		while (bret)
-		{
-			strcpy(info.sTxDate ,m_pSqlCmd->Field(0).asString());
-			strcpy(info.sTxAcc,m_pSqlCmd->Field(1).asString());
-			strcpy(info.sSeatNo,m_pSqlCmd->Field(2).asString());
-			strcpy(info.sShFlag,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sBsFlag,m_pSqlCmd->Field(4).asString());
-			info.nContractNo  = m_pSqlCmd->Field(5).asLong();
-			strcpy(info.sContractCode,m_pSqlCmd->Field(6).asString());
-			info.nDiffQty  = m_pSqlCmd->Field(7).asLong();
-			strcpy(info.sSerial,m_pSqlCmd->Field(8).asString());
-
-			if (m_pMemDb->m_pDbTrader.m_pDiffPosi.Insert(info) <0 )
-			{
+        bret = m_pSqlCmd->FetchNext();
+        if (!bret)
+        {
 #ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"CUST_POSI_DIFF [%s %s] repeat",info.sTxDate,info.sSerial);
+            m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "Table sys_code_table no data");
 #else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"持仓轧差表 CUST_POSI_DIFF [%s %s]重复",info.sTxDate,info.sSerial);
+            m_pLog->LogMp(LOG_WARNNING, __FILE__, __LINE__, "码表 sys_code_table表无数据 ");
 #endif
-				return false;
-			}
-			bret = m_pSqlCmd->FetchNext();
-		}
-	}
-	catch (...)
-	{
+            return false;
+        }
+        while (bret)
+        {
+			CBF_Tools::StringCopy(info.sCodeType, sizeof(info.sCodeType) - 1, m_pSqlCmd->Field(0).asString());
+            CBF_Tools::StringCopy(info.sCharFlag, sizeof(info.sCharFlag) - 1, m_pSqlCmd->Field(1).asString());
+            CBF_Tools::StringCopy(info.sCodeId, sizeof(info.sCodeId) - 1, m_pSqlCmd->Field(2).asString());
+			CBF_Tools::StringCopy(info.sCodeDesc, sizeof(info.sCodeDesc) - 1, m_pSqlCmd->Field(3).asString());
+            info.nValueType = m_pSqlCmd->Field(4).asLong();
+            rid = m_pMemDb->m_pDbBaseinfo.m_pCodeTable.Insert(info);
+            bret = m_pSqlCmd->FetchNext();
+        }
+    }
+    catch (...)
+    {
 #ifdef _ENGLISH_
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Database operator Exception!");
+        m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "Database operator Exception!");
 #else
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"数据库操作异常");
+        m_pLog->LogMp(LOG_ERROR_FAULT, __FILE__, __LINE__, "数据库操作异常");
 #endif
-		return false;
-	}
-	return true;
-}
-
-bool CInitTrade::ReadBrokerageInfo()
-{
-
-	bool bret;
-
-	S_MDB_BROKERAGE_INFO info;
-	sprintf(m_sSql,"select BROKERAGE_CODE,NAME,PG_DREBSVRID,ORGAN_CODE,CLEAR_DATE,CLEAR_FLAG from BROKERAGE_INFO ");
-	try
-	{
-		if (!m_pSqlCmd->setCommandText(m_sSql))
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"setCommandText error <%s>",m_sSql);
-			return false;
-		}
-		if (!m_pSqlCmd->Execute())
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Execute <%s> error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
-			return false;
-		}
-
-		bret = m_pSqlCmd->FetchNext();
-		while (bret)
-		{
-			info.nSysCode  = m_pSqlCmd->Field(0).asLong();
-			strcpy(info.sSysName,m_pSqlCmd->Field(1).asString());
-			info.nSvrId  = m_pSqlCmd->Field(2).asLong();
-			strcpy(info.sOrgCode,m_pSqlCmd->Field(3).asString());
-			strcpy(info.sClearDate,m_pSqlCmd->Field(4).asString());
-			info.nClearFlag  = m_pSqlCmd->Field(5).asLong();
-			if (m_pMemDb->m_pDbSet.m_pBrokerage.Insert(info) <0 )
-			{
-#ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"BROKERAGE_INFO [%d %s] repeat",info.nSysCode,info.sSysName);
-#else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"经纪信息 BROKERAGE_INFO [%d %s]重复",info.nSysCode,info.sSysName);
-#endif
-				return false;
-			}
-			bret = m_pSqlCmd->FetchNext();
-		}
-	}
-	catch (...)
-	{
-#ifdef _ENGLISH_
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Database operator Exception!");
-#else
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"数据库操作异常");
-#endif
-		return false;
-	}
-	S_MDB_BROKERAGE_EXCHANGE exchinfo;
-	sprintf(m_sSql,"select BROKERAGE_CODE,EXCH_CODE,SEAT_NO,DREBSVRID from BROKERAGE_EXCHANGE ");
-	try
-	{
-		if (!m_pSqlCmd->setCommandText(m_sSql))
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"setCommandText error <%s>",m_sSql);
-			return false;
-		}
-		if (!m_pSqlCmd->Execute())
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Execute <%s> error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
-			return false;
-		}
-
-		bret = m_pSqlCmd->FetchNext();
-		while (bret)
-		{
-			exchinfo.nSysCode  = m_pSqlCmd->Field(0).asLong();
-			strcpy(exchinfo.sExchCode,m_pSqlCmd->Field(1).asString());
-			strcpy(exchinfo.sSeatNo,m_pSqlCmd->Field(2).asString());
-			exchinfo.nSvrId = m_pSqlCmd->Field(3).asLong();
-			
-			if (m_pMemDb->m_pDbSet.m_pBrokerageExchange.Insert(exchinfo) <0 )
-			{
-#ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"BROKERAGE_EXCHANGE [%d %s %s] repeat",exchinfo.nSysCode,exchinfo.sExchCode,exchinfo.sSeatNo);
-#else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"经纪交易所信息 BROKERAGE_EXCHANGE [%d %s %s]重复",exchinfo.nSysCode,exchinfo.sExchCode,exchinfo.sSeatNo);
-#endif
-				return false;
-			}
-			bret = m_pSqlCmd->FetchNext();
-		}
-	}
-	catch (...)
-	{
-#ifdef _ENGLISH_
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Database operator Exception!");
-#else
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"数据库操作异常");
-#endif
-		return false;
-	}
-	S_MDB_BROKERAGE_PG pginfo;
-	sprintf(m_sSql,"select BROKERAGE_CODE,PG_BROKERID,DREBSVRID from BROKERAGE_PG ");
-	try
-	{
-		if (!m_pSqlCmd->setCommandText(m_sSql))
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"setCommandText error <%s>",m_sSql);
-			return false;
-		}
-		if (!m_pSqlCmd->Execute())
-		{
-			m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Execute <%s> error %s",m_sSql,m_pSqlCmd->GetCmdErrInfo());
-			return false;
-		}
-
-		bret = m_pSqlCmd->FetchNext();
-		while (bret)
-		{
-			pginfo.nSysCode  = m_pSqlCmd->Field(0).asLong();
-			strcpy(pginfo.sBrokerId,m_pSqlCmd->Field(1).asString());
-			pginfo.nSvrId = m_pSqlCmd->Field(2).asLong();
-
-			if (m_pMemDb->m_pDbSet.m_pBrokeragePg.Insert(pginfo) <0 )
-			{
-#ifdef _ENGLISH_
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"BROKERAGE_PG [%d %s] repeat",pginfo.nSysCode,pginfo.sBrokerId);
-#else
-				m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"经纪交易所信息 BROKERAGE_PG [%d %s]重复",pginfo.nSysCode,pginfo.sBrokerId);
-#endif
-				return false;
-			}
-			bret = m_pSqlCmd->FetchNext();
-		}
-	}
-	catch (...)
-	{
-#ifdef _ENGLISH_
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"Database operator Exception!");
-#else
-		m_pLog->LogMp(LOG_ERROR_FAULT,__FILE__,__LINE__,"数据库操作异常");
-#endif
-		return false;
-	}
-	return true;
+        return false;
+    }
+    return true;
 }

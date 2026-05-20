@@ -475,14 +475,6 @@ bool CProcThread::Init(CBF_Xml *xml)
 		
 		try
 		{
-// 			tmp.iProcBase->m_pClientLink = m_pClientLink;
-// 			tmp.iProcBase->m_pExchLink = m_pExchLink;
-// 			tmp.iProcBase->m_pMemDb = m_pMemDb;
-//			tmp.iProcBase->m_pMemPool = m_pMemPool;
-// 			tmp.iProcBase->m_pSqlCmd = m_pSqlCmd;
-// 			tmp.iProcBase->m_pXdp = &m_pXdp;
-//			tmp.iProcBase->m_pLog = m_pLog;
-//			tmp.iProcBase->m_nIndex = m_nIndex;
 			tmp.iProcBase->g_nSvrHostStatus = g_nSvrHostStatus;
 			tmp.iProcBase->g_pPubData = g_pPubData;
 			if (!tmp.iProcBase->Init(m_pXml,m_pClientLink,m_pMemDb,&m_pXdp,m_pLog,m_pSqlCmd,m_pExchLink,m_nIndex))

@@ -897,6 +897,7 @@ void CLinkThread::OnMonitor()
 		pXml.SetNodeValueByPath("Monitor/主机资源/CPU",false,(int)m_sHostInfo.nCpuRate);
 		pXml.SetNodeAttribute("Monitor/主机资源/内存",false,"total",false,(int)m_sHostInfo.nTotalMemory);
 		pXml.SetNodeAttribute("Monitor/主机资源/内存",false,"used",false,(int)m_sHostInfo.nUsedMemory);
+		m_pLog.LogMp(LOG_DEBUG, __FILE__, __LINE__, "主机信息 cpu使用率:%d 总内存:%d 使用内存:%d", m_sHostInfo.nCpuRate, m_sHostInfo.nTotalMemory, m_sHostInfo.nUsedMemory);
 		for (i=0 ; i< m_vdinfo.size() ; i++)
 		{
 			CXmlNode *disknode = pXml.AddNodeByPath("Monitor/主机资源/磁盘",false,"磁盘",false,"");
@@ -1731,6 +1732,11 @@ void CLinkThread::OnCheckProcess()
 					m_pRes->g_pLog.LogMp(LOG_DEBUG,__FILE__,__LINE__,"进程[%s] PID[%d] 已存在 心跳已[%d]秒未收到",\
 						m_pRes->g_vProcessInfo[i].nodeid.c_str(),m_pRes->g_vProcessInfo[i].pid,time(NULL) - m_pRes->g_vProcessInfo[i].lastUseTIme);
 				}
+			}
+			else
+			{
+				//有进程则置状态为0
+				m_pRes->g_vProcessInfo[i].status = "0";
 			}
 		}
 	}

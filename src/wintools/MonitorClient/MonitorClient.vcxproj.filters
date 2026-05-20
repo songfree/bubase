@@ -48,6 +48,12 @@
     <ClInclude Include="StdAfx.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CDlgCgate.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CDlgDaemon.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MonitorClient.cpp">
@@ -72,6 +78,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="StdAfx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CDlgCgate.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CDlgDaemon.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

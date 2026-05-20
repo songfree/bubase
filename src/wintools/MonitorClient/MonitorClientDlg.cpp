@@ -11,6 +11,8 @@
 #include "BF_3Des.h"
 #include "SetDatabase.h"
 
+#include "CDlgCgate.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -85,6 +87,8 @@ BEGIN_MESSAGE_MAP(CMonitorClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_STOP, &CMonitorClientDlg::OnBnClickedButtonStop)
 	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_BUTTON_SET, &CMonitorClientDlg::OnBnClickedButtonSet)
+	ON_BN_CLICKED(IDC__BUTTON_CGATE, &CMonitorClientDlg::OnClickedButtonCgate)
+	ON_BN_CLICKED(IDC_BUTTON3, &CMonitorClientDlg::OnBnClickedButton3)
 END_MESSAGE_MAP()
 
 
@@ -122,10 +126,11 @@ BOOL CMonitorClientDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	m_picstatus_app = true;
 	m_picstatus_pc = true;
+	m_picdaemon_status = true;
 	// TODO: 在此添加额外的初始化代码
 	m_pDbApi = NULL;
-	m_edtBegin.SetWindowText("091000");
-	m_edtEnd.SetWindowText("150000");
+	m_edtBegin.SetWindowText("085000");
+	m_edtEnd.SetWindowText("092900");
 	m_edtSep.SetWindowText("5");
 	m_edtSep.SetLimitText(1);
 	m_edtBegin.SetLimitText(6);
@@ -182,6 +187,8 @@ BOOL CMonitorClientDlg::OnInitDialog()
 	m_timerID1 = SetTimer(ONTIMER1, 1, NULL);//定时器
 
 	m_btnStop.EnableWindow(FALSE);
+
+	m_bIsRunning = false;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -291,6 +298,7 @@ void CMonitorClientDlg::OnBnClickedOk()
 	GetPcNodeInfo();
 	m_picstatus_app = true;
 	m_picstatus_pc = true;
+	m_bIsRunning = true;
 }
 
 
@@ -307,6 +315,7 @@ void CMonitorClientDlg::OnBnClickedButtonStop()
     m_pDate.Update();
     sprintf(tmpchar, "          停止监控 停止时间-%s", m_pDate.ToStringDT17().c_str());
     m_statusbar.SetPaneText(0, tmpchar);
+	m_bIsRunning = false;
 }
 
 
@@ -328,6 +337,7 @@ void CMonitorClientDlg::OnTimer(UINT_PTR nIDEvent)
             char tmpchar[300];
             sprintf(tmpchar, "     正在监控");
             m_statusbar.SetPaneText(1, tmpchar);
+			m_bIsRunning = true;
 			Monitor();
 		}
 		else
@@ -336,6 +346,7 @@ void CMonitorClientDlg::OnTimer(UINT_PTR nIDEvent)
             sprintf(tmpchar, "     当前时间:%d 不在监控时间[%d-%d]范围", curtime,m_nBeginTime,m_nEndTime);
 			m_statusbar.SetPaneText(1, tmpchar);
 			GetDlgItem(IDC_BUTTON_STOP)->PostMessage(BM_CLICK);
+			m_bIsRunning = false;
 		}
 	}
 
@@ -353,6 +364,8 @@ void CMonitorClientDlg::Monitor()
 	}
 	GetAppNodeInfo();
 	GetPcCpuMemDiskInfo();
+	GetCgateInfo();
+	GetDaemonInfo();
 }
 bool CMonitorClientDlg::ConnectDb()
 {
@@ -458,7 +471,7 @@ void CMonitorClientDlg::GetPcNodeInfo()
         return;
     }
 	S_PC_NODE_INFO info;
-    m_vAppNodeInfo.clear();
+	m_vPcNodeInfo.clear();
     while (m_pDbApi->FetchNext())
     {
         bzero(&info, sizeof(S_PC_NODE_INFO));
@@ -501,6 +514,76 @@ void CMonitorClientDlg::GetAppNodeInfo()
 	}
 	UpdateAppNode();
 }
+void CMonitorClientDlg::GetCgateInfo()
+{
+    sprintf(m_sSql, "select a.*,b.app_name,c.pc_node_name,c.pc_ip1 from bfm_cgate_info a,bfm_app_node b,bfm_pc_node c where a.public_id=b.public_id and a.private_id=b.private_id and b.pc_node_id = c.pc_node_id");
+    if (!m_pDbApi->Execute(m_sSql))
+    {
+        m_pLog.LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "查询数据库出错 %s", m_pDbApi->GetCmdErrInfo());
+        m_statusbar.SetPaneText(1, m_pDbApi->GetCmdErrInfo());
+        return;
+    }
+    S_CGATE_INFO info;
+	m_vCgateInfo.clear();
+    while (m_pDbApi->FetchNext())
+    {
+        bzero(&info, sizeof(S_CGATE_INFO));
+        info.public_id = m_pDbApi->Field(0).asLong();
+        info.private_id = m_pDbApi->Field(1).asLong();
+        strcpy(info.sanme, m_pDbApi->Field(2).asString());
+        info.report_date = m_pDbApi->Field(3).asLong();
+        info.report_time = m_pDbApi->Field(4).asLong();
+        info.connect_num = m_pDbApi->Field(5).asLong();
+        
+        strcpy(info.cgate_name, m_pDbApi->Field(6).asString());
+        strcpy(info.pc_node_name, m_pDbApi->Field(7).asString());
+		strcpy(info.pc_ip, m_pDbApi->Field(8).asString());
+		m_vCgateInfo.push_back(info);
+    }
+    UpdateCGateInfo();
+}
+void CMonitorClientDlg::GetDaemonInfo()
+{
+    sprintf(m_sSql, "select a.*,b.app_name,c.pc_node_name,c.pc_ip1 from bfm_bpc2_report a,bfm_app_node b,bfm_pc_node c where a.public_id=b.public_id and a.private_id=b.private_id and b.pc_node_id = c.pc_node_id and  a.report_name<>'cgate'");
+    if (!m_pDbApi->Execute(m_sSql))
+    {
+        m_pLog.LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "查询数据库出错 %s", m_pDbApi->GetCmdErrInfo());
+        m_statusbar.SetPaneText(1, m_pDbApi->GetCmdErrInfo());
+        return;
+    }
+    S_DAEMON_INFO info;
+	m_vDaemonInfo.clear();
+	bool iserror = false;
+    while (m_pDbApi->FetchNext())
+    {
+        bzero(&info, sizeof(S_CGATE_INFO));
+        info.public_id = m_pDbApi->Field(0).asLong();
+        info.private_id = m_pDbApi->Field(1).asLong();
+        strcpy(info.sanme, m_pDbApi->Field(2).asString());
+        info.nstatus = m_pDbApi->Field(3).asLong();
+		if (info.nstatus != 0)
+		{
+			iserror = true;
+		}
+		strcpy(info.reporttxt, m_pDbApi->Field(4).asString());
+        
+
+        strcpy(info.daemon_name, m_pDbApi->Field(6).asString());
+        strcpy(info.pc_node_name, m_pDbApi->Field(7).asString());
+        strcpy(info.pc_ip, m_pDbApi->Field(8).asString());
+        m_vDaemonInfo.push_back(info);
+    }
+    if (iserror)
+    {
+		m_picdaemon_status = false;
+    }
+	else
+	{
+		m_picdaemon_status = true;
+	}
+    autoDisplay();
+}
+
 void CMonitorClientDlg::GetPcCpuMemDiskInfo()
 {
     sprintf(m_sSql, "select a.pc_total_ram,a.pc_used_ram,b.pc_node_cpu,c.pc_node_id,c.pc_node_name,c.pc_mem_warn,c.pc_cpu_warn from BFM_PC_NODE_RAM a,BFM_PC_NODE_CPU b,BFM_PC_NODE c where a.pc_node_id=b.pc_node_id and c.pc_node_id=a.pc_node_id");
@@ -672,6 +755,12 @@ void CMonitorClientDlg::UpdateAppNode()
 	}
 	autoDisplay();
 }
+
+void CMonitorClientDlg::UpdateCGateInfo()
+{
+   
+}
+
 void CMonitorClientDlg::UpdatePcNode()
 {
     m_lstPcNode.DeleteAllItems();
@@ -701,7 +790,7 @@ void CMonitorClientDlg::UpdatePcNode()
 void CMonitorClientDlg::autoDisplay()
 {
 	StopMusic();
-    if (!m_picstatus_app)
+    if (!m_picstatus_app || !m_picdaemon_status)
     {
         HICON hIcontmp = AfxGetApp()->LoadIcon(IDI_ICON_ERR2);
         ((CStatic*)GetDlgItem(IDC_MONITOR_PIC))->SetIcon(hIcontmp);
@@ -723,6 +812,7 @@ void CMonitorClientDlg::autoDisplay()
         HICON hIcontmp = AfxGetApp()->LoadIcon(IDI_ICON_OK2);
         ((CStatic*)GetDlgItem(IDC_MONITOR_PC))->SetIcon(hIcontmp);
     }
+    return ;
 }
 
 
@@ -743,6 +833,7 @@ bool CMonitorClientDlg::PlayMusic(const char* musicfile)
 		return m_bIsPlaying;
 	}
 	DWORD dwResult = 0;
+	m_music_open.lpstrElementName = musicfile;
 	dwResult = mciSendCommand(0, MCI_OPEN, MCI_OPEN_ELEMENT, DWORD_PTR(&m_music_open));
 	if (dwResult != 0)
 	{
@@ -775,4 +866,52 @@ void CMonitorClientDlg::StopMusic()
 	}
 	m_bIsPlaying=false;
 	return;
+}
+
+
+void CMonitorClientDlg::OnClickedButtonCgate()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	if (!m_bIsRunning)
+	{
+        if (!ConnectDb())
+        {
+            MessageBox("连接监控数据库出错", "错误");
+            m_statusbar.SetPaneText(1, m_errMsg.c_str());
+            UpdateData(TRUE);
+            return;
+        }
+        GetCgateInfo();
+	}
+	CDlgCgate dlg;
+	dlg.m_vCgateInfo.clear();
+	for (unsigned int i = 0; i < m_vCgateInfo.size(); i++)
+	{
+		dlg.m_vCgateInfo.push_back(m_vCgateInfo[i]);
+	}
+	dlg.DoModal();
+}
+
+
+void CMonitorClientDlg::OnBnClickedButton3()
+{
+	// TODO: 在此添加控件通知处理程序代码
+    if (!m_bIsRunning)
+    {
+        if (!ConnectDb())
+        {
+            MessageBox("连接监控数据库出错", "错误");
+            m_statusbar.SetPaneText(1, m_errMsg.c_str());
+            UpdateData(TRUE);
+            return;
+        }
+        GetDaemonInfo();
+    }
+    CDlgDaemon dlg;
+    dlg.m_vDaemonInfo.clear();
+    for (unsigned int i = 0; i < m_vDaemonInfo.size(); i++)
+    {
+        dlg.m_vDaemonInfo.push_back(m_vDaemonInfo[i]);
+    }
+    dlg.DoModal();
 }

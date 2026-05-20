@@ -108,6 +108,10 @@ public:
 	// 返回  : bool 
 	// 描述  : 从数据库读客户特殊费率
 	bool ReadCustFeeDetail();
+    //读取债券黑白灰名单
+	bool ReadBondBwg();
+    //读取价格限定
+    bool ReadPriceLimit();
 
 	// 函数名: ReadFeeTempletDetail
 	// 编程  : 王明松 2018-3-6 16:16:33
@@ -121,7 +125,6 @@ public:
 	// 描述  : 从数据库读费率模板
 	bool ReadFeeTemplet();
 
-	bool ReadCustPosiDiff();
 
 	// 函数名: ReadTxaccTemplet
 	// 编程  : 王明松 2018-3-6 16:16:33
@@ -187,6 +190,8 @@ public:
 	// 返回  : bool 
 	// 描述  : 从数据库表读取期权价格模型
 	bool ReadOptionModel();
+	//读取码表
+	bool ReadCodeTable();
 
 	// 函数名: InitSet
 	// 编程  : 王明松 2018-3-6 16:16:33
@@ -195,11 +200,11 @@ public:
 	bool InitSet();
 
 
-	// 函数名: ReadFundAcc
+	// 函数名: ReadTradeAcc
 	// 编程  : 王明松 2018-5-31 16:00:28
 	// 返回  : bool 
 	// 描述  : 读资金账号
-	bool ReadFundAcc();
+	bool ReadTradeAcc();
 
 	// 函数名: ReadCustom
 	// 编程  : 王明松 2018-5-31 16:00:44
@@ -317,13 +322,6 @@ public:
 	// 描述  : 从数据库读操作员在线信息
 	bool ReadOperOnline();
 
-	// 函数名: ReadBrokerageInfo
-	// 编程  : 王明松 2018-5-31 16:06:41
-	// 返回  : bool 
-	// 描述  : 从数据库读经纪信息
-	bool ReadBrokerageInfo();
-	
-
 	// 函数名: ConnectLocalDb
 	// 编程  : 王明松 2018-5-31 16:06:54
 	// 返回  : bool 
@@ -352,7 +350,7 @@ public:
 protected:
 
 	CInt     m_keyCustRowid;
-	S_MDB_CUST_FUNDACC_INFO *m_pTmpCustTxacc;
+	S_MDB_TRADEACC_INFO *m_pTmpCustTxacc;
 	char     m_sSql[500];
 	char     m_sErrMsg[256];
 

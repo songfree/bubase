@@ -48,6 +48,7 @@ typedef struct
 typedef struct 
 {
 	char   sPosiTempletId[13];//模ID
+	char   sPosiTempletName[41];//模板名称
 	unsigned short nWarnNo;//预警序号
 	char   sExchCode[2];//交易所代码
 	char   sProdType[2];//品种类别
@@ -105,6 +106,13 @@ typedef struct
 	char sFareModeName[41];//模板名称
 	char sFareType[2];//模板类型
 	char sOrgCode[13];//所属机构
+	char sCR_Channel[3];//创建来源
+	char sCR_Date[18];//创建日期
+	char sCR_Oper[17];//创建操作员
+	char sModi_Channel[3];//修改来源
+	char sModi_Date[18];//修改来源
+	char sModi_Oper[17];//修改来源
+	char sSubCanUse[2];//是否下级适用
 }S_MDB_FEE_TEMPLET;
 
 typedef struct 
@@ -135,37 +143,33 @@ typedef struct
 }S_MDB_CUST_FEE;
 
 
-typedef struct 
-{
-	unsigned int nSysCode;//系统代码
-	char  sSysName[41];//系统名称
-	unsigned int  nSvrId;//系统注册到总线的公共服务号
-	char  sOrgCode[17];//对应的机构代码
-	char  sClearDate[9];//结算日期
-	unsigned int   nClearFlag; //清算标志 0数据导入  1清算
-	//0 不清算，导入柜台数据
-	//1 清算       直接连交易所
-	//	2 不清算   但连柜台的多个PG
-	//	3 不清算       直接连交易所
-}S_MDB_BROKERAGE_INFO; //经纪配置
-typedef struct 
-{
-	unsigned int nSysCode;//系统代码
-	char  sExchCode[2];//交易所代码
-	char  sSeatNo[7];//席位代码
-	unsigned int   nSvrId; //在总线上注册的服务号
-}S_MDB_BROKERAGE_EXCHANGE; //经纪交易所配置
-typedef struct 
-{
-	unsigned int nSysCode;//系统代码
-	char  sBrokerId[11];//pg对应的brokerid
-	unsigned int   nSvrId; //在总线上注册的服务号
-}S_MDB_BROKERAGE_PG; //经纪PG配置
 typedef struct  
 {
 	char sCurrency[2]; //币种
 	double dRate;     //兑人民币的比率
 }S_MDB_CURRENCY_RATE;
+
+//债券交易黑白灰名单
+typedef struct
+{
+    char sMatchAcc[22]; //交易对手方账号
+    char sBwgFlag[2]; //名单标志
+	char sMatchOrg[7];//交易对手方机构
+	char sMatchName[41];//交易对手方名称
+	char sAddDateTime[18];//添加日期时间
+	char sAddOper[9];//添加操作员
+}S_MDB_BOND_BWG_INFO;
+
+//价格限定表
+typedef struct
+{
+    char sProdType[2]; //品种类别
+    int  nSecuNo; //证券编号
+    char sSecuCode[21];//证券代码
+    char sLimitType[2];//价格限定类型
+    double dUpLimit;//上限
+    double dDownLimit;//下限
+}S_MDB_PRICE_LIMIT;
 
 class  CTbl_WarnLevel
 {
@@ -407,7 +411,6 @@ protected:
 	
 	CMemTableNew <S_MDB_FUND_TEMPLET> m_table;
 	CKeyField<CKey_Fund_Templet>    m_key;   //主键 模板ID,预警序号，资金指标
-//	CIndexCharF<13,1>                m_index;//模板ID的索引
 	CIndexVarChar<1>                m_index;//模板ID的索引
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
@@ -964,8 +967,7 @@ class  CTbl_Cust_Templet
 protected:
 	
 	CMemTableNew <S_MDB_CUST_TEMPLET_RELA> m_table;
-//	CPkeyCharF<21,1>                m_key;
-	CPkeyCharV<1>                m_key;
+	CPkeyCharVUnordered<1>                m_key;
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTbl_Cust_Templet()
@@ -1019,7 +1021,7 @@ class  CTblPordOrg_Templet
 protected:
 
 	CMemTableNew <S_MDB_PRODORG_TEMPLET_RELA> m_table;
-	CPkeyCharV<1>                m_key;
+	CPkeyCharVUnordered<1>                m_key;
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
 	CTblPordOrg_Templet()
@@ -1073,9 +1075,7 @@ class  CTbl_Fee_Templet_Info
 protected:
 	
 	CMemTableNew <S_MDB_FEE_TEMPLET> m_table;
-// 	CPkeyCharF<14,1>               m_key;//模板ID主键
-// 	CIndexCharF<13,1>            m_indexOrg;//机构索引
-	CPkeyCharV<1>               m_key;//模板ID主键
+	CPkeyCharVUnordered<1>               m_key;//模板ID主键
 	CIndexVarChar<1>            m_indexOrg;//机构索引
 	CBF_Mutex                   m_mutex;//互斥锁
 public:
@@ -1695,358 +1695,6 @@ public:
 	}
 };
 
-
-//经纪配置信息
-class  CTbl_Brokerage
-{
-protected:
-
-	CMemTableNew <S_MDB_BROKERAGE_INFO> m_table;
-	CPkeyUInt<1>                m_key;
-	CBF_Mutex                   m_mutex;//互斥锁
-public:
-	CTbl_Brokerage()
-	{
-
-	}
-	virtual ~CTbl_Brokerage()
-	{
-
-	}
-	void Clear()
-	{
-		m_key.Clear();
-		m_table.Clear();
-	}
-	int Insert(S_MDB_BROKERAGE_INFO info) //只有在初始化时使用，所以可以不加锁
-	{
-		CBF_PMutex pp(&m_mutex);
-		if (m_key.Find(info.nSysCode))
-		{
-			return -1;
-		}
-		int rid=m_table.Add(info);
-		m_key.Add(rid,m_table.m_table[rid].nSysCode);
-		return rid;
-	}
-
-	S_MDB_BROKERAGE_INFO *Select(unsigned int brokerageid)
-	{
-		int rid;
-		CBF_PMutex pp(&m_mutex);
-		if (!m_key.Select(rid,brokerageid))
-		{
-			return NULL;
-		}
-		return &(m_table.m_table[rid]);
-	}
-	S_MDB_BROKERAGE_INFO *At(int rowid)
-	{
-		if (rowid<0 || rowid > m_table.AllSize()-1)
-		{
-			return NULL;
-		}
-		return &(m_table.m_table[rowid]);
-	}
-};
-
-
-class CKey_Brokerage_Exchange : public CIndex_Field_Base
-{
-public:
-	unsigned int nSysCode;//系统代码
-	char  sExchCode[2];//交易所代码
-	char  sSeatNo[7];//席位代码
-
-
-	virtual bool operator<(const CKey_Brokerage_Exchange& field) const
-	{
-		if (nSysCode<field.nSysCode)
-		{
-			return true;
-		}
-		else if (nSysCode == field.nSysCode)
-		{
-			if  (sExchCode[0] < field.sExchCode[0])
-			{
-				return true;
-			}
-			else if  (sExchCode[0] == field.sExchCode[0])
-			{
-				if (strcmp(sSeatNo,field.sSeatNo) <0)
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-		else
-		{
-			return false;
-		}
-	}
-};
-class CIndex_Brokerage_Exchange : public CIndex_Field_Base
-{
-public:
-	unsigned int nSysCode;//系统代码
-	char  sExchCode[2];//交易所代码
-
-	virtual bool operator<(const CIndex_Brokerage_Exchange& field) const
-	{
-		if (nSysCode<field.nSysCode)
-		{
-			return true;
-		}
-		else if (nSysCode == field.nSysCode)
-		{
-			if  (sExchCode[0] < field.sExchCode[0])
-			{
-				return true;
-			}
-			return false;
-		}
-		else
-		{
-			return false;
-		}
-	}
-};
-//经纪对应交易所
-class  CTbl_Brokerage_Exchange
-{
-protected:
-
-	CMemTableNew <S_MDB_BROKERAGE_EXCHANGE> m_table;
-	CKeyField<CKey_Brokerage_Exchange>    m_key;   //主键 经纪编号+交易所+席位号
-	CIndexField<CIndex_Brokerage_Exchange> m_index; // 经纪编号+交易所
-	CIndexUInt<1>                   m_indexSys;//经纪编号
-	CBF_Mutex                   m_mutex;//互斥锁
-public:
-	CTbl_Brokerage_Exchange()
-	{
-
-	}
-	virtual ~CTbl_Brokerage_Exchange()
-	{
-
-	}
-	void Clear()
-	{
-		m_key.Clear();
-		m_index.Clear();
-		m_indexSys.Clear();
-		m_table.Clear();
-	}
-	int Insert(S_MDB_BROKERAGE_EXCHANGE info) 
-	{
-		CBF_PMutex pp(&m_mutex);
-		CKey_Brokerage_Exchange aa;
-		CIndex_Brokerage_Exchange bb;
-
-		strcpy(aa.sExchCode,info.sExchCode);
-		strcpy(aa.sSeatNo,info.sSeatNo);
-		aa.nSysCode = info.nSysCode;
-		
-
-		if (m_key.Find(aa))
-		{
-			return -1;
-		}
-		strcpy(bb.sExchCode,info.sExchCode);
-		bb.nSysCode = info.nSysCode;
-
-		int rid=m_table.Add(info);
-		aa.m_nRowId = rid;
-		bb.m_nRowId = rid;
-		m_key.Add(aa);
-		m_index.Add(bb);
-		m_indexSys.Add(rid,m_table.m_table[rid].nSysCode);
-		return rid;
-	}
-
-	// 函数名: *Select
-	// 编程  : 王明松 2018-2-7 13:54:46
-	// 返回  : S_MDB_BROKERAGE_EXCHANGE 
-	// 参数  : unsigned int nsyscode
-	// 参数  :char *exchcode    品种类型
-	// 参数  : char *seatno     品种
-	// 描述  : 取经纪行对应交易所配置
-	S_MDB_BROKERAGE_EXCHANGE *Select(unsigned int nsyscode,char *exchcode,char *seatno)
-	{
-		CBF_PMutex pp(&m_mutex);
-		CKey_Brokerage_Exchange aa;
-		strcpy(aa.sExchCode,exchcode);
-		strcpy(aa.sSeatNo,seatno);
-		aa.nSysCode = nsyscode;
-		if (!m_key.Find(aa))
-		{
-			return NULL;
-		}
-		return &(m_table.m_table[aa.m_nRowId]);
-	}
-
-	bool Select(unsigned int nsyscode,std::vector<S_MDB_BROKERAGE_EXCHANGE *> &reslist)
-	{
-		std::vector<int> iset;
-		if (!m_indexSys.Select(iset,nsyscode))
-		{
-			return false;
-		}
-		for (int i=0; i<iset.size(); i++)
-		{
-			reslist.push_back(&(m_table.m_table[iset[i]]));
-		}
-		return true;
-	}
-	bool Select(unsigned int nsyscode,char *exchcode,std::vector<S_MDB_BROKERAGE_EXCHANGE *> &reslist)
-	{
-		CIndex_Brokerage_Exchange bb;
-		strcpy(bb.sExchCode,exchcode);
-		bb.nSysCode = nsyscode;
-		
-
-		std::vector<int> iset;
-		bool bret = m_index.Find(bb);
-		if (!bret)
-		{
-			return false;
-		}
-		while (bret)
-		{
-			reslist.push_back(&(m_table.m_table[bb.m_nRowId]));
-			bret = m_index.Next(bb);
-		}
-		return true;
-	}
-	S_MDB_BROKERAGE_EXCHANGE *At(int rowid)
-	{
-		if (rowid<0 || rowid > m_table.AllSize()-1)
-		{
-			return NULL;
-		}
-		return &(m_table.m_table[rowid]);
-	}
-
-};
-
-class CKey_Brokerage_Pg : public CIndex_Field_Base
-{
-public:
-	unsigned int nSysCode;//系统代码
-	char  sBrokerId[11];//pg的brokerid
-
-
-	virtual bool operator<(const CKey_Brokerage_Pg& field) const
-	{
-		if (nSysCode<field.nSysCode)
-		{
-			return true;
-		}
-		else if (nSysCode == field.nSysCode)
-		{
-			if (strcmp(sBrokerId,field.sBrokerId) <0)
-			{
-				return true;
-			}
-			return false;
-		}
-		else
-		{
-			return false;
-		}
-	}
-};
-
-//经纪对应PG
-class  CTbl_Brokerage_Pg
-{
-protected:
-
-	CMemTableNew <S_MDB_BROKERAGE_PG> m_table;
-	CKeyField<CKey_Brokerage_Pg>    m_key;   //主键 经纪编号+brokerid
-	CIndexUInt<1>                   m_indexSys;//经纪编号
-	CBF_Mutex                   m_mutex;//互斥锁
-public:
-	CTbl_Brokerage_Pg()
-	{
-
-	}
-	virtual ~CTbl_Brokerage_Pg()
-	{
-
-	}
-	void Clear()
-	{
-		m_key.Clear();
-		m_indexSys.Clear();
-		m_table.Clear();
-	}
-	int Insert(S_MDB_BROKERAGE_PG info) 
-	{
-		CBF_PMutex pp(&m_mutex);
-		CKey_Brokerage_Pg aa;
-
-		strcpy(aa.sBrokerId,info.sBrokerId);
-		aa.nSysCode = info.nSysCode;
-
-
-		if (m_key.Find(aa))
-		{
-			return -1;
-		}
-		aa.nSysCode = info.nSysCode;
-
-		int rid=m_table.Add(info);
-		aa.m_nRowId = rid;
-		m_key.Add(aa);
-		m_indexSys.Add(rid,m_table.m_table[rid].nSysCode);
-		return rid;
-	}
-
-	// 函数名: *Select
-	// 编程  : 王明松 2018-2-7 13:54:46
-	// 返回  : S_MDB_BROKERAGE_EXCHANGE 
-	// 参数  : unsigned int nsyscode
-	// 参数  :char *exchcode    品种类型
-	// 参数  : char *seatno     品种
-	// 描述  : 取经纪行对应交易所配置
-	S_MDB_BROKERAGE_PG *Select(unsigned int nsyscode,char *sbrokerid)
-	{
-		CBF_PMutex pp(&m_mutex);
-		CKey_Brokerage_Pg aa;
-		strcpy(aa.sBrokerId,sbrokerid);
-		aa.nSysCode = nsyscode;
-		if (!m_key.Find(aa))
-		{
-			return NULL;
-		}
-		return &(m_table.m_table[aa.m_nRowId]);
-	}
-
-	bool Select(unsigned int nsyscode,std::vector<S_MDB_BROKERAGE_PG *> &reslist)
-	{
-		std::vector<int> iset;
-		if (!m_indexSys.Select(iset,nsyscode))
-		{
-			return false;
-		}
-		for (int i=0; i<iset.size(); i++)
-		{
-			reslist.push_back(&(m_table.m_table[iset[i]]));
-		}
-		return true;
-	}
-	S_MDB_BROKERAGE_PG *At(int rowid)
-	{
-		if (rowid<0 || rowid > m_table.AllSize()-1)
-		{
-			return NULL;
-		}
-		return &(m_table.m_table[rowid]);
-	}
-
-};
 //人民币比率
 class  CTbl_CurrencyRate
 {
@@ -2100,7 +1748,113 @@ public:
 		return &(m_table.m_table[rowid]);
 	}
 };
+//债券黑白灰名单
+class  CTbl_Bond_Bwg
+{
+protected:
 
+    CMemTableNew <S_MDB_BOND_BWG_INFO> m_table;
+    CPkeyCharVUnordered<1>                m_key; //账户
+    CBF_Mutex                   m_mutex;//互斥锁
+public:
+	CTbl_Bond_Bwg()
+    {
+
+    }
+    virtual ~CTbl_Bond_Bwg()
+    {
+
+    }
+    void Clear()
+    {
+        m_key.Clear();
+        m_table.Clear();
+    }
+    int Insert(S_MDB_BOND_BWG_INFO info) //只有在初始化时使用，所以可以不加锁
+    {
+        CBF_PMutex pp(&m_mutex);
+        if (m_key.Find(info.sMatchAcc))
+        {
+            return -1;
+        }
+        int rid = m_table.Add(info);
+        m_key.Add(rid, m_table.m_table[rid].sMatchAcc);
+        return rid;
+    }
+
+	S_MDB_BOND_BWG_INFO* Select(const char* acc)
+    {
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        if (!m_key.Select(rid, (char*)acc))
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rid]);
+    }
+	S_MDB_BOND_BWG_INFO* At(int rowid)
+    {
+        if (rowid<0 || rowid > m_table.AllSize() - 1)
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rowid]);
+    }
+};
+
+//价格限定表
+class  CTbl_Price_Limit
+{
+protected:
+
+    CMemTableNew <S_MDB_PRICE_LIMIT> m_table;
+    CPkeyCharVUnordered<2>                m_key; //品种类别+证券代码
+    CBF_Mutex                   m_mutex;//互斥锁
+public:
+	CTbl_Price_Limit()
+    {
+
+    }
+    virtual ~CTbl_Price_Limit()
+    {
+
+    }
+    void Clear()
+    {
+        m_key.Clear();
+        m_table.Clear();
+    }
+    int Insert(S_MDB_PRICE_LIMIT info) //只有在初始化时使用，所以可以不加锁
+    {
+        CBF_PMutex pp(&m_mutex);
+        if (m_key.Find(info.sProdType,info.sSecuCode))
+        {
+            return -1;
+        }
+        int rid = m_table.Add(info);
+        m_key.Add(rid, m_table.m_table[rid].sProdType, m_table.m_table[rid].sSecuCode);
+        return rid;
+    }
+
+	S_MDB_PRICE_LIMIT* Select(const char* prodtype,const char *secucode)
+    {
+        int rid;
+        CBF_PMutex pp(&m_mutex);
+        if (!m_key.Select(rid, (char*)prodtype, (char*)secucode))
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rid]);
+    }
+	S_MDB_PRICE_LIMIT* At(int rowid)
+    {
+        if (rowid<0 || rowid > m_table.AllSize() - 1)
+        {
+            return NULL;
+        }
+        return &(m_table.m_table[rowid]);
+    }
+};
 
 class CDb_Set  
 {
@@ -2130,14 +1884,11 @@ public:
 	CTbl_Fee_Templet_Detail  m_pFeeTempletDetail;//费率模板配置
 	CTbl_Cust_Fee_Detail     m_pCustFeeDetail;//客户特殊费率设置表
 
-	CTbl_Brokerage           m_pBrokerage;//经纪配置信息  
-	CTbl_Brokerage_Exchange  m_pBrokerageExchange;//纪纪对应交易所
-	CTbl_Brokerage_Pg        m_pBrokeragePg;//纪纪对应pg
-
 	CTblPordOrg_Templet      m_pProdTemplet;//产品模板对应关系
 	CTblPordOrg_Templet      m_pOrgTemplet;//机构模板对应关系
 	CTbl_CurrencyRate        m_pCurrencyRate;//兑人民币比率设置
-
+	CTbl_Bond_Bwg            m_pBondBwgInfo;//债券黑白灰名单
+	CTbl_Price_Limit         m_pPriceLimit;//报单价格限定表
 };
 
 #endif // !defined(AFX_DB_SET_H__4B14D6AB_CE59_4B41_A502_27B567589F24__INCLUDED_)

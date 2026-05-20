@@ -36,8 +36,8 @@ typedef struct _S_TBL_FUNC
 
 typedef struct  
 {
-	UINT64_  nLocalSerial;
-
+	UINT64_  nLocalSerial;		 //本地报单编号
+	unsigned int  nBilateralSerial;//做市报价单号       
 }S_PUBLIC_SERIAL;
 
 
@@ -57,9 +57,9 @@ public:
 		CBF_PMutex pp(&m_mutex);
 		UINT64_ aa= m_sPublicSerial.nLocalSerial;
 		 m_sPublicSerial.nLocalSerial++;
-		 if (m_sPublicSerial.nLocalSerial> 999999999)
+		 if (m_sPublicSerial.nLocalSerial> 99000000)  //本地报单号为长为8位
 		 {
-			m_sPublicSerial.nLocalSerial =1;
+			m_sPublicSerial.nLocalSerial =1;		  //本地报单号范围是	 1 -  99000000
 		 }
 		 return aa;
 	}
@@ -72,13 +72,40 @@ public:
 		}
 		else
 		{
-			if (m_sPublicSerial.nLocalSerial - serial >90000000)
+			if (m_sPublicSerial.nLocalSerial - serial >9000000)	 //本地报单号为长为8位
 			{
 				m_sPublicSerial.nLocalSerial=serial;
 			}
 		}
 		return 0;
 	}
+	UINT64_ GetBilateralSerial()
+	{
+        CBF_PMutex pp(&m_mutex);
+        UINT64_ aa = m_sPublicSerial.nBilateralSerial;
+        m_sPublicSerial.nBilateralSerial++;
+        if (m_sPublicSerial.nBilateralSerial > 99999999)  //做市报价单号
+        {
+            m_sPublicSerial.nBilateralSerial = 99000001;   //做市报价单号范围是	 99000001 -  99999999
+        }
+        return aa;
+	}
+    int UpdateBilateralSerial(UINT64_ serial)
+    {
+        CBF_PMutex pp(&m_mutex);
+        if (serial > m_sPublicSerial.nBilateralSerial)
+        {
+            m_sPublicSerial.nBilateralSerial = serial;
+        }
+        else
+        {
+            if (m_sPublicSerial.nBilateralSerial - serial > 900000)	 //本地报单号为长为8位，实际有效位6位
+            {
+                m_sPublicSerial.nBilateralSerial = serial;
+            }
+        }
+        return 0;
+    }
 	bool InitFromFile(const char *datafile)
 	{
 		FILE *fp = fopen(datafile,"rb");
@@ -186,7 +213,6 @@ public:
 		m_pSqlCmd = NULL; //数据库连接
 		m_pExchLink = NULL;//交易所连接调用
 		m_pClientLink = NULL; //客户端连接调用
-		m_pMemPool = NULL;//内存缓冲池
 		m_pMemDb = NULL;//内存表
 		m_pLog = NULL;
 		g_nSvrHostStatus =  NULL;
@@ -198,7 +224,6 @@ public:
 		m_pSqlCmd = NULL; //数据库连接
 		m_pExchLink = NULL;//交易所连接调用
 		m_pClientLink = NULL; //客户端连接调用
-		m_pMemPool = NULL;//内存缓冲池
 		m_pMemDb = NULL;//内存表
 		m_pLog = NULL;
 		g_nSvrHostStatus =  NULL;
@@ -222,6 +247,7 @@ public:
 	{
 		m_pClientLink = pBusLink;
 		m_pMemDb= pMemDb;
+		m_pXdp = pXdp;
 		m_pLog = pLog;
 		m_pSqlCmd = pSqlCmd;
 		m_pExchLink = pExchLink;
@@ -236,11 +262,11 @@ public:
 	// 参数  : S_TRADE_DATA &data
 	// 参数  : int tms
 	// 描述  : 取得本处理线程的应答，同步等待，取到后要判断流水是不是本次请求的应答
-	int  GetAnsData(S_TRADE_DATA &data,int tms)
+	virtual int  GetAnsData(S_TRADE_DATA &data,int tms)
 	{
 		return m_pClientLink->GetAnsData(m_nIndex,data,tms);
 	}
-	int Send2Exch(S_TRADE_DATA &data,CXdp *xdp)
+	virtual int Send2Exch(S_TRADE_DATA &data,CXdp *xdp)
 	{
 		//songfree 20180510 改为b_Cinfo.b_cIndex保存index
 		data.pData->sDBHead.b_Cinfo.b_cIndex = m_nIndex;
@@ -248,6 +274,67 @@ public:
 		return m_pExchLink->Send2Exch(data,xdp);
 	}
 
+    // 函数名: ReleaseBroadcast
+    // 编程  : 王明松 2022-7-6 16:16:08
+    // 返回  : void 
+    // 参数  : const char* data	要发送的xdp数据
+    // 参数  : int datalen      要发送的数据长度
+    // 参数  : int privatekey      发送私有广播(如成交回报)的key，供需要的按此key过滤 ，如网关订阅
+    // 参数  : int pubkey          发送公共广播(如行情)的key，供需要的按此key过滤 ，如网关订阅
+    // 参数  : int funcno   发送广播的功能号，订阅的功能号，即主题 2个key根据需要选填一个，另外一个填0
+    // 描述  : 发送广播，供需要的订阅
+    virtual void ReleaseBroadcast(const char* data, int datalen, int privatekey, int pubkey, int funcno)
+    {
+        S_TRADE_DATA sdata;
+        if (m_pClientLink->PoolMalloc(sdata) < 0)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "PoolMalloc error");
+            return;
+        }
+        bzero(&(sdata.pData->sDBHead), DREBHEADLEN);
+        memcpy(sdata.pData->sBuffer, data, datalen);
+        sdata.pData->sDBHead.nLen = datalen;
+        sdata.pData->sDBHead.cRaflag = 0;
+        sdata.pData->sDBHead.cCmd = CMD_DPABC;
+        sdata.pData->sDBHead.d_Dinfo.d_nServiceNo = funcno;
+        sdata.src = 0;
+        //s_nSerial	  保存私有广播的key
+        //s_nHook     保存公有广播的key 
+        sdata.pData->sDBHead.s_Sinfo.s_nSerial = privatekey;
+        sdata.pData->sDBHead.s_Sinfo.s_nHook = pubkey;
+        //发至总线
+        m_pClientLink->Send2Client(sdata);
+    }
+    virtual void ReleaseBroadcast(CXdp *xdp, int privatekey, int pubkey, int funcno)
+    {
+        S_TRADE_DATA sdata;
+        if (m_pClientLink->PoolMalloc(sdata) < 0)
+        {
+            m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "PoolMalloc error");
+            return;
+        }
+		unsigned int len;
+		char errmsg[200];
+		len = sizeof(sdata.pData->sBuffer);
+		if (!xdp->ToBuffer(sdata.pData->sBuffer, len, m_sErrMsg))
+		{
+			m_pClientLink->PoolFree(sdata);
+			m_pLog->LogMp(LOG_ERROR_GENERAL, __FILE__, __LINE__, "ToBuffer error %s", m_sErrMsg);
+			return ;
+		}
+        bzero(&(sdata.pData->sDBHead), DREBHEADLEN);
+        sdata.pData->sDBHead.nLen = len;
+        sdata.pData->sDBHead.cRaflag = 0;
+        sdata.pData->sDBHead.cCmd = CMD_DPABC;
+        sdata.pData->sDBHead.d_Dinfo.d_nServiceNo = funcno;
+        sdata.src = 0;
+        //s_nSerial	  保存私有广播的key
+        //s_nHook     保存公有广播的key 
+        sdata.pData->sDBHead.s_Sinfo.s_nSerial = privatekey;
+        sdata.pData->sDBHead.s_Sinfo.s_nHook = pubkey;
+        //发至总线
+        m_pClientLink->Send2Client(sdata);
+    }
 	CProcFuncTbl    m_pFuncTbl;//交易码表
 	
 	unsigned  int *g_nSvrHostStatus;//主备状态
@@ -259,11 +346,10 @@ protected:
 	CDbApi         *m_pSqlCmd; //数据库连接
 	CIExchLink     *m_pExchLink;//交易所连接调用
 	CIClientLink   *m_pClientLink; //客户端连接调用
-	CBF_BufferPool *m_pMemPool;//内存缓冲池
 	CMemDb         *m_pMemDb;//内存表
 	CIErrlog       *m_pLog;
 	int             m_nIndex;//线程索引，标识是哪个线程
-
+	char m_sErrMsg[256];
 };
 
 #endif // !defined(AFX_IPROCBASE_H__CFA6CB37_70F8_4291_BE24_D77ED7C3DC35__INCLUDED_)

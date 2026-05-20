@@ -81,7 +81,7 @@ public:
 
 
 protected:
-	CMemTable<std::string> m_table;        //黑名单内存表
+	CMemTableNew<std::string> m_table;        //黑名单内存表
 	CPkeyCharF<20,1>        m_pKey;        //黑名单主键
 };
 

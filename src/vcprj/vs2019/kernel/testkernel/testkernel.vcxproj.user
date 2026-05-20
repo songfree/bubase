@@ -2,7 +2,7 @@
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LocalDebuggerCommand>D:\BUBASE\src\vcprj\vs2019\kernel\testkernel\x64\Debug\testkerneld.exe</LocalDebuggerCommand>
-    <LocalDebuggerWorkingDirectory>D:\BUBASE\src\vcprj\vs2019\kernel\testkernel\x64\Debug</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

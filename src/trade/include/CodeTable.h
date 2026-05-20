@@ -29,7 +29,12 @@
 #define  EX_CODE_CME  'A'		//CME
 #define  EX_CODE_LME  'B'		//LME
 #define  EX_CODE_INE  'C'			//INE原油
-
+#define  EX_CODE_CFETS  'D'			//外汇交易中心
+#define  EX_CODE_GFE  'G'			//广州期交易所
+#define  EX_CODE_SSE  'S'			//上海证券交易所
+#define  EX_CODE_BOND_BC  'X'			//债券场外交易市场
+#define  EX_CODE_BJSE  'Y'			//北京证券交易所
+#define  EX_CODE_SZSE  'Z'			//深圳证券交易所
 
 
 //买卖标志
@@ -43,6 +48,11 @@
 #define EX_MARKET_TYPE_PATS     'P'		//PATS市场
 #define EX_MARKET_TYPE_SEC      'S'     //证券市场
 
+//价格限定类型
+#define   PRICE_LIMIT_PRICE    '0'  //价格 
+#define   PRICE_LIMIT_SP_RATE    '1'  //结算价比率 
+#define   PRICE_LIMIT_NP_RATE    '2'  //最新价比率
+#define   PRICE_LIMIT_VALUE_RATE    '3'  //估值比率
 
 //交易类型
 #define TX_TYPE_BASIC     '0'	 	//基本定单
@@ -54,7 +64,10 @@
 #define TX_TYPE_EMERGENCY '7'		//应急
 #define TX_TYPE_BLOCK     '8'		//大宗
 #define TX_TYPE_IMPAWN    '9'		//质押
-
+#define TX_TYPE_CLICK     'A'       //点击成交
+#define TX_TYPE_SESSION     'B'       //对话报价
+#define TX_TYPE_REQPRICE     'C'       //请求报价
+#define TX_TYPE_REFPRICE     'D'       //指示性报价
 
 //出入金方向
 #define  FUND_FLAG_OUT  '0'		//出金
@@ -85,9 +98,13 @@
 //品种类别
 
 #define PROD_TYPE_SPOT           '0'		//现货
-#define PROD_TYPE_OPTION         '2'		//期权
+#define PROD_TYPE_OPTION         '2'		//期货期权
+#define PROD_TYPE_OPTION_SEC     '3'		//股票期权
 #define PROD_TYPE_FUTURES        '4'		//期货
 #define PROD_TYPE_SEC            '5'		//股票
+#define PROD_TYPE_BOND           '9'		//交易所债券
+#define PROD_TYPE_BOND_BANK      'B'   //银行间债券
+#define PROD_TYPE_BOND_BC        'C'   //场外债券
 
 //复核状态
 #define  CHECK_STATUS_NO       '1'		//未复核
@@ -214,8 +231,9 @@
 #define  TERM_TYPE_RISK      "12"		//风控
 #define  TERM_TYPE_MANUAL    "14"		//人工座席
 #define  TERM_TYPE_CCB       "15"		//企业网银
-#define  TERM_TYPE_RPCAPI       "16"		//内部SOCKET API
-
+#define  TERM_TYPE_RPCAPI     "16"		//内部SOCKET API
+#define  TERM_TYPE_STG        "17"	    //策略
+#define  TERM_TYPE_ALGO       "18"	    //算法
 
 //证件类型
 #define   CERT_TYPE_IDCARD    '0'		//身份证
@@ -236,6 +254,11 @@
 #define ACC_TYPE_SELF     '0'		//自营
 #define ACC_TYPE_PERSON   '1'		//个人
 #define ACC_TYPE_CORP     '2'		//法人
+
+//黑白灰名单标志
+#define BWG_FLAG_BLACK     '1'		//黑名单
+#define BWG_FLAG_WHITE     '2'		//白名单
+#define BWG_FLAG_GRAY      '3'		//灰名单
 
 //费用模板类型
 #define  FEE_MODEL_TYPE_MEMBER    '1'		//  会员费用模板
@@ -273,17 +296,23 @@
 #define   TR_NORMAL   '2'       //正常
 
 //持仓监控指标
-#define   PM_MARGINRATE        '0' 		//保证金占比
-#define   PM_POSIVALUE_RATE    '1'		//持仓价值比
-#define   PM_POSI_OFFSET_RATE  '2'      //持仓轧差价值比
+#define   PM_MARGINRATE          '0' 		//保证金占比
+#define   PM_POSIVALUE_RATE      '1'		//持仓价值比
+#define   PM_POSI_OFFSET_RATE    '2'      //持仓轧差价值比
+#define   PM_POSI_CONCENTRATION  '3'      //债券集中度
+#define   PM_POSI_DV01           '4'      //净持仓DV01
+
+
 
 //资产资金监控指标
 #define   PFM_NETVALUE  '0' 		//单位净值
 #define   PFM_RISK      '1'		    //风险度
+#define   PFM_POSI_TOTAL           '2'      //持仓总规模
 
 //资金监控指标
 #define  FMM_RIGHT    '0' 		//客户权益
 #define  FMM_RISK     '1'		//风险度
+#define  FMM_POSI_TOTAL           '2'      //持仓总规模
 
 //条件
 #define  EF_LARGE       '0'		//大于
@@ -393,7 +422,7 @@
 #define  RET_ERR_CLEARPRICE       2021     //更新结算价出错
 #define  RET_ERR_DATEINPUT        2022     //日期输入不符
 #define  RET_ERR_CONTRACTINPUT    2023     //合约输入不符
-#define  RET_ERR_CUSTTXACC        2024     //客户号资金账号不匹配
+#define  RET_ERR_CUSTTXACC        2024     //客户号交易账号不匹配
 #define  RET_ERR_MARKET           2025     //市场非法
 #define  RET_ERR_UPORG            2026     //上级机构非法
 #define  RET_ERR_PRODACC          2027     //产品交易账号不存在
@@ -413,25 +442,27 @@
 #define  RET_ERR_EOFLAG                  2041     //开平标志错误
 #define  RET_ERR_BSFLAG                  2042     //买卖标志错误
 #define  RET_ERR_TXTYPE                  2043     //交易类型错误
-#define  RET_ERR_ORDERTYPE               2044     //报单类型错误
-#define  RET_ERR_ORDERATTR               2045     //报单属性错误/成交属性错误
+#define  RET_ERR_ORDERTYPE               2044     //指令价格类型错误
+#define  RET_ERR_ORDERATTR               2045     //报单有效属性错误
 #define  RET_ERR_ORDERPRICE               2046     //委托价错误
 #define  RET_ERR_EXCHANGE                 2047     //交易所信息不存在
 #define  RET_ERR_CHANNEL                  2048     //渠道错误
 #define  RET_ERR_CUSTOPER                 2049     //客户/交易员错误
-#define  RET_ERR_CUSTFUNDACC              2050     //资金账号非法
+#define  RET_ERR_CUSTFUNDACC              2050     //交易账号非法
 #define  RET_ERR_CUSTNO                   2051     //客户号非法，不存在
 #define  RET_ERR_CHANNELOPEN               2052     //未开通此渠道
 #define  RET_ERR_TXORG                     2053     //交易网点不存在
 
-#define  RET_ERR_ORDERTYPE_SUPPORT              2054     //报单类型不支持
-#define  RET_ERR_ORDERATTR_SUPPORT              2055     //报单类型+成交属性不支持
+#define  RET_ERR_ORDERTYPE_SUPPORT              2054     //指令价格类型不支持
+#define  RET_ERR_ORDERATTR_SUPPORT              2055     //报单有效属性错误不支持
 #define  RET_ERR_CUSTFUND                       2056     //无资金数据
 #define  RET_ERR_TRADECODE                       2057     //无交易编码
 #define  RET_ERR_GETFEE                         2058     //取手续费出错
-#define  RET_ERR_GETMARGIN                      2059     //出保证金出错
+#define  RET_ERR_GETMARGIN                      2059     //取保证金出错
 #define  RET_ERR_AVAILFUND                      2060     //可用资金不足
 #define  RET_ERR_CLEARFLAG                      2061     //清算标志不符，配置为清算不可数据导入
-#define  RET_ERR_CLEARFLAG                      2061     //清算标志不符，配置为清算不可数据导入
 #define  RET_ERR_TRADERIGHT                     2062     //交易权限不符
+#define  RET_ERR_BWG_MENU                       2063     //黑白灰名单不符
+#define  RET_ERR_SETTLE_PRICE                       2064     //结算价不符 未设置
+#define  RET_ERR_RISK_CONTRACT                       2065     //风险合约 禁止买入
 #endif // !defined(AFX_CODETABLE_H__CD822933_07A9_4A62_B9F2_0791BE0E5A56__INCLUDED_)

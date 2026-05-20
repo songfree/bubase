@@ -61,14 +61,11 @@ bool CTradeResource::Init(const char *confile)
 		g_lSvrTxList.push_back(ARB_SEND_QUERY);//仲裁查询
 		g_lArbTxList.push_back(ARB_SEND_CONTROL);//仲裁指定主机
 		g_lArbTxList.push_back(ARB_SEND_QUERY);//仲裁查询
-		
 	}
 	else
 	{
 		m_nSvrHostStatus = MASTERHOST;
 	}
-	
-	
 	if (m_pXml.GetNodeValueByPath("/package/head/public/listenport",false,g_nListenPort) == NULL)
 	{
 		m_errMsg = "file error,no [/package/head/public/listenport] node";
@@ -101,6 +98,28 @@ bool CTradeResource::Init(const char *confile)
 	{
 		g_nProcTheadNum =50;
 	}
+    //广播配置
+    CXmlNode* bcnode = m_pXml.GetNodeByPath("package/head/broadcast", false);
+    if (bcnode != NULL)
+    {
+        CXmlNode* bcfuncnode = (CXmlNode*)bcnode->GetFirstChild();
+        while (bcfuncnode != NULL)
+        {
+            g_lBCFuncList.push_back(atoi(bcfuncnode->GetNodeValue().c_str()));
+            bcfuncnode = (CXmlNode*)bcfuncnode->getNextSibling();
+        }
+    }
+	//主备同步的广播
+    bcnode = m_pXml.GetNodeByPath("package/head/hasync", false);
+    if (bcnode != NULL)
+    {
+        CXmlNode* hafuncnode = (CXmlNode*)bcnode->GetFirstChild();
+        while (hafuncnode != NULL)
+        {
+            g_lHAFuncList.push_back(atoi(hafuncnode->GetNodeValue().c_str()));
+			hafuncnode = (CXmlNode*)hafuncnode->getNextSibling();
+        }
+    }
 	return true;
 }
 

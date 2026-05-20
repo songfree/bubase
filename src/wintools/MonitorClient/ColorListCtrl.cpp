@@ -4,9 +4,6 @@
 #include "ColorListCtrl.h"
 
 
-#include "stdafx.h"
-#include "ColorListCtrl.h"
-
 
 // CColorListCtrl
 
