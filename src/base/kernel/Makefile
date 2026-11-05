@@ -24,7 +24,7 @@ libbf_kernel.a: $(OBJL)
 	ar rv $@ $(OBJL)
 	mv $@ $(HOME)/lib
 libbf_kernel.so: $(OBJL)
-	g++ $(CPPFLAGS) $(CPPDEFS) -shared $(OBJL) -L$(HOME)/lib  -lpthread -ldl -o $@
+	g++ $(CPPFLAGS) $(CPPDEFS) -shared $(OBJL) -L$(HOME)/lib  -lpthread -ldl -lrt -o $@
 	mv $@ $(HOME)/lib
 
 clean:

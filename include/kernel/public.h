@@ -39,7 +39,7 @@
 #include <math.h>
 #include <float.h>
 #include <fstream>
-
+#include <stdint.h>
 /////////////////////////////////////////////////////////////////////////
 ///STL
 /////////////////////////////////////////////////////////////////////////
@@ -386,8 +386,8 @@ typedef void * DLLHANDLE;
 ///在Windows下，我们需要使用Sleep，而不用sleep。我们统一成SLEEP
 #ifdef _WINDOWS
 #define SLEEP(ms) Sleep(ms)
-#elif HP_UX
-#define SLEEP(ms) sleep(ms/1000)
+#elif defined(HP_UX)
+#define SLEEP(ms) usleep(ms*1000)
 #else
 #define SLEEP(ms) usleep(ms*1000)
 #endif
@@ -426,16 +426,25 @@ typedef void * DLLHANDLE;
 
 ///在Windows下，我们需要重新定义MAX和MIN宏
 #ifdef _WINDOWS
-#ifndef MAX
-#define MAX(a,b) max(a,b)
-#endif
-#ifndef MIN
-#define MIN(a,b) min(a,b)
-#endif
-#endif
+	#ifndef  NOMINMAX
+		#ifndef MAX
+			#define MAX(a,b) max(a,b)
+		#endif
+		#ifndef MIN
+			#define MIN(a,b) min(a,b)
+		#endif
+	#else
+		#ifndef MAX
+			#define MAX(a,b) std::max(a,b)
+		#endif
+		#ifndef MIN
+			#define MIN(a,b) std::min(a,b)
+		#endif
+	#endif
+#endif 
 #ifdef UNIX
-#define MAX(a,b) (((a)>(b))?(a):(b))
-#define MIN(a,b) (((a)<(b))?(a):(b))
+	#define MAX(a,b) (((a)>(b))?(a):(b))
+	#define MIN(a,b) (((a)<(b))?(a):(b))
 #endif
 
 ///取得当前工作目录的区别

@@ -74,7 +74,7 @@ public:
 	
 	/// 函数名: Lock
     /// 编程  : wms 2005-7-9 0:11:47
-    /// 描述  : 对本资源进行加锁（阻塞模式）
+    /// 描述  : 对本资源进行加锁（非阻塞模式）
     /// 返回  : bool: 是否加锁成功，返回false，则用GetMessage()得到错误信息
 	bool Lock(int offset=0,int len=-1);
 
@@ -140,7 +140,9 @@ public:
 private:
 	bool locktype(int ltype, unsigned int offset, unsigned int  len);
 
-
+  // 禁止拷贝，避免 double close / double unmap
+    CShareMemory(const CShareMemory&);
+    CShareMemory& operator=(const CShareMemory&);
 };
 #undef KERNEL_EXPORT
 #endif /// !defined(AFX_SHAREMEMORY_H__385E9967_54D4_4A8A_AD31_0445E3EF56CC__INCLUDED_)

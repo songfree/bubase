@@ -29,7 +29,28 @@
 #include <stdarg.h>
 
 #include <unordered_set>
-#include <functional>
+#include <functional>	
+
+#include <string>
+#include <cstring>
+#include <cerrno>
+#include <cstddef>
+#include <cstdint>
+#include <list>
+#include <unordered_map>
+#include <unordered_set>
+#include <mutex>
+#include <algorithm>
+#include <atomic>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
  // from boost (functional/hash):
  // see http://www.boost.org/doc/libs/1_35_0/doc/html/hash/combine.html
@@ -5844,5 +5865,1331 @@ public:
 };
 
 
+//linux makefile 要加： -D_FILE_OFFSET_BITS = 64
+// 编译期校验：T 必须是 trivially copyable 且 standard layout
+  // CFileMapping.h
+
+// ============================================================
+// 映射模式
+// ============================================================
+enum class MapMode
+{
+    DirectWrite,   // 模式1：MAP_SHARED / PAGE_READWRITE，Flush 才确保落盘，无 LRU，适合生成文件
+    CopyOnWrite    // 模式2：MAP_PRIVATE / PAGE_WRITECOPY，COW + LRU，退出不落盘
+};
+
+// ============================================================
+// CFileMapping<T>：跨平台文件映射，支持模式1生成、模式2 COW 处理
+// ============================================================
+template <typename T>
+class CFileMapping
+{
+public:
+    // --------------------------------------------------------
+    // 构造 / 析构 / 拷贝 / 移动
+    // --------------------------------------------------------
+
+    /// @brief 默认构造：初始化所有句柄为空，不打开任何文件。
+    CFileMapping() { InitHandles(); }
+
+    /// @brief 析构：调用 Close() 释放映射和句柄。
+    ~CFileMapping() { Close(); }
+
+    /// @brief 禁止拷贝构造（映射句柄不可复制）。
+    CFileMapping(const CFileMapping&) = delete;
+
+    /// @brief 禁止拷贝赋值（映射句柄不可复制）。
+    CFileMapping& operator=(const CFileMapping&) = delete;
+
+    /// @brief 移动构造：接管源对象的所有资源，源对象被置空。
+    CFileMapping(CFileMapping&& o) noexcept
+    {
+        InitHandles();
+        MoveFrom(o);
+    }
+
+    /// @brief 移动赋值：先 Close() 自身，再接管源对象资源。
+    CFileMapping& operator=(CFileMapping&& o) noexcept
+    {
+        if (this != &o)
+        {
+            Close();
+            InitHandles();
+            MoveFrom(o);
+        }
+        return *this;
+    }
+
+    // --------------------------------------------------------
+    // 打开接口
+    // --------------------------------------------------------
+
+    /// @brief 模式1：打开/创建文件并映射 byte_size 字节（MAP_SHARED）。
+    /// @param path 文件路径
+    /// @param byte_size 映射字节数；>0 时创建或调整文件到该大小，==0 时使用文件现有大小
+    /// @return 成功 true，失败 false（错误信息见 Error()）
+    bool OpenDirect(const std::string& path, size_t byte_size)
+    {
+        Close();
+        m_eMode = MapMode::DirectWrite;
+        m_sError.clear();
+#ifdef _WIN32
+        return OpenDirectWindows(path, byte_size);
+#else
+        return OpenDirectPosix(path, byte_size);
+#endif
+    }
+
+    /// @brief 模式2：只读打开文件并映射为 COW（MAP_PRIVATE）。
+    /// @param path 文件路径
+    /// @return 成功 true，失败 false（错误信息见 Error()）
+    bool OpenCow(const std::string& path)
+    {
+        Close();
+        m_eMode = MapMode::CopyOnWrite;
+        m_sError.clear();
+#ifdef _WIN32
+        return OpenCowWindows(path);
+#else
+        return OpenCowPosix(path);
+#endif
+    }
+
+    // --------------------------------------------------------
+    // 模式1 的两种收尾方式
+    // --------------------------------------------------------
+
+    /// @brief 模式1 生成完成后：Flush → 按 actual_count 截断 → 关闭。仅生成不处理时使用。
+    /// @param actual_count 实际写入的元素个数，必须 <= Count()
+    /// @return 成功 true，失败 false
+    bool CloseDirect(size_t actual_count)
+    {
+        if (m_eMode != MapMode::DirectWrite)
+        {
+            m_sError = "CloseDirect: not in DirectWrite mode";
+            return false;
+}
+        if (actual_count > m_nCount)
+        {
+            m_sError = "CloseDirect: actual_count exceeds mapped count";
+            return false;
+        }
+
+        size_t actual_bytes = actual_count * sizeof(T);
+        Flush();
+
+#ifdef _WIN32
+        if (m_pBase) { UnmapViewOfFile(m_pBase); m_pBase = nullptr; }
+        if (m_hMap) { CloseHandle(m_hMap); m_hMap = NULL; }
+        if (m_hFile != INVALID_HANDLE_VALUE)
+        {
+            LARGE_INTEGER li;
+            li.QuadPart = static_cast<LONGLONG>(actual_bytes);
+            SetFilePointerEx(m_hFile, li, NULL, FILE_BEGIN);
+            SetEndOfFile(m_hFile);
+        }
+#else
+        if (m_pBase) { munmap(m_pBase, m_nSize); m_pBase = nullptr; }
+        if (m_nFd >= 0)
+            ftruncate(m_nFd, static_cast<off_t>(actual_bytes));
+#endif
+
+        ResetHandles();
+        m_nSize = 0;
+        m_nCount = 0;
+        ClearLruState();
+        return true;
+    }
+    /// @brief 模式1：显式调整映射大小（扩容/收缩）。仅 DirectWrite 模式有效。
+/// @param new_count 新的元素个数
+/// @return 成功 true；失败 false（尽力回滚到原大小）
+/// @note 收缩时超出 new_count 的数据被丢弃；扩容后新区域在 Linux 上读为零，
+///       Windows 上不保证为零。每次调整都会 munmap + mmap，频繁调用开销较大。
+/// @warning 不可与任何访问并发调用。
+    bool Resize(size_t new_count)
+    {
+        if (m_eMode != MapMode::DirectWrite)
+        {
+            m_sError = "Resize: only valid in DirectWrite mode";
+            return false;
+        }
+
+        size_t new_bytes = new_count * sizeof(T);
+        if (new_bytes == m_nSize)
+            return true;
+
+        // 收缩前先 Flush，避免截断丢弃尚未写回的数据
+        if (new_bytes < m_nSize)
+            Flush();
+
+        size_t old_size = m_nSize;
+
+#ifdef _WIN32
+        if (m_pBase) { UnmapViewOfFile(m_pBase); m_pBase = nullptr; }
+        if (m_hMap) { CloseHandle(m_hMap); m_hMap = NULL; }
+
+        LARGE_INTEGER li;
+        li.QuadPart = static_cast<LONGLONG>(new_bytes);
+        if (!SetFilePointerEx(m_hFile, li, NULL, FILE_BEGIN) ||
+            !SetEndOfFile(m_hFile))
+        {
+            m_sError = "Resize: SetEndOfFile failed: " +
+                std::to_string(GetLastError());
+            RestoreFileSizeWindows(old_size);
+            RemapDirectWindows(old_size);
+            return false;
+        }
+
+        if (new_bytes == 0)
+        {
+            m_nSize = 0;
+            m_nCount = 0;
+            return true;
+        }
+
+        if (!RemapDirectWindows(new_bytes))
+        {
+            // 回滚：文件大小恢复，重新映射旧大小
+            RestoreFileSizeWindows(old_size);
+            RemapDirectWindows(old_size);
+            m_sError = "Resize: remap failed";
+            return false;
+        }
+#else
+        if (m_pBase) { munmap(m_pBase, m_nSize); m_pBase = nullptr; }
+
+        if (ftruncate(m_nFd, static_cast<off_t>(new_bytes)) != 0)
+        {
+            m_sError = std::string("Resize: ftruncate failed: ") +
+                std::strerror(errno);
+            RemapDirectPosix(old_size);
+            return false;
+        }
+
+        if (new_bytes == 0)
+        {
+            m_nSize = 0;
+            m_nCount = 0;
+            return true;
+        }
+
+        void* p = mmap(nullptr, new_bytes, PROT_READ | PROT_WRITE,
+            MAP_SHARED, m_nFd, 0);
+        if (p == MAP_FAILED)
+        {
+            m_sError = std::string("Resize: mmap failed: ") +
+                std::strerror(errno);
+            // 回滚文件大小并重新映射
+            ftruncate(m_nFd, static_cast<off_t>(old_size));
+            RemapDirectPosix(old_size);
+            return false;
+        }
+        m_pBase = p;
+        m_nSize = new_bytes;
+        m_nCount = new_count;
+#endif
+        return true;
+    }
+    /// @brief 模式1 生成完成后：Flush → 按 actual_count 截断 → 就地重新映射为 COW。
+    ///        不重新打开文件，复用文件句柄。
+    /// @param actual_count 实际写入的元素个数，必须 <= Count()
+    /// @return 成功 true；成功后 Mode()==CopyOnWrite，Count()==actual_count，LRU/dirty 状态已清空
+    bool SwitchToCow(size_t actual_count)
+    {
+        if (m_eMode != MapMode::DirectWrite)
+        {
+            m_sError = "SwitchToCow: not in DirectWrite mode";
+            return false;
+        }
+        if (actual_count > m_nCount)
+        {
+            m_sError = "SwitchToCow: actual_count exceeds mapped count";
+            return false;
+        }
+
+        size_t actual_bytes = actual_count * sizeof(T);
+
+        // 1) 先 Flush，确保数据落盘后再截断，避免丢数据
+        Flush();
+
+        // 2) 释放旧映射，保留文件句柄
+#ifdef _WIN32
+        if (m_pBase) { UnmapViewOfFile(m_pBase); m_pBase = nullptr; }
+        if (m_hMap) { CloseHandle(m_hMap); m_hMap = NULL; }
+
+        // 3) 截断到实际大小
+        LARGE_INTEGER li;
+        li.QuadPart = static_cast<LONGLONG>(actual_bytes);
+        if (!SetFilePointerEx(m_hFile, li, NULL, FILE_BEGIN) ||
+            !SetEndOfFile(m_hFile))
+        {
+            m_sError = "SetEndOfFile failed: " + std::to_string(GetLastError());
+            ResetHandles();
+            m_nSize = 0; m_nCount = 0;
+            return false;
+        }
+
+        if (actual_bytes == 0)
+        {
+            m_eMode = MapMode::CopyOnWrite;
+            m_nSize = 0; m_nCount = 0;
+            ClearLruState();
+            return true;
+        }
+
+        // 4) 重新映射为 COW
+        m_hMap = CreateFileMappingA(
+            m_hFile, NULL, PAGE_WRITECOPY,
+            static_cast<DWORD>(static_cast<uint64_t>(actual_bytes) >> 32),
+            static_cast<DWORD>(static_cast<uint64_t>(actual_bytes) & 0xFFFFFFFFULL),
+            NULL);
+        if (!m_hMap)
+        {
+            m_sError = "CreateFileMapping(PAGE_WRITECOPY) failed: " +
+                std::to_string(GetLastError());
+            ResetHandles();
+            m_nSize = 0; m_nCount = 0;
+            return false;
+        }
+        void* p = MapViewOfFile(m_hMap, FILE_MAP_COPY, 0, 0, 0);
+        if (!p)
+        {
+            m_sError = "MapViewOfFile(FILE_MAP_COPY) failed: " +
+                std::to_string(GetLastError());
+            ResetHandles();
+            m_nSize = 0; m_nCount = 0;
+            return false;
+        }
+        m_pBase = p;
+#else
+        if (m_pBase) { munmap(m_pBase, m_nSize); m_pBase = nullptr; }
+
+        if (ftruncate(m_nFd, static_cast<off_t>(actual_bytes)) != 0)
+        {
+            m_sError = std::string("ftruncate failed: ") + std::strerror(errno);
+            ResetHandles();
+            m_nSize = 0; m_nCount = 0;
+            return false;
+        }
+
+        if (actual_bytes == 0)
+        {
+            m_eMode = MapMode::CopyOnWrite;
+            m_nSize = 0; m_nCount = 0;
+            ClearLruState();
+            return true;
+        }
+
+        void* p = mmap(nullptr, actual_bytes, PROT_READ | PROT_WRITE,
+            MAP_PRIVATE, m_nFd, 0);
+        if (p == MAP_FAILED)
+        {
+            m_sError = std::string("mmap(MAP_PRIVATE) failed: ") +
+                std::strerror(errno);
+            ResetHandles();
+            m_nSize = 0; m_nCount = 0;
+            return false;
+        }
+        m_pBase = p;
+#endif
+
+        m_eMode = MapMode::CopyOnWrite;
+        m_nSize = actual_bytes;
+        m_nCount = actual_count;
+        ClearLruState();
+        return true;
+        }
+
+    /// @brief 关闭映射并释放所有句柄和 LRU 状态。不主动 Flush（COW 修改丢弃；DirectWrite 依赖 OS 异步写回）。
+    void Close()
+    {
+        if (m_pBase)
+        {
+#ifdef _WIN32
+            UnmapViewOfFile(m_pBase);
+#else
+            munmap(m_pBase, m_nSize);
+#endif
+        }
+        m_pBase = nullptr;
+        m_nSize = 0;
+        m_nCount = 0;
+        ResetHandles();
+        ClearLruState();
+    }
+
+    // --------------------------------------------------------
+    // 基本访问
+    // --------------------------------------------------------
+
+    /// @brief 是否已成功映射（空文件返回 false）。
+    bool IsOpen() const { return m_pBase != nullptr; }
+
+    /// @brief 映射的字节数。
+    size_t ByteSize() const { return m_nSize; }
+
+    /// @brief 映射的元素个数（ByteSize() / sizeof(T)）。
+    size_t Count() const { return m_nCount; }
+
+    /// @brief 最近一次错误信息。
+    const std::string& Error() const { return m_sError; }
+
+    /// @brief 当前映射模式。
+    MapMode Mode() const { return m_eMode; }
+
+    /// @brief 非 const 数据指针。COW 下调用会禁用 LRU 淘汰（无法跟踪写），所有页常驻。
+    T* Data()
+    {
+        if (m_eMode == MapMode::CopyOnWrite)
+            MarkAllDirty();
+        return static_cast<T*>(m_pBase);
+    }
+
+    /// @brief const 数据指针。不改变 LRU 状态。
+    const T* Data() const
+    {
+        return static_cast<const T*>(m_pBase);
+    }
+
+    /// @brief 非 const 按索引访问。COW 下自动 MarkDirty 该页，返回可写指针。
+    /// @return 越界返回 nullptr
+    T* At(size_t idx)
+    {
+        if (idx >= m_nCount) return nullptr;
+        TouchPage(idx, true);
+        return &static_cast<T*>(m_pBase)[idx];
+    }
+
+    /// @brief const 按索引访问。走正常 LRU，不标记 dirty。
+    /// @return 越界返回 nullptr
+    const T* At(size_t idx) const
+    {
+        if (idx >= m_nCount) return nullptr;
+        TouchPage(idx, false);
+        return &static_cast<const T*>(m_pBase)[idx];
+    }
+
+    /// @brief 非 const 下标访问。COW 下自动 MarkDirty 该页。
+    /// @warning 不检查越界，调用方保证 idx < Count()
+    T& operator[](size_t idx)
+    {
+        TouchPage(idx, true);
+        return static_cast<T*>(m_pBase)[idx];
+    }
+
+    /// @brief const 下标访问。走正常 LRU，不标记 dirty。
+    /// @warning 不检查越界，调用方保证 idx < Count()
+    const T& operator[](size_t idx) const
+    {
+        TouchPage(idx, false);
+        return static_cast<const T*>(m_pBase)[idx];
+    }
+
+    // --------------------------------------------------------
+    // dirty 标记（COW 模式下）
+    // --------------------------------------------------------
+
+    /// @brief 显式声明 idx 所在页会被修改。该页移出 LRU、常驻内存，修改永不丢弃。
+    /// @note 必须在写之前调用；非 const 的 At()/operator[] 会自动调用。
+    void MarkDirty(size_t idx)
+    {
+        if (m_eMode != MapMode::CopyOnWrite || !m_pBase || idx >= m_nCount)
+            return;
+        size_t page_idx = (idx * sizeof(T)) / m_nPageSize;
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        MarkDirtyLocked(page_idx);
+    }
+
+    /// @brief 批量标记 [begin, end) 覆盖的所有页为 dirty。
+    void MarkDirtyRange(size_t begin, size_t end)
+    {
+        if (m_eMode != MapMode::CopyOnWrite || !m_pBase) return;
+        if (begin >= m_nCount) return;
+        if (end > m_nCount) end = m_nCount;
+        if (begin >= end) return;
+
+        size_t p0 = (begin * sizeof(T)) / m_nPageSize;
+        size_t p1 = ((end - 1) * sizeof(T)) / m_nPageSize;
+
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        for (size_t p = p0; p <= p1; ++p)
+            MarkDirtyLocked(p);
+    }
+
+    // --------------------------------------------------------
+    // reload：确保 idx 所在页当前在内存中
+    // --------------------------------------------------------
+
+    /// @brief 确保 idx 所在页当前在内存。
+    ///        dirty 页：修改保留，no-op。
+    ///        clean 页在 LRU：移到 LRU 头部。
+    ///        clean 页不在 LRU：加入 LRU，淘汰最旧页，从文件预读加载。
+    /// @return 越界或模式不对返回 false
+    bool Reload(size_t idx)
+    {
+        if (!m_pBase || idx >= m_nCount || m_eMode != MapMode::CopyOnWrite)
+            return false;
+
+        size_t page_idx = (idx * sizeof(T)) / m_nPageSize;
+
+        bool need_load = false;
+        {
+            std::lock_guard<std::mutex> lk(m_mtxLru);
+
+            if (m_bAllDirty) return true;                     // 淘汰已禁用
+            if (m_setDirty.count(page_idx)) return true;      // dirty 页常驻
+
+            auto it = m_mapLru.find(page_idx);
+            if (it != m_mapLru.end())
+            {
+                m_listLru.splice(m_listLru.begin(), m_listLru, it->second);
+                return true;
+            }
+
+            if (m_bLruEnabled.load(std::memory_order_relaxed))
+            {
+                m_listLru.push_front(page_idx);
+                m_mapLru[page_idx] = m_listLru.begin();
+                while (m_mapLru.size() > m_nLruCapacity)
+                    EvictOldestLocked();
+            }
+            need_load = true;
+        }
+
+        if (need_load) PreloadPage(page_idx);
+        return true;
+        }
+
+    /// @brief 批量 Reload [begin, end)。
+    void ReloadRange(size_t begin, size_t end)
+    {
+        if (!m_pBase || m_eMode != MapMode::CopyOnWrite) return;
+        if (begin >= m_nCount) return;
+        if (end > m_nCount) end = m_nCount;
+        if (begin >= end) return;
+
+        size_t per_page = m_nPageSize / sizeof(T);
+        if (per_page == 0) per_page = 1;
+
+        size_t p0 = (begin * sizeof(T)) / m_nPageSize;
+        size_t p1 = ((end - 1) * sizeof(T)) / m_nPageSize;
+        for (size_t p = p0; p <= p1; ++p)
+            Reload(p * per_page);
+    }
+
+    // --------------------------------------------------------
+    // 刷盘（仅 DirectWrite 有效）
+    // --------------------------------------------------------
+
+    /// @brief 将 DirectWrite 模式的修改同步到磁盘。COW 模式下为 no-op。
+    void Flush()
+    {
+        if (!m_pBase || m_eMode != MapMode::DirectWrite) return;
+#ifdef _WIN32
+        FlushViewOfFile(m_pBase, m_nSize);
+        if (m_hFile != INVALID_HANDLE_VALUE)
+            FlushFileBuffers(m_hFile);
+#else
+        msync(m_pBase, m_nSize, MS_SYNC);
+#endif
+    }
+
+    // --------------------------------------------------------
+    // 预取 / 缓存建议
+    // --------------------------------------------------------
+
+    /// @brief 预取 idx 所在页到内存（只读提示，走 clean 路径）。
+    void Prefetch(size_t idx) const
+    {
+        if (idx >= m_nCount || !m_pBase) return;
+        TouchPage(idx, false);
+        const void* addr = static_cast<const char*>(m_pBase) + idx * sizeof(T);
+#ifdef _WIN32
+        WIN32_MEMORY_RANGE_ENTRY range;
+        range.VirtualAddress = const_cast<void*>(addr);
+        range.NumberOfBytes = sizeof(T);
+        PrefetchVirtualMemory(GetCurrentProcess(), 1, &range, 0);
+#else
+        off_t off = static_cast<off_t>(idx) * static_cast<off_t>(sizeof(T));
+        posix_fadvise(m_nFd, off, static_cast<off_t>(sizeof(T)), POSIX_FADV_WILLNEED);
+#endif
+    }
+
+    /// @brief 建议内核按随机访问模式处理（Linux only）。
+    void AdviseRandom()
+    {
+#ifdef __linux__
+        if (m_pBase) madvise(m_pBase, m_nSize, MADV_RANDOM);
+#endif
+    }
+
+    /// @brief 建议内核使用大页（Linux only）。
+    void AdviseHugePage()
+    {
+#ifdef __linux__
+        if (m_pBase) madvise(m_pBase, m_nSize, MADV_HUGEPAGE);
+#endif
+    }
+
+    // --------------------------------------------------------
+    // LRU 接口
+    // --------------------------------------------------------
+
+    /// @brief 设置 LRU 容量（只限制 clean 页；dirty 页常驻不受限制）。0 表示禁用 LRU。
+    void SetLruCapacity(size_t max_pages)
+    {
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        m_nLruCapacity = max_pages;
+        m_bLruEnabled.store(max_pages > 0, std::memory_order_relaxed);
+        if (max_pages == 0)
+        {
+            m_listLru.clear();
+            m_mapLru.clear();
+    }
+        else
+        {
+            while (m_mapLru.size() > m_nLruCapacity)
+                EvictOldestLocked();
+        }
+    }
+
+    /// @brief 返回当前 LRU 容量。
+    size_t LruCapacity() const
+    {
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        return m_nLruCapacity;
+    }
+
+    /// @brief 返回当前 LRU 中缓存的 clean 页数量。
+    size_t LruCachedPages() const
+    {
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        return m_mapLru.size();
+    }
+
+    /// @brief 返回当前被标记 dirty 的页数量。
+    size_t LruDirtyPages() const
+    {
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        return m_setDirty.size();
+    }
+
+    /// @brief 是否因调用 Data() 而禁用了 LRU 淘汰。
+    bool LruEvictionDisabled() const
+    {
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        return m_bAllDirty;
+    }
+
+private:
+    // --------------------------------------------------------
+    // 内部工具
+    // --------------------------------------------------------
+
+    /// @brief 初始化句柄和所有成员为默认值。
+    void InitHandles()
+    {
+#ifdef _WIN32
+        m_hFile = INVALID_HANDLE_VALUE;
+        m_hMap = NULL;
+#else
+        m_nFd = -1;
+#endif
+        m_pBase = nullptr;
+        m_nSize = 0;
+        m_nCount = 0;
+        m_eMode = MapMode::DirectWrite;
+        m_nPageSize = QueryPageSize();
+        m_bAllDirty = false;
+        m_nLruCapacity = 0;
+        m_bLruEnabled.store(false, std::memory_order_relaxed);
+    }
+
+    /// @brief 查询系统页大小（字节）。
+    static size_t QueryPageSize()
+    {
+#ifdef _WIN32
+        SYSTEM_INFO si; GetSystemInfo(&si);
+        return static_cast<size_t>(si.dwPageSize);
+#else
+        long ps = sysconf(_SC_PAGESIZE);
+        return ps > 0 ? static_cast<size_t>(ps) : 4096;
+#endif
+    }
+
+    /// @brief 关闭并重置文件/映射句柄。
+    void ResetHandles()
+    {
+#ifdef _WIN32
+        if (m_hMap) { CloseHandle(m_hMap); m_hMap = NULL; }
+        if (m_hFile != INVALID_HANDLE_VALUE)
+        {
+            CloseHandle(m_hFile); m_hFile = INVALID_HANDLE_VALUE;
+        }
+#else
+        if (m_nFd >= 0) { ::close(m_nFd); m_nFd = -1; }
+#endif
+    }
+
+    /// @brief 清空 LRU / dirty 相关状态。
+    void ClearLruState()
+    {
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        m_listLru.clear();
+        m_mapLru.clear();
+        m_setDirty.clear();
+        m_bAllDirty = false;
+    }
+
+    /// @brief 从源对象接管所有资源，源对象被置空。移动/赋值用。
+    void MoveFrom(CFileMapping& o)
+    {
+        m_pBase = o.m_pBase;
+        m_nSize = o.m_nSize;
+        m_nCount = o.m_nCount;
+        m_eMode = o.m_eMode;
+        m_nPageSize = o.m_nPageSize;
+        m_sError.swap(o.m_sError);
+#ifdef _WIN32
+        m_hFile = o.m_hFile; m_hMap = o.m_hMap;
+        o.m_hFile = INVALID_HANDLE_VALUE; o.m_hMap = NULL;
+#else
+        m_nFd = o.m_nFd; o.m_nFd = -1;
+#endif
+        // 移动/赋值不应与访问并发，这里不加锁
+        m_nLruCapacity = o.m_nLruCapacity;
+        m_listLru = std::move(o.m_listLru);
+        m_mapLru = std::move(o.m_mapLru);
+        m_setDirty = std::move(o.m_setDirty);
+        m_bAllDirty = o.m_bAllDirty;
+        m_bLruEnabled.store(o.m_bLruEnabled.load(std::memory_order_relaxed),
+            std::memory_order_relaxed);
+
+        o.m_nLruCapacity = 0;
+        o.m_bAllDirty = false;
+        o.m_bLruEnabled.store(false, std::memory_order_relaxed);
+        o.m_pBase = nullptr;
+        o.m_nSize = 0;
+        o.m_nCount = 0;
+        o.m_eMode = MapMode::DirectWrite;
+    }
+
+    /// @brief 在持锁状态下把 page_idx 标记为 dirty（移出 LRU、加入 dirty 集合）。
+    /// @note 调用方必须持有 m_mtxLru。
+    void MarkDirtyLocked(size_t page_idx) const
+    {
+        if (m_bAllDirty) return;
+        auto it = m_mapLru.find(page_idx);
+        if (it != m_mapLru.end())
+        {
+            m_listLru.erase(it->second);
+            m_mapLru.erase(it);
+        }
+        m_setDirty.insert(page_idx);
+    }
+
+    /// @brief 访问 idx 所在页：is_write=true 时自动 MarkDirty；false 时走 LRU 刷新/加入。
+    void TouchPage(size_t idx, bool is_write) const
+    {
+        if (m_eMode != MapMode::CopyOnWrite) return;
+        if (!m_pBase || idx >= m_nCount) return;
+
+        size_t page_idx = (idx * sizeof(T)) / m_nPageSize;
+
+        if (is_write)
+        {
+            std::lock_guard<std::mutex> lk(m_mtxLru);
+            MarkDirtyLocked(page_idx);
+            return;
+        }
+
+        if (!m_bLruEnabled.load(std::memory_order_relaxed)) return;
+
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        if (m_bAllDirty) return;
+        if (m_setDirty.count(page_idx)) return;
+
+        auto it = m_mapLru.find(page_idx);
+        if (it != m_mapLru.end())
+        {
+            m_listLru.splice(m_listLru.begin(), m_listLru, it->second);
+            return;
+        }
+        m_listLru.push_front(page_idx);
+        m_mapLru[page_idx] = m_listLru.begin();
+        while (m_mapLru.size() > m_nLruCapacity)
+            EvictOldestLocked();
+    }
+
+    /// @brief 淘汰 LRU 尾部（最旧）的 clean 页。Linux 用 MADV_DONTNEED 释放；Windows 仅统计移除。
+    /// @note 调用方必须持有 m_mtxLru。
+    void EvictOldestLocked() const
+    {
+        if (m_bAllDirty) return;
+        if (m_listLru.empty()) return;
+        size_t page_idx = m_listLru.back();
+        m_listLru.pop_back();
+        m_mapLru.erase(page_idx);
+
+        // dirty 页从不进入 LRU 列表，这里淘汰的一定是 clean 页
+#ifdef __linux__
+        if (!m_pBase) return;
+        size_t off = page_idx * m_nPageSize;
+        if (off >= m_nSize) return;
+        size_t len = std::min(m_nPageSize, m_nSize - off);
+        madvise(static_cast<char*>(m_pBase) + off, len, MADV_DONTNEED);
+#endif
+        // Windows：无等价 API，clean 文件页由 OS 自然回收
+    }
+
+    /// @brief 禁用 LRU 淘汰（COW 下调用非 const Data() 后无法跟踪写，安全优先）。
+    void MarkAllDirty() const
+    {
+        std::lock_guard<std::mutex> lk(m_mtxLru);
+        m_bAllDirty = true;
+        m_listLru.clear();
+        m_mapLru.clear();
+    }
+
+    /// @brief 锁外调用：触发一页从文件加载到内存。
+    void PreloadPage(size_t page_idx) const
+    {
+        if (!m_pBase) return;
+        size_t off = page_idx * m_nPageSize;
+        if (off >= m_nSize) return;
+        size_t len = MIN(m_nPageSize, m_nSize - off);
+
+#ifdef _WIN32
+        volatile char c = static_cast<char*>(m_pBase)[off];
+        (void)c;
+#else
+        madvise(static_cast<char*>(m_pBase) + off, len, MADV_WILLNEED);
+#endif
+    }
+
+    // --------------------------------------------------------
+    // 平台相关：模式1
+    // --------------------------------------------------------
+#ifdef _WIN32
+    /// @brief Windows 模式1：创建/打开文件到 byte_size，映射为 PAGE_READWRITE。
+    bool OpenDirectWindows(const std::string& path, size_t byte_size)
+    {
+        m_hFile = CreateFileA(path.c_str(),
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ, NULL,
+            OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (m_hFile == INVALID_HANDLE_VALUE)
+        {
+            m_sError = "CreateFile failed: " + std::to_string(GetLastError());
+            return false;
+        }
+
+        LARGE_INTEGER sz;
+        if (!GetFileSizeEx(m_hFile, &sz))
+        {
+            m_sError = "GetFileSizeEx failed";
+            ResetHandles();
+            return false;
+        }
+        size_t actual = static_cast<size_t>(sz.QuadPart);
+        size_t target = (byte_size > 0) ? byte_size : actual;
+        if (target != actual)
+        {
+            LARGE_INTEGER ns; ns.QuadPart = static_cast<LONGLONG>(target);
+            if (!SetFilePointerEx(m_hFile, ns, NULL, FILE_BEGIN) ||
+                !SetEndOfFile(m_hFile))
+            {
+                m_sError = "SetEndOfFile failed: " + std::to_string(GetLastError());
+                ResetHandles();
+                return false;
+            }
+        }
+        if (target == 0)
+        {
+            m_nSize = 0; m_nCount = 0; m_pBase = NULL;
+            return true;
+        }
+        if (target % sizeof(T) != 0)
+            m_sError = "warning: file size not multiple of record size";
+
+        m_hMap = CreateFileMappingA(m_hFile, NULL, PAGE_READWRITE,
+            static_cast<DWORD>(static_cast<uint64_t>(target) >> 32),
+            static_cast<DWORD>(static_cast<uint64_t>(target) & 0xFFFFFFFFULL),
+            NULL);
+        if (!m_hMap)
+        {
+            m_sError = "CreateFileMapping failed: " + std::to_string(GetLastError());
+            ResetHandles();
+            return false;
+        }
+        void* p = MapViewOfFile(m_hMap, FILE_MAP_WRITE, 0, 0, 0);
+        if (!p)
+        {
+            m_sError = "MapViewOfFile failed: " + std::to_string(GetLastError());
+            ResetHandles();
+            return false;
+        }
+        m_pBase = p;
+        m_nSize = target;
+        m_nCount = target / sizeof(T);
+        return true;
+    }
+
+    /// @brief Windows 模式2：只读打开文件，映射为 PAGE_WRITECOPY（COW）。
+    bool OpenCowWindows(const std::string& path)
+    {
+        m_hFile = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
+            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (m_hFile == INVALID_HANDLE_VALUE)
+        {
+            m_sError = "CreateFile failed: " + std::to_string(GetLastError());
+            return false;
+        }
+        LARGE_INTEGER sz;
+        if (!GetFileSizeEx(m_hFile, &sz))
+        {
+            m_sError = "GetFileSizeEx failed";
+            ResetHandles();
+            return false;
+        }
+        if (sz.QuadPart == 0)
+        {
+            m_nSize = 0; m_nCount = 0; m_pBase = NULL;
+            return true;
+        }
+        if (sz.QuadPart % static_cast<LONGLONG>(sizeof(T)) != 0)
+            m_sError = "warning: file size not multiple of record size";
+
+        m_hMap = CreateFileMappingA(m_hFile, NULL, PAGE_WRITECOPY,
+            static_cast<DWORD>(sz.QuadPart >> 32),
+            static_cast<DWORD>(sz.QuadPart & 0xFFFFFFFFULL),
+            NULL);
+        if (!m_hMap)
+        {
+            m_sError = "CreateFileMapping(PAGE_WRITECOPY) failed: " +
+                std::to_string(GetLastError());
+            ResetHandles();
+            return false;
+        }
+        void* p = MapViewOfFile(m_hMap, FILE_MAP_COPY, 0, 0, 0);
+        if (!p)
+        {
+            m_sError = "MapViewOfFile(FILE_MAP_COPY) failed: " +
+                std::to_string(GetLastError());
+            ResetHandles();
+            return false;
+        }
+        m_pBase = p;
+        m_nSize = static_cast<size_t>(sz.QuadPart);
+        m_nCount = m_nSize / sizeof(T);
+        return true;
+    }
+
+    HANDLE m_hFile;   ///< 文件句柄（Windows）
+    HANDLE m_hMap;    ///< 文件映射句柄（Windows）
+#else
+    /// @brief POSIX 模式1：open(O_RDWR|O_CREAT) + ftruncate 到 byte_size + mmap(MAP_SHARED)。
+    bool OpenDirectPosix(const std::string& path, size_t byte_size)
+    {
+        m_nFd = ::open(path.c_str(), O_RDWR | O_CREAT, 0644);
+        if (m_nFd < 0)
+        {
+            m_sError = std::string("open failed: ") + std::strerror(errno);
+            return false;
+        }
+        struct stat st;
+        if (fstat(m_nFd, &st) != 0)
+        {
+            m_sError = std::string("fstat failed: ") + std::strerror(errno);
+            ResetHandles();
+            return false;
+        }
+        size_t actual = static_cast<size_t>(st.st_size);
+        size_t target = (byte_size > 0) ? byte_size : actual;
+        if (target != actual)
+        {
+            if (ftruncate(m_nFd, static_cast<off_t>(target)) != 0)
+            {
+                m_sError = std::string("ftruncate failed: ") + std::strerror(errno);
+                ResetHandles();
+                return false;
+            }
+        }
+        if (target == 0)
+        {
+            m_nSize = 0; m_nCount = 0; m_pBase = nullptr;
+            return true;
+        }
+        if (target % sizeof(T) != 0)
+            m_sError = "warning: file size not multiple of record size";
+
+        void* p = mmap(nullptr, target, PROT_READ | PROT_WRITE,
+            MAP_SHARED, m_nFd, 0);
+        if (p == MAP_FAILED)
+        {
+            m_sError = std::string("mmap failed: ") + std::strerror(errno);
+            ResetHandles();
+            return false;
+        }
+        m_pBase = p;
+        m_nSize = target;
+        m_nCount = target / sizeof(T);
+        return true;
+    }
+
+    /// @brief POSIX 模式2：open(O_RDONLY) + mmap(MAP_PRIVATE)，写触发 COW 不落盘。
+    bool OpenCowPosix(const std::string& path)
+    {
+        m_nFd = ::open(path.c_str(), O_RDONLY);
+        if (m_nFd < 0)
+        {
+            m_sError = std::string("open failed: ") + std::strerror(errno);
+            return false;
+        }
+        struct stat st;
+        if (fstat(m_nFd, &st) != 0)
+        {
+            m_sError = std::string("fstat failed: ") + std::strerror(errno);
+            ResetHandles();
+            return false;
+        }
+        if (st.st_size == 0)
+        {
+            m_nSize = 0; m_nCount = 0; m_pBase = nullptr;
+            return true;
+        }
+        if (st.st_size % static_cast<off_t>(sizeof(T)) != 0)
+            m_sError = "warning: file size not multiple of record size";
+
+        void* p = mmap(nullptr, static_cast<size_t>(st.st_size),
+            PROT_READ | PROT_WRITE,
+            MAP_PRIVATE, m_nFd, 0);
+        if (p == MAP_FAILED)
+        {
+            m_sError = std::string("mmap failed: ") + std::strerror(errno);
+            ResetHandles();
+            return false;
+        }
+        m_pBase = p;
+        m_nSize = static_cast<size_t>(st.st_size);
+        m_nCount = m_nSize / sizeof(T);
+        return true;
+    }
+#ifdef _WIN32
+    /// @brief 把文件大小恢复到指定字节数（Resize 失败回滚用）。
+    void RestoreFileSizeWindows(size_t bytes)
+    {
+        LARGE_INTEGER li;
+        li.QuadPart = static_cast<LONGLONG>(bytes);
+        SetFilePointerEx(m_hFile, li, NULL, FILE_BEGIN);
+        SetEndOfFile(m_hFile);
+    }
+
+    /// @brief 用现有文件句柄重新建立 DirectWrite 映射（不 open）。
+    /// @param bytes 映射字节数
+    bool RemapDirectWindows(size_t bytes)
+    {
+        if (bytes == 0)
+        {
+            m_pBase = NULL;
+            m_nSize = 0;
+            m_nCount = 0;
+            return true;
+        }
+        m_hMap = CreateFileMappingA(
+            m_hFile, NULL, PAGE_READWRITE,
+            static_cast<DWORD>(static_cast<uint64_t>(bytes) >> 32),
+            static_cast<DWORD>(static_cast<uint64_t>(bytes) & 0xFFFFFFFFULL),
+            NULL);
+        if (!m_hMap) return false;
+
+        void* p = MapViewOfFile(m_hMap, FILE_MAP_WRITE, 0, 0, 0);
+        if (!p)
+        {
+            CloseHandle(m_hMap);
+            m_hMap = NULL;
+            return false;
+        }
+        m_pBase = p;
+        m_nSize = bytes;
+        m_nCount = bytes / sizeof(T);
+        return true;
+    }
+#else
+    /// @brief 用现有 fd 重新建立 DirectWrite 映射（不 open、不改文件大小）。
+    bool RemapDirectPosix(size_t bytes)
+    {
+        if (bytes == 0)
+        {
+            m_pBase = nullptr;
+            m_nSize = 0;
+            m_nCount = 0;
+            return true;
+        }
+        void* p = mmap(nullptr, bytes, PROT_READ | PROT_WRITE,
+            MAP_SHARED, m_nFd, 0);
+        if (p == MAP_FAILED) return false;
+        m_pBase = p;
+        m_nSize = bytes;
+        m_nCount = bytes / sizeof(T);
+        return true;
+    }
+#endif
+
+    int m_nFd;   ///< 文件描述符（POSIX）
+#endif
+
+    // --------------------------------------------------------
+    // 通用成员变量
+    // --------------------------------------------------------
+
+    void* m_pBase;      ///< 映射基地址（nullptr 表示未映射）
+    size_t      m_nSize;      ///< 映射字节数
+    size_t      m_nCount;     ///< 映射元素个数（m_nSize / sizeof(T)）
+    MapMode     m_eMode;      ///< 当前映射模式
+    std::string m_sError;     ///< 最近一次错误信息
+
+    // --------------------------------------------------------
+    // LRU / dirty 状态（由 m_mtxLru 保护）
+    // --------------------------------------------------------
+
+    mutable std::mutex m_mtxLru;   ///< 保护以下所有 LRU/dirty 状态
+    mutable std::list<size_t> m_listLru;   ///< LRU 双向链表，头部最新、尾部最旧（存 page_idx）
+    mutable std::unordered_map<size_t, std::list<size_t>::iterator> m_mapLru;  ///< page_idx → m_listLru 迭代器
+    mutable std::unordered_set<size_t> m_setDirty;  ///< 被标记 dirty 的 page_idx 集合（常驻、不淘汰）
+    mutable bool m_bAllDirty;      ///< true 表示禁用淘汰（COW 下调用 Data() 后置位）
+    size_t m_nLruCapacity;         ///< LRU 容量（clean 页数上限；0 表示禁用 LRU）
+    std::atomic<bool> m_bLruEnabled;  ///< LRU 是否启用（m_nLruCapacity > 0）
+    size_t m_nPageSize;            ///< 系统页大小（字节）
+};
+
+#ifdef BUBASE_TEST
+
+        struct Record { int id; double value; };
+
+        void generate_only()
+        {
+            const size_t MAX_N = 10'000'000;
+            size_t actual = 0;
+
+            CFileMapping<Record> m;
+            if (!m.open_direct("data.bin", MAX_N * sizeof(Record))) {
+                std::fprintf(stderr, "open_direct failed: %s\n", m.error().c_str());
+                return;
+            }
+
+            for (size_t i = 0; i < MAX_N; ++i) {
+                if (i >= 3'000'000) break;
+                m[i] = Record{ (int)i, i * 1.0 };
+                ++actual;
+            }
+
+            // flush 落盘 + 截断到 actual 条 + 关闭
+            if (!m.close_direct(actual)) {
+                std::fprintf(stderr, "close_direct failed: %s\n", m.error().c_str());
+            }
+        }
+        void generate_then_cow_process()
+        {
+            const size_t MAX_N = 10'000'000;
+            size_t actual = 0;
+
+            CFileMapping<Record> m;
+            if (!m.open_direct("data.bin", MAX_N * sizeof(Record))) {
+                std::fprintf(stderr, "open_direct failed: %s\n", m.error().c_str());
+                return;
+            }
+
+            // ===== 阶段1：生成 =====
+            for (size_t i = 0; i < MAX_N; ++i) {
+                if (i >= 3'000'000) break;
+                m[i] = Record{ (int)i, i * 1.0 };
+                ++actual;
+            }
+
+            // ===== 就地转 COW：flush → 截断到 3M 条 → 重新映射 =====
+            if (!m.switch_to_cow(actual)) {
+                std::fprintf(stderr, "switch_to_cow failed: %s\n", m.error().c_str());
+                return;
+            }
+            // 此时 m.mode() == CopyOnWrite，m.count() == 3000000
+
+            // ===== 阶段2：COW 处理 =====
+            m.set_lru_capacity(1024);   // 最多 1024 个 clean 页常驻
+
+            // 第一轮：顺序读 + 条件写
+            for (size_t i = 0; i < m.count(); ++i) {
+                const CFileMapping<Record>& cm = m;
+                if (cm[i].value > 1'500'000.0) {
+                    m.mark_dirty(i);
+                    m[i].value *= 2.0;
+                }
+            }
+
+            // 第二轮：应用逻辑回看某些数据
+            // reload 确保在内存：dirty 页保留修改，clean 页被淘汰则从文件加载
+            for (size_t i = 0; i < m.count(); i += 1000) {
+                m.reload(i);
+                const CFileMapping<Record>& cm = m;
+                if (cm[i].value > 3'000'000.0) {
+                    // 之前改过，dirty 页常驻，读到修改后的值
+                }
+            }
+
+            std::printf("count=%zu clean=%zu dirty=%zu\n",
+                m.count(), m.lru_cached_pages(), m.lru_dirty_pages());
+
+            // 退出：close 不 msync，修改丢弃
+        }
+
+        int main()
+        {
+            generate_then_cow_process();
+            return 0;
+        }
+        void process_existing_file()
+        {
+            CFileMapping<Record> m;
+            m.set_lru_capacity(512);
+            if (!m.open_cow("data.bin")) {
+                std::fprintf(stderr, "open_cow failed: %s\n", m.error().c_str());
+                return;
+            }
+
+            for (size_t i = 0; i < m.count(); ++i) {
+                const CFileMapping<Record>& cm = m;
+                if (cm[i].id % 100 == 0) {
+                    m.mark_dirty(i);
+                    m[i].value = -1.0;
+                }
+            }
+            // 所有修改退出时丢弃，data.bin 不变
+        }
+
+        void GenerateWithResize()
+        {
+            CFileMapping<Record> m;
+            // 初始只映射 1024 条，远小于最终规模
+            if (!m.OpenDirect("data.bin", 1024 * sizeof(Record))) {
+                std::fprintf(stderr, "%s\n", m.Error().c_str());
+                return;
+            }
+
+            size_t actual = 0;
+            const size_t FINAL_N = 3'000'000;
+
+            for (size_t i = 0; i < FINAL_N; ++i)
+            {
+                // 写之前确保容量够
+                if (i >= m.Count())
+                {
+                    size_t new_cap = m.Count() * 2;
+                    if (new_cap <= i) new_cap = i + 1;
+                    if (!m.Resize(new_cap)) {
+                        std::fprintf(stderr, "Resize failed: %s\n", m.Error().c_str());
+                        return;
+                    }
+                }
+                m[i] = Record{ (int)i, i * 1.0 };
+                ++actual;
+            }
+
+            // 收尾：Flush + 截断到实际大小 + 关闭
+            m.CloseDirect(actual);
+        }
+        //三、详细说明
+        //    1. 两种模式的数据流
+        //    阶段	调用	映射方式	写入落盘？	LRU
+        //    模式1 生成	open_direct(path, max_bytes)	MAP_SHARED / PAGE_READWRITE	不主动；flush() 才确保	无
+        //    模式1 收尾（只生成）	close_direct(actual_count)	—	flush() 后截断关闭	—
+        //    模式1 收尾（转处理）	switch_to_cow(actual_count)	变成 MAP_PRIVATE / PAGE_WRITECOPY	之后修改不落盘	可启用
+        //    模式2 处理	open_cow(path) 或上一步 switch_to_cow	COW	不落盘	支持
+        //    2. switch_to_cow 的步骤
+        //    flush()：先确保生成的数据落盘，否则截断可能丢未写回数据。
+
+        //    释放旧映射：munmap / UnmapViewOfFile + CloseHandle(hMap)，保留文件句柄。
+
+        //    截断：ftruncate(fd, actual_bytes) / SetEndOfFile(actual_bytes)。
+
+        //    重新映射为 COW：mmap(MAP_PRIVATE) / CreateFileMapping(PAGE_WRITECOPY) + MapViewOfFile(FILE_MAP_COPY)。
+
+        //    重置状态：m_nSize_、m_nCount_ 更新，LRU / dirty 状态清空。
+
+        //    为什么不重新 open：复用文件句柄，避免路径被改名 / 删除导致失败，也省一次 open 的开销。
+
+        //    3. COW 语义（Linux / Windows 一致）
+        //    读：缺页时从文件读入内存。
+
+        //    写：第一次写某页触发 COW，内核复制该页为私有匿名页，后续写只改私有页。
+
+        //    munmap / UnmapViewOfFile：私有页释放，文件不变。
+
+        //    4. dirty / clean 页的区分
+        //    用户态无法精确查询 COW 页是否已被写过。所以：
+
+        //    mark_dirty(idx)：显式契约，应用声明"我可能要写这一页"。该页从 LRU 移除，常驻内存，永不淘汰。
+
+        //    非 const operator[] / at()：自动调用 mark_dirty，作为安全兜底。
+
+        //    const 访问：正常参与 LRU，可被淘汰。
+
+        //    非 const data()：无法跟踪写，保守地禁用 LRU 淘汰（m_all_dirty_ = true），所有页常驻。
+
+        //    关键：mark_dirty 必须在写之前调用。如果先写后标记，且该页恰好被 LRU 淘汰，修改会丢。
+
+        //    5. reload 的语义
+        //    确保 idx 所在页当前在内存，不丢弃任何修改：
+
+        //    页状态	行为
+        //    dirty 页	常驻，修改保留，直接返回
+        //    clean 页在 LRU	移到 LRU 头部（刷新热度）
+        //    clean 页不在 LRU	加入 LRU，淘汰最旧页，从文件预读
+        //    m_all_dirty_	淘汰已禁用，直接返回
+        //    Linux 用 madvise(MADV_WILLNEED) 异步预读；Windows 用 volatile 读触发缺页。
+
+        //    6. LRU 淘汰（仅 clean 页）
+        //    每次 const 访问，touch_page 把页移到 LRU 头部。
+
+        //    LRU 超容量时，从尾部淘汰，Linux 上 madvise(MADV_DONTNEED)。
+
+        //    dirty 页从不进入 LRU 列表，所以淘汰的一定是 clean 页，安全。
+
+        //    7. 平台差异
+        //    操作	Linux	Windows
+        //    模式1 映射	mmap(MAP_SHARED)	CreateFileMapping(PAGE_READWRITE)
+        //    模式2 映射	mmap(MAP_PRIVATE)	CreateFileMapping(PAGE_WRITECOPY)
+        //    flush	msync(MS_SYNC)	FlushViewOfFile + FlushFileBuffers
+        //    LRU 淘汰 clean 页	madvise(MADV_DONTNEED)，实际释放页	仅从统计移除，OS 自然回收
+        //    reload 预读	madvise(MADV_WILLNEED) 异步	volatile 读触发缺页
+        //    退出丢修改	munmap	UnmapViewOfFile
+        //    Windows 上 LRU 的"淘汰"只影响统计，clean 文件页由 OS 在内存压力下回收，语义正确。
+
+        //    8. 线程安全
+        //    at / operator[] / mark_dirty / reload / prefetch：可多线程并发，内部有 m_lru_mtx_ 保护。
+
+        //    open_ * / close / switch_to_cow / close_direct / set_lru_capacity / 移动赋值：不应与任何访问并发，由调用方保证。
+
+        //    9. 限制与契约
+        //    mark_dirty 必须在写之前。顺序：mark_dirty(i) → 写。
+
+        //    非 const 读也会标 dirty（C++ 无法区分读 / 写）。纯读请用 const 引用：const CFileMapping<T>&cm = m; cm[i]。
+
+        //    data() 在 COW 下禁用 LRU。裸指针写无法跟踪，安全优先。
+
+        //    模式1 的"不调用不写"是程序语义。MAP_SHARED 的 dirty page 最终会被内核异步写回，程序无法完全阻止。flush() 是"确保已落盘"的语义。
+
+        //    switch_to_cow / close_direct 内部会 flush。如果生成阶段数据量很大，flush 可能耗时较长，属正常。
+
+        //    actual_count 不能超过 m_nCount_（open_direct 时映射的大小），否则返回 false。
+
+        //    10. 编译
+        //    bash
+        //    # Linux
+        //    g++ - std = c++11 - O2 - pthread main.cpp - o main
+
+        //    # Windows(MSVC)
+        //    cl / std:c++14 / O2 main.cpp
+        //    - pthread 在 Linux 下必加（std::mutex 依赖）。C++11 即可，无需 C++17。
+#endif BUBASE_TEST
 
 #endif // !defined(AFX_MDBBASE_H__B2EF1D82_10E5_4C0B_B6EF_A98703B25A7C__INCLUDED_)

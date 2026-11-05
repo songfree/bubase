@@ -166,20 +166,20 @@ bool CSubScribeInfo::IsSubscribe(unsigned int funcno, unsigned int key, int ndat
             m_key.Add(rid, m_table.m_table[rid].nServiceNo, m_table.m_table[rid].nKey);
             return true;
         }
-        if (m_table.m_table[rid].s_nSerial > ndate) //日期未更新
-        {
-            return false;
-        }
-        else if (m_table.m_table[rid].s_nSerial == ndate && m_table.m_table[rid].s_nGateIndex > ntime) //日期未更新但时间戳小于上一个
-        {
-            return false;
-        }
-        else  //日期相同，但时间戳大于等于，要发送，日期大于也要发送
-        {
-            m_table.m_table[rid].s_nSerial = ndate;
-            m_table.m_table[rid].s_nGateIndex = ntime;
-            return true;
-        }
+        //if (m_table.m_table[rid].s_nSerial > ndate) //日期未更新
+        //{
+        //    return false;
+        //}
+        //else if (m_table.m_table[rid].s_nSerial == ndate && m_table.m_table[rid].s_nGateIndex > ntime) //日期未更新但时间戳小于上一个
+        //{
+        //    return false;
+        //}
+        //else  //日期相同，但时间戳大于等于，要发送，日期大于也要发送
+        //{
+        //    m_table.m_table[rid].s_nSerial = ndate;
+        //    m_table.m_table[rid].s_nGateIndex = ntime;
+        //    return true;
+        //}
 		return true;
 	}
 	CBF_PMutex pp(&m_mutex);
@@ -187,20 +187,20 @@ bool CSubScribeInfo::IsSubscribe(unsigned int funcno, unsigned int key, int ndat
 	{
 		return false;
 	}
-    if (m_table.m_table[rid].s_nSerial > ndate) //日期未更新
-    {
-        return false;
-    }
-    else if (m_table.m_table[rid].s_nSerial == ndate && m_table.m_table[rid].s_nGateIndex > ntime) //日期未更新但时间戳小于上一个
-    {
-        return false;
-    }
-    else  //日期相同，但时间戳大于等于，要发送，日期大于也要发送
-    {
-        m_table.m_table[rid].s_nSerial = ndate;
-        m_table.m_table[rid].s_nGateIndex = ntime;
-        return true;
-    }
+    //if (m_table.m_table[rid].s_nSerial > ndate) //日期未更新
+    //{
+    //    return false;
+    //}
+    //else if (m_table.m_table[rid].s_nSerial == ndate && m_table.m_table[rid].s_nGateIndex > ntime) //日期未更新但时间戳小于上一个
+    //{
+    //    return false;
+    //}
+    //else  //日期相同，但时间戳大于等于，要发送，日期大于也要发送
+    //{
+    //    m_table.m_table[rid].s_nSerial = ndate;
+    //    m_table.m_table[rid].s_nGateIndex = ntime;
+    //    return true;
+    //}
     return true;
 }
 int CSubScribeInfo::Subscribe(unsigned int funcno, unsigned int key)

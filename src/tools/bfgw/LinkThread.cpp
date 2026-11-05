@@ -1486,6 +1486,12 @@ void CLinkThread::OnAccept(int conindex)
 	if (tsock != INVALID_SOCKET)
 	{
 		m_pLog.LogMp(LOG_DEBUG,__FILE__,__LINE__,"从[%d]端口接收到[%s]的连接",m_pSockMgr->at(conindex)->m_nPort,address);
+		if (!m_pRes->IsWhiteList(address))
+		{
+            closesocket(tsock);
+            m_pLog.LogMp(LOG_WARNNING, __FILE__, __LINE__, "从[%d]端口接收到[%s]的连接 不在白名单，拒绝", m_pSockMgr->at(conindex)->m_nPort, address);
+            return;
+		}
 		//检查黑名单
 		if (m_pRes->IsRefuse(address))
 		{

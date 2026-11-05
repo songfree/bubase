@@ -173,7 +173,7 @@ public:
         }
         if (g_nQuoteQueueNum < 10)
         {
-            g_nQuoteQueueNum = 10;
+            //g_nQuoteQueueNum = 10;
         }
         if (pXml.GetNodeValueByPath("/package/head/public/sendwindow", false, g_nSendOnceNum) == NULL)
         {

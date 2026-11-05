@@ -79,10 +79,16 @@ public:
 	// 描述  : 读配置文件
 	bool Init(const char *confile);
 
-
+    // 函数名: IsWhiteList
+    // 编程  : 王明松 2013-12-10 9:46:06
+    // 返回  : bool 
+    // 参数  : const char *ip
+    // 描述  : 判断ip是否在白名单内
+    bool IsWhiteList(const char* ip);
 protected:
 	CMemTableNew<std::string> m_table;        //黑名单内存表
-	CPkeyCharF<20,1>        m_pKey;        //黑名单主键
+	CPkeyCharFUnordered<20,1>        m_pKey;        //黑名单主键
+	CPkeyCharFUnordered<20,1>		 m_pWhiteKey;//白名单主键
 };
 
 #endif // !defined(AFX_RESOURCE_H__FF782DDA_47F8_4B57_961C_BF9F48B676FC__INCLUDED_)

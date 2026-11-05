@@ -212,8 +212,8 @@ void CBF_Timer::Init(unsigned long tick, bool accuracy, int cpucores)
 
 void CBF_Timer::ProcessTimer()
 {
-	unsigned long btime;
-	unsigned long etime;
+	INT64_ btime;
+	INT64_ etime;
 	CBF_PMutex pp(&m_mutex);
 	LIST_TIMER::iterator prn,prq;
 	
@@ -286,7 +286,7 @@ void CBF_Timer::ProcessTimer()
 				{
 					if (m_bTimerAccuracy) //精确定时
 					{
-						prq->nTimeCount = prq->nTimeOut-(etime-btime);//减去处理所耗时间
+						prq->nTimeCount = (INT64_)prq->nTimeOut -( etime - btime);//减去处理所耗时间
 					}
 					else
 					{
@@ -300,7 +300,7 @@ void CBF_Timer::ProcessTimer()
 				if (m_bTimerAccuracy) //精确定时
 				{
 					etime = m_pDateTime.GetTickCount();
-					prq->nTimeCount = prq->nTimeCount-(etime-btime);//减去处理所耗时间
+					prq->nTimeCount = (INT64_)prq->nTimeCount- (etime - btime);//减去处理所耗时间
 				}
 			}
 		}

@@ -267,11 +267,72 @@ bool CResource::Init(const char *confile)
 		sprintf(m_sErrMsg, "节点[package/head/blacklist]转发黑名单未配置");
 		g_pLog.LogMp(LOG_PROMPT,__FILE__,__LINE__,m_sErrMsg);
 	}
+    CXmlNode* usenode = g_pXml.GetNodeByPath("package/head/whitelist", false);
+    if (usenode != NULL)
+    {
+        tmpnode = (CXmlNode*)usenode->GetFirstChild();
+        while (tmpnode != NULL)
+        {
+            if (tmpnode->GetAttribute("IP", false, stmp) == NULL)
+            {
+                g_pLog.LogMp(LOG_WARNNING, __FILE__, __LINE__, "%s 无IP属性", tmpnode->GetNodeName().c_str());
+                tmpnode = (CXmlNode*)tmpnode->getNextSibling();
+                continue;
+            }
+			if (!m_pWhiteKey.Find((char*)stmp.c_str()))
+			{
+				m_pWhiteKey.Add(0, (char*)stmp.c_str());
+			}
+            else
+            {
+                g_pLog.LogMp(LOG_WARNNING, __FILE__, __LINE__, "%s IP[%s]重复", tmpnode->GetNodeName().c_str(), stmp.c_str());
+            }
+            tmpnode = (CXmlNode*)tmpnode->getNextSibling();
+        }
+    }
+    else
+    {
+        sprintf(m_sErrMsg, "节点[package/head/blacklist]转发黑名单未配置");
+        g_pLog.LogMp(LOG_PROMPT, __FILE__, __LINE__, m_sErrMsg);
+    }
 	return true;
 }
 
 bool CResource::IsRefuse(const char *ip)
 {
-	CInt nSet;
-	return m_pKey.Select(nSet,(char *)ip);
+	char tmpchar[20];
+	for (int i = 0; i < strlen(ip); i++)
+	{
+		if (ip[i] == ':')
+		{
+			tmpchar[i] = 0;
+			break;
+		}
+		else
+		{
+			tmpchar[i] = ip[i];
+		}
+	}
+	return m_pKey.Find(tmpchar);
+}
+bool CResource::IsWhiteList(const char* ip)
+{
+	if (m_pWhiteKey.Size() < 1)
+	{
+		return true;
+	}
+    char tmpchar[20];
+    for (int i = 0; i < strlen(ip); i++)
+    {
+        if (ip[i] == ':')
+        {
+            tmpchar[i] = 0;
+            break;
+        }
+        else
+        {
+            tmpchar[i] = ip[i];
+        }
+    }
+	return m_pWhiteKey.Find(tmpchar);
 }

@@ -4,12 +4,7 @@
 
 #include "BF_Tools.h"
 #include "BF_Zip.h"
-#include "BF_3Des.h"
-#include "BF_Des.h"
 
-
-CBF_Des  g_bfDes;
-CBF_3Des g_bf3Des;
 
 #ifndef _WINDOWS
 //#include <curses.h>  
@@ -1045,40 +1040,3 @@ void CBF_Tools::HEX_2_DSP(const char *hex,char *dsp,int count)
 //    free(unicodeStr);
 //    return utfLen;
 //}
-
-int bf_Des3Buffer(char* pwdbuffer,int pwdbuffersize, const char* des3key)
-{
-    char errmsg[256];
-    if (!g_bf3Des.Des3Buffer(pwdbuffer, pwdbuffersize, des3key, errmsg))
-    {
-        return -1;
-    }
-    return 0;
-}
-int bf_DesBuffer(char* pwdbuffer, int pwdlen, const char* des3key)
-{
-	int len = pwdlen;
-    if (g_bfDes.Encryptchar(pwdbuffer, len, des3key) !=0 )
-    {
-        return -1;
-    }
-    return 0;
-}
-int bf_Des3UncryptBuffer(char* pwdbuffer, int pwdlen, const char* des3key)
-{
-    char errmsg[256];
-    if (!g_bf3Des.UnDes3Buffer(pwdbuffer, pwdlen, des3key, errmsg))
-    {
-        return -1;
-    }
-    return 0;
-}
-int bf_DesUncryptBuffer(char* pwdbuffer, int pwdlen, const char* deskey)
-{
-    int len = pwdlen;
-    if (g_bfDes.UncryptString(pwdbuffer, len, deskey) <=0)
-    {
-        return -1;
-    }
-    return 0;
-}
